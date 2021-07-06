@@ -13,15 +13,19 @@ from core.utils import freeze_all, unfreeze_all
 flags.DEFINE_string('model', 'yolov4_vit_v1', 'yolov4, yolov3, yolov4_vit_v1')
 flags.DEFINE_string('weights', None, 'pretrained weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
+flags.DEFINE_string('model_path', '.', '/kaggle/')
+flags.DEFINE_string('log_dir', '.', '/kaggle/')
 
 def main(_argv):
+    if not os.path.isdir(FLAGS.model_path):
+        raise ValueError('Path doesnt exist')
     physical_devices = tf.config.experimental.list_physical_devices('GPU')
     if len(physical_devices) > 0:
         tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
     trainset = Dataset(FLAGS, is_training=True)
     testset = Dataset(FLAGS, is_training=False)
-    logdir = "./data/log"
+    logdir = FLAGS.log_dir
     isfreeze = False
     steps_per_epoch = len(trainset)
     first_stage_epochs = cfg.TRAIN.FISRT_STAGE_EPOCHS
@@ -155,6 +159,7 @@ def main(_argv):
         for i, (image_data, target) in enumerate(trainset):
             train_step(image_data, target)
             print(i*4)
+            model.save(FLAGS.model_path)
         for image_data, target in testset:
             test_step(image_data, target)
         model.save_weights("./checkpoints/yolov4")
