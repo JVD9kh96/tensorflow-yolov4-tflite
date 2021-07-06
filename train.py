@@ -152,11 +152,13 @@ def main(_argv):
         #         for name in freeze_layers:
         #             freeze = model.get_layer(name)
         #             unfreeze_all(freeze)
-        for image_data, target in trainset:
+        for i, (image_data, target) in enumerate(trainset):
             train_step(image_data, target)
+            print(i*4)
         for image_data, target in testset:
             test_step(image_data, target)
         model.save_weights("./checkpoints/yolov4")
+        print('###########################END of EPOCH{} ##############'.format(epoch))
 
 if __name__ == '__main__':
     try:
