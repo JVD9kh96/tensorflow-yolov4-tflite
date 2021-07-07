@@ -3,6 +3,7 @@ from absl.flags import FLAGS
 import os
 import shutil
 import tensorflow as tf
+import time
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -158,13 +159,13 @@ def main(_argv):
         #         for name in freeze_layers:
         #             freeze = model.get_layer(name)
         #             unfreeze_all(freeze)
-        for i, (image_data, target) in enumerate(trainset):
+        for i, (image_data, target) in enumerate(trainset) :
             train_step(image_data, target)
-            print(i*4)
-            model.save(FLAGS.model_path)
+            if i % 1000 == 0 :
+                model.save(FLAGS.model_path)
         for image_data, target in testset:
             test_step(image_data, target)
-        model.save_weights("./checkpoints/yolov4")
+        model.save_weights(FLAGS.model_path)
         print('###########################END of EPOCH{} ##############'.format(epoch))
 
 if __name__ == '__main__':
