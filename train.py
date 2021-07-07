@@ -14,7 +14,7 @@ flags.DEFINE_string('model', 'yolov4_vit_v1', 'yolov4, yolov3, yolov4_vit_v1')
 flags.DEFINE_string('weights', None, 'pretrained weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_string('model_path', '.', '/kaggle/')
-flags.DEFINE_string('log_dir', '.', '/kaggle/')
+flags.DEFINE_string('logDir', '.', '/kaggle/')
 
 def main(_argv):
     if not os.path.isdir(FLAGS.model_path):
@@ -25,7 +25,7 @@ def main(_argv):
 
     trainset = Dataset(FLAGS, is_training=True)
     testset = Dataset(FLAGS, is_training=False)
-    logdir = FLAGS.log_dir
+    logdir = FLAGS.logDir
     isfreeze = False
     steps_per_epoch = len(trainset)
     first_stage_epochs = cfg.TRAIN.FISRT_STAGE_EPOCHS
