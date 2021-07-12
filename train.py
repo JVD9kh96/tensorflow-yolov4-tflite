@@ -15,7 +15,7 @@ import numpy as np
 from core import utils
 from core.utils import freeze_all, unfreeze_all
 
-flags.DEFINE_string('model', 'yolov4_vit_v1', 'yolov4, yolov3, yolov4_vit_v1')
+flags.DEFINE_string('model', 'yolov4_vit_v1', 'yolov4, yolov3, yolov4_vit_v1و yolov4_vit_v1_light')
 flags.DEFINE_string('weights', None, 'pretrained weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_string('model_path', '.', '/kaggle/')
