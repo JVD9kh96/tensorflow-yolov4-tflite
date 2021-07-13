@@ -156,7 +156,6 @@ def main(_argv):
                      "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, giou_loss, conf_loss,
                                                                prob_loss, total_loss))
             with writer.as_default():
-                tf.summary.scalar("valid/lr", optimizer.lr, step=global_steps)
                 tf.summary.scalar("valid/loss/total_loss", total_loss, step=global_steps)
                 tf.summary.scalar("valid/loss/giou_loss", giou_loss, step=global_steps)
                 tf.summary.scalar("valid/loss/conf_loss", conf_loss, step=global_steps)
