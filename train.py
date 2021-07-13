@@ -123,9 +123,9 @@ def main(_argv):
             #        (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
             #    )
             #optimizer.lr.assign(lr.numpy())
-            if global_steps > 0.8 * total_steps and global_steps < 0.9 * total_steps:
+            if global_steps.numoy() > 0.8 * total_steps and global_steps.numpy() < 0.9 * total_steps:
                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/10.0)
-            elif global_steps > 0.9 * total_steps:
+            elif global_steps.numpy() > 0.9 * total_steps:
                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/100.0)
             
 
