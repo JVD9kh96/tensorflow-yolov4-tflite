@@ -41,7 +41,7 @@ def main(_argv):
     input_layer = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
     IOU_LOSS_THRESH = cfg.YOLO.IOU_LOSS_THRESH
-
+    weight_decay = 0.0005
     # freeze_layers = utils.load_freeze_layer(FLAGS.model, FLAGS.tiny)
     if FLAGS.tiny:
         num_yolo_head = 2
@@ -82,8 +82,13 @@ def main(_argv):
         print('Restoring weights from: %s ... ' % FLAGS.weights)
 
 
-    optimizer = tf.keras.optimizers.Adam()
+    #optimizer = tf.keras.optimizers.Adam()
+    optimizer = tfa.optimizers.AdamW(
+        learning_rate=cfg.TRAIN.LR_INIT, weight_decay=weight_decay)
+    
     if os.path.exists(logdir): shutil.rmtree(logdir)
+    os.makedirs(logdir + '/train/', exist_ok = True)
+    os.makedirs(logdir + '/valid/', exist_ok = True)
     writer = tf.summary.create_file_writer(logdir)
 
     # define training step function
@@ -111,21 +116,26 @@ def main(_argv):
                                                                prob_loss, total_loss))
             # update learning rate
             global_steps.assign_add(1)
-            if global_steps < warmup_steps:
-                lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
-            else:
-                lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
-                    (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
-                )
-            optimizer.lr.assign(lr.numpy())
+            #if global_steps < warmup_steps:
+            #    lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
+            #else:
+            #    lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
+            #        (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
+            #    )
+            #optimizer.lr.assign(lr.numpy())
+            if global_steps > 0.8 * total_steps and global_steps < 0.9 * total_steps:
+                optimizer.lr.assign(cfg.TRAIN.LR_INIT/10.0)
+            elif global_steps > 0.9 * total_steps:
+                optimizer.lr.assign(cfg.TRAIN.LR_INIT/100.0)
+            
 
             # writing summary data
             with writer.as_default():
-                tf.summary.scalar("lr", optimizer.lr, step=global_steps)
-                tf.summary.scalar("loss/total_loss", total_loss, step=global_steps)
-                tf.summary.scalar("loss/giou_loss", giou_loss, step=global_steps)
-                tf.summary.scalar("loss/conf_loss", conf_loss, step=global_steps)
-                tf.summary.scalar("loss/prob_loss", prob_loss, step=global_steps)
+                tf.summary.scalar("train/lr", optimizer.lr, step=global_steps)
+                tf.summary.scalar("train/loss/total_loss", total_loss, step=global_steps)
+                tf.summary.scalar("train/loss/giou_loss", giou_loss, step=global_steps)
+                tf.summary.scalar("train/loss/conf_loss", conf_loss, step=global_steps)
+                tf.summary.scalar("train/loss/prob_loss", prob_loss, step=global_steps)
             writer.flush()
     def test_step(image_data, target):
         with tf.GradientTape() as tape:
@@ -145,6 +155,13 @@ def main(_argv):
             tf.print("=> TEST STEP %4d   giou_loss: %4.2f   conf_loss: %4.2f   "
                      "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, giou_loss, conf_loss,
                                                                prob_loss, total_loss))
+            with writer.as_default():
+                tf.summary.scalar("valid/lr", optimizer.lr, step=global_steps)
+                tf.summary.scalar("valid/loss/total_loss", total_loss, step=global_steps)
+                tf.summary.scalar("valid/loss/giou_loss", giou_loss, step=global_steps)
+                tf.summary.scalar("valid/loss/conf_loss", conf_loss, step=global_steps)
+                tf.summary.scalar("valid/loss/prob_loss", prob_loss, step=global_steps)
+            writer.flush()
 
     for epoch in range(first_stage_epochs + second_stage_epochs):
         # if epoch < first_stage_epochs:
