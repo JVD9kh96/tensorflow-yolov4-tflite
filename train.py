@@ -7,7 +7,7 @@ import time
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
-        
+import tensorflow_addons as tfa
 from core.yolov4 import YOLO, decode, compute_loss, decode_train
 from core.dataset import Dataset
 from core.config import cfg
@@ -179,6 +179,7 @@ def main(_argv):
             train_step(image_data, target)
             if i % 1000 == 0 :
                 model.save(FLAGS.model_path)
+                model.save_weights(FLAGS.model_path + 'ModelWeights')
         for image_data, target in testset:
             test_step(image_data, target)
         model.save_weights(FLAGS.model_path)
