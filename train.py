@@ -20,6 +20,8 @@ flags.DEFINE_string('weights', None, 'pretrained weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_string('model_path', '.', '/kaggle/')
 flags.DEFINE_string('logDir', '.', '/kaggle/')
+flags.DEFINE_boolean('test', False, 'include test step or not')
+flags.DEFINE_integer('init_step', 0, 'initial step')
 
 def main(_argv):
     if not os.path.isdir(FLAGS.model_path):
@@ -162,7 +164,7 @@ def main(_argv):
                 tf.summary.scalar("valid/loss/prob_loss", prob_loss, step=global_steps)
             writer.flush()
 
-    for epoch in range(first_stage_epochs + second_stage_epochs):
+    for epoch in range(FLAGS.init_step, first_stage_epochs + second_stage_epochs):
         # if epoch < first_stage_epochs:
         #     if not isfreeze:
         #         isfreeze = True
@@ -178,10 +180,11 @@ def main(_argv):
         for i, (image_data, target) in enumerate(trainset) :
             train_step(image_data, target)
             if i % 1000 == 0 :
-                model.save(FLAGS.model_path)
+                #model.save(FLAGS.model_path)
                 model.save_weights(FLAGS.model_path + 'ModelWeights')
-        for image_data, target in testset:
-            test_step(image_data, target)
+        if FLAGS.test:
+            for image_data, target in testset:
+                test_step(image_data, target)
         model.save_weights(FLAGS.model_path)
         print('###########################END of EPOCH{} ##############'.format(epoch))
 
