@@ -9,9 +9,13 @@ from tensorflow import keras
 import tensorflow_addons as tfa
 
 
-def mlp(x, hidden_units, dropout_rate):
+def mlp(x, hidden_units, dropout_rate, activation = 'gelu'):
     for units in hidden_units:
-        x = layers.Dense(units, activation=tf.nn.gelu)(x)
+        if activation == 'gelu':
+            x = layers.Dense(units, activation=tf.nn.gelu)(x)
+        elif activation == 'mish':
+            x = layers.Dense(units)(x)
+            x = mish(x)
         x = layers.Dropout(dropout_rate)(x)
     return x
 
@@ -234,14 +238,14 @@ def VIT_v1(inputs, image_size = 416,
                           patch_size=8,
                           projection_dim = 128,
                           transformer_layers =[6, 6, 6],
-                          attention_heads=[4, 4, 4]):
+                          attention_heads=[4, 4, 4], activation = 'gelu'):
     
     num_patches = (image_size // patch_size) ** 2
     transformer_units = [projection_dim * 2, projection_dim] 
     # inputs = layers.Input(shape=(image_size, image_size, 3))
     patches = Patches(patch_size)(inputs)
     encoded_patches = PatchEncoder(num_patches, projection_dim)(patches)    
-    encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0])
+    encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation)
     encoded_patches = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
     route1 = encoded_patches
     route1 = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(route1)
@@ -253,14 +257,14 @@ def VIT_v1(inputs, image_size = 416,
     # else:
     #     encoded_patches = tf.keras.layers.MaxPooling1D(pool_size = 4, strides=4)(encoded_patches)
 
-    encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*4, projection_dim*2], transformer_layers[1], num_heads = attention_heads[1])
+    encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*4, projection_dim*2], transformer_layers[1], num_heads = attention_heads[1], activation = activation)
     encoded_patches = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
     route2 = encoded_patches
     route2 = tf.keras.layers.Reshape((image_size//16, image_size//16, projection_dim*2))(route2)
     encoded_patches = tf.expand_dims(encoded_patches, axis = -1)
     encoded_patches = Patches_sp([4, projection_dim*2])(encoded_patches)
     encoded_patches = PatchEncoder(dict_size[1]//16, projection_dim*4)(encoded_patches)    
-    encoded_patches = common.transformer(encoded_patches, projection_dim*4, [projection_dim*8, projection_dim*4], transformer_layers[2], num_heads = attention_heads[2])
+    encoded_patches = common.transformer(encoded_patches, projection_dim*4, [projection_dim*8, projection_dim*4], transformer_layers[2], num_heads = attention_heads[2], activation = activation)
     encoded_patches = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
     encoded_patches = tf.keras.layers.Reshape((image_size//32, image_size//32, projection_dim*4))(encoded_patches)
     # model = keras.Model(inputs=inputs, outputs=[route1, route2, encoded_patches])
@@ -270,14 +274,15 @@ def VIT_v1_tiny(inputs, image_size = 416,
                           patch_size=16,
                           projection_dim = 128,
                           transformer_layers =[6, 6],
-                          attention_heads=[4, 4]):
+                          attention_heads=[4, 4],
+                          activation = 'gelu):
     
     num_patches = (image_size // patch_size) ** 2
     transformer_units = [projection_dim * 2, projection_dim] 
     # inputs = layers.Input(shape=(image_size, image_size, 3))
     patches = Patches(patch_size)(inputs)
     encoded_patches = PatchEncoder(num_patches, projection_dim)(patches)    
-    encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0])
+    encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation)
     encoded_patches = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
     route1 = encoded_patches
     route1 = tf.keras.layers.Reshape((image_size//16, image_size//16, projection_dim))(route1)
@@ -289,7 +294,7 @@ def VIT_v1_tiny(inputs, image_size = 416,
     # else:
     #     encoded_patches = tf.keras.layers.MaxPooling1D(pool_size = 4, strides=4)(encoded_patches)
 
-    encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*4, projection_dim*2], transformer_layers[1], num_heads = attention_heads[1])
+    encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*4, projection_dim*2], transformer_layers[1], num_heads = attention_heads[1], activation = activation)
     encoded_patches = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
     route2 = encoded_patches
     route2 = tf.keras.layers.Reshape((image_size//32, image_size//32, projection_dim*2))(route2)
