@@ -68,13 +68,17 @@ def route_group(input_layer, groups, group_id):
 def upsample(input_layer):
     return tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear')
 
-def mlp(x, hidden_units, dropout_rate):
+def mlp(x, hidden_units, dropout_rate, activation = 'gelu'):
     for units in hidden_units:
-        x = layers.Dense(units, activation=tf.nn.gelu)(x)
+        if activation == 'gelu':
+            x = layers.Dense(units, activation=tf.nn.gelu)(x)
+        elif activation == 'mish':
+            x = layers.Dense(units)(x)
+            x = mish(x)
         x = layers.Dropout(dropout_rate)(x)
     return x
 
-def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, num_heads = 4):
+def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, num_heads = 4, activation = 'gelu'):
     encoded_patches = input_layer
     for _ in range(num_layers):
         # Layer normalization 1.
@@ -88,7 +92,7 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
         # Layer normalization 2.
         x3 = layers.LayerNormalization(epsilon=1e-6)(x2)
         # MLP.
-        x3 = mlp(x3, hidden_units=transformer_units, dropout_rate=0.1)
+        x3 = mlp(x3, hidden_units=transformer_units, dropout_rate=0.1, activation = activation)
         # Skip connection 2.
         encoded_patches = layers.Add()([x3, x2])
     return encoded_patches
