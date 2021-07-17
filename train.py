@@ -24,15 +24,15 @@ flags.DEFINE_boolean('test', False, 'include test step or not')
 flags.DEFINE_integer('init_step', 0, 'initial step')
 flags.DEFINE_integer('time_lim', 32000, 'time limit to terminate runtime')
 flags.DEFINE_string('activation', 'gelu', 'gelu, mish')
-tic = time.time()
-flg = False
+
 
 
 def main(_argv):
     if not os.path.isdir(FLAGS.model_path):
         raise ValueError('Path doesnt exist')
 
-
+    tic = time.time()
+    flg = False
     trainset = Dataset(FLAGS, is_training=True)
     testset = Dataset(FLAGS, is_training=False)
     logdir = FLAGS.logDir
