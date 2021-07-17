@@ -22,6 +22,11 @@ flags.DEFINE_string('model_path', '.', '/kaggle/')
 flags.DEFINE_string('logDir', '.', '/kaggle/')
 flags.DEFINE_boolean('test', False, 'include test step or not')
 flags.DEFINE_integer('init_step', 0, 'initial step')
+flags.DEFINE_integer('time_lim', 32000, 'time limit to terminate runtime')
+
+tic = time.time()
+flg = False
+
 
 def main(_argv):
     if not os.path.isdir(FLAGS.model_path):
@@ -178,6 +183,10 @@ def main(_argv):
         #             freeze = model.get_layer(name)
         #             unfreeze_all(freeze)
         for i, (image_data, target) in enumerate(trainset) :
+            toc = time.time()
+            if toc - tic > FLAGS.time_lim:
+                flg = True
+                break
             train_step(image_data, target)
             if i % 1000 == 0 :
                 #model.save(FLAGS.model_path)
@@ -187,7 +196,8 @@ def main(_argv):
                 test_step(image_data, target)
         model.save_weights(FLAGS.model_path)
         print('###########################END of EPOCH{} ##############'.format(epoch))
-
+        if flg:
+            break
 if __name__ == '__main__':
     try:
         app.run(main)
