@@ -15,7 +15,7 @@ import numpy as np
 from core import utils
 from core.utils import freeze_all, unfreeze_all
 
-flags.DEFINE_string('model', 'yolov4_vit_v1', 'yolov4, yolov3, yolov4_vit_v1و yolov4_vit_v1_light')
+flags.DEFINE_string('model', 'yolov4_vit_v1', 'yolov4, yolov3, yolov4_vit_v1, yolov4_vit_v1_light')
 flags.DEFINE_string('weights', None, 'pretrained weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_string('model_path', '.', '/kaggle/')
@@ -23,7 +23,7 @@ flags.DEFINE_string('logDir', '.', '/kaggle/')
 flags.DEFINE_boolean('test', False, 'include test step or not')
 flags.DEFINE_integer('init_step', 0, 'initial step')
 flags.DEFINE_integer('time_lim', 32000, 'time limit to terminate runtime')
-
+flags.DEFINE_string('activation', 'gelu', 'gelu, mish')
 tic = time.time()
 flg = False
 
@@ -54,7 +54,7 @@ def main(_argv):
         num_yolo_head = 2
     else:
         num_yolo_head = 3
-    feature_maps = YOLO(input_layer, NUM_CLASS, FLAGS.model, FLAGS.tiny)
+    feature_maps = YOLO(input_layer, NUM_CLASS, FLAGS.model, FLAGS.tiny, FLAGS.activation)
     if FLAGS.tiny:
         bbox_tensors = []
         for i, fm in enumerate(feature_maps):
