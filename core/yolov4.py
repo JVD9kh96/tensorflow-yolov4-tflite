@@ -139,7 +139,7 @@ def YOLOv4(input_layer, NUM_CLASS):
     conv = common.convolutional(conv, (3, 3, 512, 1024))
     conv_lbbox = common.convolutional(conv, (1, 1, 1024, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
 
-    return [conv_sbbox, conv_mbbox, conv_lbbox, spp, mxp1, mxp2, mxp3]
+    return [conv_sbbox, conv_mbbox, conv_lbbox]
 
 def YOLOv4_vit_v1(input_layer, NUM_CLASS, activation = 'gelu'):
     route_1, route_2, conv = backbone.VIT_v1(input_layer, activation = activation)
