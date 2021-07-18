@@ -21,7 +21,7 @@ flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_string('model_path', '.', '/kaggle/')
 flags.DEFINE_string('logDir', '.', '/kaggle/')
 flags.DEFINE_boolean('test', False, 'include test step or not')
-flags.DEFINE_integer('init_step', 0, 'initial step')
+flags.DEFINE_integer('init_epoch', 0, 'initial epoch')
 flags.DEFINE_integer('time_lim', 32000, 'time limit to terminate runtime')
 flags.DEFINE_string('activation', 'gelu', 'gelu, mish')
 
@@ -168,8 +168,8 @@ def main(_argv):
                 tf.summary.scalar("valid/loss/conf_loss", conf_loss, step=global_steps)
                 tf.summary.scalar("valid/loss/prob_loss", prob_loss, step=global_steps)
             writer.flush()
-    print('loading functions done...')
-    for epoch in range(FLAGS.init_step, first_stage_epochs + second_stage_epochs):
+            
+    for epoch in range(FLAGS.init_epoch, first_stage_epochs + second_stage_epochs):
         # if epoch < first_stage_epochs:
         #     if not isfreeze:
         #         isfreeze = True
