@@ -168,7 +168,7 @@ def main(_argv):
                 tf.summary.scalar("valid/loss/conf_loss", conf_loss, step=global_steps)
                 tf.summary.scalar("valid/loss/prob_loss", prob_loss, step=global_steps)
             writer.flush()
-
+    print('loading functions done...')
     for epoch in range(FLAGS.init_step, first_stage_epochs + second_stage_epochs):
         # if epoch < first_stage_epochs:
         #     if not isfreeze:
