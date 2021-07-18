@@ -21,7 +21,7 @@ flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_string('model_path', '.', '/kaggle/')
 flags.DEFINE_string('logDir', '.', '/kaggle/')
 flags.DEFINE_boolean('test', False, 'include test step or not')
-flags.DEFINE_integer('init_epoch', 0, 'initial epoch')
+flags.DEFINE_integer('init_step', 0, 'initial step')
 flags.DEFINE_integer('time_lim', 32000, 'time limit to terminate runtime')
 flags.DEFINE_string('activation', 'gelu', 'gelu, mish')
 
@@ -40,7 +40,7 @@ def main(_argv):
     steps_per_epoch = len(trainset)
     first_stage_epochs = cfg.TRAIN.FISRT_STAGE_EPOCHS
     second_stage_epochs = cfg.TRAIN.SECOND_STAGE_EPOCHS
-    global_steps = tf.Variable(1, trainable=False, dtype=tf.int64)
+    global_steps = tf.Variable(FLAGS.init_step, trainable=False, dtype=tf.int64)
     warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
     total_steps = (first_stage_epochs + second_stage_epochs) * steps_per_epoch
     # train_steps = (first_stage_epochs + second_stage_epochs) * steps_per_period
@@ -168,8 +168,8 @@ def main(_argv):
                 tf.summary.scalar("valid/loss/conf_loss", conf_loss, step=global_steps)
                 tf.summary.scalar("valid/loss/prob_loss", prob_loss, step=global_steps)
             writer.flush()
-            
-    for epoch in range(FLAGS.init_epoch, first_stage_epochs + second_stage_epochs):
+    start_epoch = int((FLAGS.init_step)/total_steps*(first_stage_epochs + second_stage_epochs))
+    for epoch in range(start_epoch, first_stage_epochs + second_stage_epochs):
         # if epoch < first_stage_epochs:
         #     if not isfreeze:
         #         isfreeze = True
