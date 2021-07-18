@@ -82,10 +82,10 @@ def main(_argv):
     if FLAGS.weights == None:
         print("Training from scratch")
     else:
-        if 0:
-            utils.load_weights(model, FLAGS.weights, FLAGS.model, FLAGS.tiny)
-        else:
-            model.load_weights(FLAGS.weights)
+        #if 0:
+        #    utils.load_weights(model, FLAGS.weights, FLAGS.model, FLAGS.tiny)
+        #else:
+        model.load_weights(FLAGS.weights)
         print('Restoring weights from: %s ... ' % FLAGS.weights)
 
 
