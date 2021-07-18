@@ -82,7 +82,7 @@ def main(_argv):
     if FLAGS.weights == None:
         print("Training from scratch")
     else:
-        if FLAGS.weights.split(".")[len(FLAGS.weights.split(".")) - 1] == "weights":
+        if 0:
             utils.load_weights(model, FLAGS.weights, FLAGS.model, FLAGS.tiny)
         else:
             model.load_weights(FLAGS.weights)
