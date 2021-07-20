@@ -75,17 +75,17 @@ def YOLOv3(input_layer, NUM_CLASS):
 
 def YOLOv4(input_layer, NUM_CLASS):
     route_1, route_2, conv = backbone.cspdarknet53(input_layer)
-    x1 = common.convolutional(conv, (1, 1, 1024, 512))
-    x2 = common.convolutional(x1, (3, 1, 512, 1024))
-    x3 = common.convolutional(x2, (1, 1, 1024, 512))
-    mxp1 = tf.keras.layers.MaxPool2D(pool_size = (5, 5), strides = 1, padding = 'same')(x3)
-    mxp2 = tf.keras.layers.MaxPool2D(pool_size=(9, 9), strides = 1, padding = 'same')(x3)
-    mxp3 = tf.keras.layers.MaxPool2D(pool_size = (13, 13), strides = 1, padding = 'same')(x3)
-    spp = tf.keras.layers.concatenate([mxp1, mxp2, mxp3, x3], axis = -1)
-    x4 = common.convolutional(spp, (1, 1, 2048, 512))
-    x5 = common.convolutional(x4, (3, 1, 512, 1024))
-    x6 = common.convolutional(x5, (1, 1, 1024, 512))
-    conv = x6
+    #x1 = common.convolutional(conv, (1, 1, 1024, 512))
+    #x2 = common.convolutional(x1, (3, 1, 512, 1024))
+    #x3 = common.convolutional(x2, (1, 1, 1024, 512))
+    #mxp1 = tf.keras.layers.MaxPool2D(pool_size = (5, 5), strides = 1, padding = 'same')(x3)
+    #mxp2 = tf.keras.layers.MaxPool2D(pool_size=(9, 9), strides = 1, padding = 'same')(x3)
+    #mxp3 = tf.keras.layers.MaxPool2D(pool_size = (13, 13), strides = 1, padding = 'same')(x3)
+    #spp = tf.keras.layers.concatenate([mxp1, mxp2, mxp3, x3], axis = -1)
+    #x4 = common.convolutional(spp, (1, 1, 2048, 512))
+    #x5 = common.convolutional(x4, (3, 1, 512, 1024))
+    #x6 = common.convolutional(x5, (1, 1, 1024, 512))
+    #conv = x6
     route = conv
     conv = common.convolutional(conv, (1, 1, 512, 256))
     conv = common.upsample(conv)
