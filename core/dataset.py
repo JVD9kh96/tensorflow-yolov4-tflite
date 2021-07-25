@@ -53,6 +53,13 @@ def rand_precalc_random(min, max, random_part):
         max = swap
     return (random_part * (max - min)) + min
 
+def rect_intersection(a, b):
+    minx = max(a[0], b[0])
+    miny = max(a[1], b[1])
+
+    maxx = min(a[2], b[2])
+    maxy = min(a[3], b[3])
+    return [minx, miny, maxx, maxy]
 
 def fill_truth_detection(bboxes, classes, flip, dx, dy, sx, sy, net_w, net_h):
     if bboxes.shape[0] == 0:
@@ -87,7 +94,7 @@ def fill_truth_detection(bboxes, classes, flip, dx, dy, sx, sy, net_w, net_h):
     #     bboxes = bboxes[:num_boxes]
 
     min_w_h = np.array([bboxes[:, 2] - bboxes[:, 0], bboxes[:, 3] - bboxes[:, 1]]).min()
-
+    bboxes = np.float64(bboxes)
     bboxes[:, 0] *= (net_w / sx)
     bboxes[:, 2] *= (net_w / sx)
     bboxes[:, 1] *= (net_h / sy)
@@ -547,7 +554,7 @@ class Dataset(object):
 
         for bbox in bboxes:
             bbox_coor = bbox[:4]
-            bbox_class_ind = bbox[4]
+            bbox_class_ind = int(bbox[4])
 
             onehot = np.zeros(self.num_classes, dtype=np.float)
             onehot[bbox_class_ind] = 1.0
