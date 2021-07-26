@@ -90,9 +90,9 @@ def main(_argv):
 
 
     #optimizer = tf.keras.optimizers.Adam()
-    optimizer = tfa.optimizers.AdamW(
-        learning_rate=cfg.TRAIN.LR_INIT, weight_decay=weight_decay)
-    
+    #optimizer = tfa.optimizers.AdamW(
+    #    learning_rate=cfg.TRAIN.LR_INIT, weight_decay=weight_decay)
+    optimizer = tf.keras.optimizers.SGD(learning_rate = 0.0013, momentum = 0.99)
     if os.path.exists(logdir): shutil.rmtree(logdir)
     os.makedirs(logdir + '/train/', exist_ok = True)
     os.makedirs(logdir + '/valid/', exist_ok = True)
