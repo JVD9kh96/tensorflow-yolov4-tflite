@@ -5,18 +5,15 @@ import shutil
 import operator
 import sys
 import argparse
-from absl import app, flags, logging
-from absl.flags import FLAGS
 
 MINOVERLAP = 0.5 # default value (defined in the PASCAL VOC2012 challenge)
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-na', '--no-animation',default=True, help="no animation is shown.", action="store_true")
+parser.add_argument('-na', '--no-animation', help="no animation is shown.", action="store_true")
 parser.add_argument('-np', '--no-plot', help="no plot is shown.", action="store_true")
 parser.add_argument('-q', '--quiet', help="minimalistic console output.", action="store_true")
 # argparse receiving list of classes to be ignored
 parser.add_argument('-i', '--ignore', nargs='+', type=str, help="ignore a list of classes.")
-parser.add_argument('-o', '--output', default="results", type=str, help="output path name")
 # argparse receiving list of classes with specific IoU
 parser.add_argument('--set-class-iou', nargs='+', type=str, help="set IoU for a specific class.")
 args = parser.parse_args()
@@ -273,7 +270,7 @@ def draw_plot_func(dictionary, n_classes, window_title, plot_title, x_label, out
 tmp_files_path = "tmp_files"
 if not os.path.exists(tmp_files_path): # if it doesn't exist already
   os.makedirs(tmp_files_path)
-results_files_path = args.output
+results_files_path = "results"
 if os.path.exists(results_files_path): # if it exist already
   # reset the results directory
   shutil.rmtree(results_files_path)
@@ -743,7 +740,7 @@ if draw_plot:
 """
  Write number of predicted objects per class to results.txt
 """
-with open(results_files_path + "/results", 'a') as results_file:
+with open(results_files_path + "/results.txt", 'a') as results_file:
   results_file.write("\n# Number of predicted objects per class\n")
   for class_name in sorted(pred_classes):
     n_pred = pred_counter_per_class[class_name]
