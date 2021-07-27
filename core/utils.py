@@ -125,6 +125,10 @@ def image_preprocess(image, target_size, gt_boxes=None):
         return image_paded, gt_boxes
 
 def draw_bbox(image, bboxes, classes=read_class_names(cfg.YOLO.CLASSES), show_label=True):
+    """
+    bboxes: [x_min, y_min, x_max, y_max, probability, cls_id] format coordinates.
+    """
+
     num_classes = len(classes)
     image_h, image_w, _ = image.shape
     hsv_tuples = [(1.0 * x / num_classes, 1., 1.) for x in range(num_classes)]
@@ -135,31 +139,24 @@ def draw_bbox(image, bboxes, classes=read_class_names(cfg.YOLO.CLASSES), show_la
     random.shuffle(colors)
     random.seed(None)
 
-    out_boxes, out_scores, out_classes, num_boxes = bboxes
-    for i in range(num_boxes[0]):
-        if int(out_classes[0][i]) < 0 or int(out_classes[0][i]) > num_classes: continue
-        coor = out_boxes[0][i]
-        coor[0] = int(coor[0] * image_h)
-        coor[2] = int(coor[2] * image_h)
-        coor[1] = int(coor[1] * image_w)
-        coor[3] = int(coor[3] * image_w)
-
+    for i, bbox in enumerate(bboxes):
+        coor = np.array(bbox[:4], dtype=np.int32)
         fontScale = 0.5
-        score = out_scores[0][i]
-        class_ind = int(out_classes[0][i])
+        score = bbox[4]
+        class_ind = int(bbox[5])
         bbox_color = colors[class_ind]
         bbox_thick = int(0.6 * (image_h + image_w) / 600)
-        c1, c2 = (coor[1], coor[0]), (coor[3], coor[2])
+        c1, c2 = (coor[0], coor[1]), (coor[2], coor[3])
         cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
 
         if show_label:
             bbox_mess = '%s: %.2f' % (classes[class_ind], score)
-            t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
-            c3 = (c1[0] + t_size[0], c1[1] - t_size[1] - 3)
-            cv2.rectangle(image, c1, (np.float32(c3[0]), np.float32(c3[1])), bbox_color, -1) #filled
+            t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick//2)[0]
+            cv2.rectangle(image, c1, (c1[0] + t_size[0], c1[1] - t_size[1] - 3), bbox_color, -1)  # filled
 
-            cv2.putText(image, bbox_mess, (c1[0], np.float32(c1[1] - 2)), cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
+            cv2.putText(image, bbox_mess, (c1[0], c1[1]-2), cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale, (0, 0, 0), bbox_thick//2, lineType=cv2.LINE_AA)
+
     return image
 
 def bbox_iou(bboxes1, bboxes2):
@@ -350,8 +347,11 @@ def nms(bboxes, iou_threshold, sigma=0.3, method='nms'):
             assert method in ['nms', 'soft-nms']
 
             if method == 'nms':
+                print(weight, weight.shape, type(weight))
                 iou_mask = iou > iou_threshold
-                weight[iou_mask] = 0.0
+                print(iou_mask, iou_mask.shape, type(iou_mask))
+
+                weight[iou_mask.numpy()] = 0.0
 
             if method == 'soft-nms':
                 weight = np.exp(-(1.0 * iou ** 2 / sigma))
@@ -373,3 +373,43 @@ def unfreeze_all(model, frozen=False):
         for l in model.layers:
             unfreeze_all(l, frozen)
 
+def postprocess_boxes(pred_bbox, org_img_shape, input_size, score_threshold):
+
+    valid_scale=[0, np.inf]
+    pred_bbox = np.array(pred_bbox)
+
+    pred_xywh = pred_bbox[:, 0:4]
+    pred_conf = pred_bbox[:, 4]
+    pred_prob = pred_bbox[:, 5:]
+
+    # # (1) (x, y, w, h) --> (xmin, ymin, xmax, ymax)
+    pred_coor = np.concatenate([pred_xywh[:, :2] - pred_xywh[:, 2:] * 0.5,
+                                pred_xywh[:, :2] + pred_xywh[:, 2:] * 0.5], axis=-1)
+    # # (2) (xmin, ymin, xmax, ymax) -> (xmin_org, ymin_org, xmax_org, ymax_org)
+    org_h, org_w = org_img_shape
+    resize_ratio = min(input_size / org_w, input_size / org_h)
+
+    dw = (input_size - resize_ratio * org_w) / 2
+    dh = (input_size - resize_ratio * org_h) / 2
+
+    pred_coor[:, 0::2] = 1.0 * (pred_coor[:, 0::2] - dw) / resize_ratio
+    pred_coor[:, 1::2] = 1.0 * (pred_coor[:, 1::2] - dh) / resize_ratio
+
+    # # (3) clip some boxes those are out of range
+    pred_coor = np.concatenate([np.maximum(pred_coor[:, :2], [0, 0]),
+                                np.minimum(pred_coor[:, 2:], [org_w - 1, org_h - 1])], axis=-1)
+    invalid_mask = np.logical_or((pred_coor[:, 0] > pred_coor[:, 2]), (pred_coor[:, 1] > pred_coor[:, 3]))
+    pred_coor[invalid_mask] = 0
+
+    # # (4) discard some invalid boxes
+    bboxes_scale = np.sqrt(np.multiply.reduce(pred_coor[:, 2:4] - pred_coor[:, 0:2], axis=-1))
+    scale_mask = np.logical_and((valid_scale[0] < bboxes_scale), (bboxes_scale < valid_scale[1]))
+
+    # # (5) discard some boxes with low scores
+    classes = np.argmax(pred_prob, axis=-1)
+    scores = pred_conf * pred_prob[np.arange(len(pred_coor)), classes]
+    score_mask = scores > score_threshold
+    mask = np.logical_and(scale_mask, score_mask)
+    coors, scores, classes = pred_coor[mask], scores[mask], classes[mask]
+
+    return np.concatenate([coors, scores[:, np.newaxis], classes[:, np.newaxis]], axis=-1)

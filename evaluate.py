@@ -48,7 +48,7 @@ def evaluate(arg,
 
     bbox_tensors = []
     for i, fm in enumerate(feature_maps):
-        bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE//STRIDES[i], cfg.YOLO.NUM_CLASS, STRIDES, ANCHORS, i=i)
+        bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE//STRIDES[i], NUM_CLASS, STRIDES, ANCHORS, i=i)
         bbox_tensors.append(bbox_tensor)
 
     model = tf.keras.Model(input_layer, bbox_tensors)
@@ -83,7 +83,7 @@ def evaluate(arg,
             predict_result_path = os.path.join(predicted_dir_path, str(num) + '.txt')
             # Predict Process
             image_size = image.shape[:2]
-            image_data = utils.image_preporcess(np.copy(image), [INPUT_SIZE, INPUT_SIZE])
+            image_data = utils.image_preprocess(np.copy(image), [INPUT_SIZE, INPUT_SIZE])
             image_data = image_data[np.newaxis, ...].astype(np.float32)
 
             pred_bbox = model.predict(image_data)
@@ -94,6 +94,7 @@ def evaluate(arg,
 
 
             if cfg.TEST.DECTECTED_IMAGE_PATH is not None:
+                print(type(bboxes), len(bboxes), bboxes)
                 image = utils.draw_bbox(image, bboxes)
                 cv2.imwrite(cfg.TEST.DECTECTED_IMAGE_PATH+image_name, image)
 
