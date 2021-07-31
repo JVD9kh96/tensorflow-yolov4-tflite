@@ -18,7 +18,7 @@ from core.utils import freeze_all, unfreeze_all
 flags.DEFINE_string('model', 'yolov4_vit_v1', 'yolov4, yolov3, yolov4_vit_v1, yolov4_vit_v1_light')
 flags.DEFINE_string('weights', None, 'pretrained weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
-flags.DEFINE_string('model_path', '.', '/kaggle/')
+flags.DEFINE_string('model_path', '/kaggle', '/kaggle/')
 flags.DEFINE_string('logDir', '.', '/kaggle/')
 flags.DEFINE_boolean('test', False, 'include test step or not')
 flags.DEFINE_integer('init_step', 0, 'initial step')
@@ -123,17 +123,17 @@ def main(_argv):
                                                                prob_loss, total_loss))
             # update learning rate
             global_steps.assign_add(1)
-            #if global_steps < warmup_steps:
-            #    lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
-            #else:
-            #    lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
-            #        (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
-            #    )
-            #optimizer.lr.assign(lr.numpy())
-            if global_steps.numpy() > 0.8 * total_steps and global_steps.numpy() < 0.9 * total_steps:
-                optimizer.lr.assign(cfg.TRAIN.LR_INIT/10.0)
-            elif global_steps.numpy() > 0.9 * total_steps:
-                optimizer.lr.assign(cfg.TRAIN.LR_INIT/100.0)
+            if global_steps < warmup_steps:
+               lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
+            else:
+               lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
+                   (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
+               )
+            optimizer.lr.assign(lr.numpy())
+#             if global_steps.numpy() > 0.8 * total_steps and global_steps.numpy() < 0.9 * total_steps:
+#                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/10.0)
+#             elif global_steps.numpy() > 0.9 * total_steps:
+#                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/100.0)
             
 
             # writing summary data
