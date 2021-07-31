@@ -194,7 +194,7 @@ def main(_argv):
         if FLAGS.test:
             for image_data, target in testset:
                 test_step(image_data, target)
-        model.save_weights(FLAGS.model_path)
+        model.save_weights(FLAGS.model_path+'ModelF)
         print('###########################END of EPOCH{} ##############'.format(epoch))
         if flg:
             break
