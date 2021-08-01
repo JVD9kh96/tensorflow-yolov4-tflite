@@ -89,9 +89,9 @@ def main(_argv):
         print('Restoring weights from: %s ... ' % FLAGS.weights)
 
 
-    #optimizer = tf.keras.optimizers.Adam()
-    optimizer = tfa.optimizers.AdamW(
-        learning_rate=cfg.TRAIN.LR_INIT, weight_decay=weight_decay)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=cfg.TRAIN.LR_INIT)
+#     optimizer = tfa.optimizers.AdamW(
+#         learning_rate=cfg.TRAIN.LR_INIT, weight_decay=weight_decay)
     
     if os.path.exists(logdir): shutil.rmtree(logdir)
     os.makedirs(logdir + '/train/', exist_ok = True)
