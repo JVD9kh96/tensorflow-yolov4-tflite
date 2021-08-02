@@ -24,6 +24,9 @@ flags.DEFINE_boolean('test', False, 'include test step or not')
 flags.DEFINE_integer('init_step', 0, 'initial step')
 flags.DEFINE_integer('time_lim', 32000, 'time limit to terminate runtime')
 flags.DEFINE_string('activation', 'gelu', 'gelu, mish')
+flags.DEFINE_integer('projection_dim', 128, 'projection dim for transformer')
+flags.DEFINE_integer('heads', 4, 'attention heads')
+flags.DEFINE_integer('att_layer', 6, 'attention layers')
 
 
 
@@ -54,7 +57,14 @@ def main(_argv):
         num_yolo_head = 2
     else:
         num_yolo_head = 3
-    feature_maps = YOLO(input_layer, NUM_CLASS, FLAGS.model, FLAGS.tiny, FLAGS.activation)
+    feature_maps = YOLO(input_layer,
+                        NUM_CLASS,
+                        FLAGS.model,
+                        FLAGS.tiny, 
+                        FLAGS.activation, 
+                        FLAGS.projection_dim,
+                        [FLAGS.att_layer, FLAGS.att_layer, FLAGS.att_layer],
+                        [FLAGS.heads, FLAGS.heads, FLAGS.heads])
     if FLAGS.tiny:
         bbox_tensors = []
         for i, fm in enumerate(feature_maps):
