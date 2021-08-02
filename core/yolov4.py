@@ -14,7 +14,7 @@ from core.config import cfg
 # XYSCALE = cfg.YOLO.XYSCALE
 # ANCHORS = utils.get_anchors(cfg.YOLO.ANCHORS)
 
-def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu'):
+def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4]):
     if is_tiny:
         if model == 'yolov4':
             return YOLOv4_tiny(input_layer, NUM_CLASS)
@@ -28,7 +28,7 @@ def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'ge
         elif model == 'yolov3':
             return YOLOv3(input_layer, NUM_CLASS)
         elif model == 'yolov4_vit_v1':
-            return YOLOv4_vit_v1(input_layer, NUM_CLASS, activation)
+            return YOLOv4_vit_v1(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads)
         elif model == 'yolov4_vit_v1_light':
             return YOLOv4_vit_v1_light(input_layer, NUM_CLASS, activation)
 def YOLOv3(input_layer, NUM_CLASS):
@@ -141,8 +141,18 @@ def YOLOv4(input_layer, NUM_CLASS):
 
     return [conv_sbbox, conv_mbbox, conv_lbbox]
 
-def YOLOv4_vit_v1(input_layer, NUM_CLASS, activation = 'gelu'):
-    route_1, route_2, conv = backbone.VIT_v1(input_layer, activation = activation)
+def YOLOv4_vit_v1(input_layer,
+                  NUM_CLASS,
+                  activation = 'gelu',
+                  projection_dim = 128,
+                  transformer_layers =[6, 6, 6],
+                  attention_heads=[4, 4, 4]):
+    
+    route_1, route_2, conv = backbone.VIT_v1(input_layer,
+                                             projection_dim = projection_dim,
+                                             transformer_layers =transformer_layers,
+                                             attention_heads=attention_heads,
+                                             activation = activation)
 
     route = conv
     conv = common.convolutional(conv, (1, 1, 512, 256))
