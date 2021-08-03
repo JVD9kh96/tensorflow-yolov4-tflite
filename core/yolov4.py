@@ -14,7 +14,7 @@ from core.config import cfg
 # XYSCALE = cfg.YOLO.XYSCALE
 # ANCHORS = utils.get_anchors(cfg.YOLO.ANCHORS)
 
-def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4]):
+def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4], spp=0):
     if is_tiny:
         if model == 'yolov4':
             return YOLOv4_tiny(input_layer, NUM_CLASS)
@@ -28,7 +28,7 @@ def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'ge
         elif model == 'yolov3':
             return YOLOv3(input_layer, NUM_CLASS)
         elif model == 'yolov4_vit_v1':
-            return YOLOv4_vit_v1(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads)
+            return YOLOv4_vit_v1(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads, spp)
         elif model == 'yolov4_vit_v1_light':
             return YOLOv4_vit_v1_light(input_layer, NUM_CLASS, activation)
 def YOLOv3(input_layer, NUM_CLASS):
@@ -146,13 +146,27 @@ def YOLOv4_vit_v1(input_layer,
                   activation = 'gelu',
                   projection_dim = 128,
                   transformer_layers =[6, 6, 6],
-                  attention_heads=[4, 4, 4]):
+                  attention_heads=[4, 4, 4],
+                  spp = 0):
     
     route_1, route_2, conv = backbone.VIT_v1(input_layer,
                                              projection_dim = projection_dim,
                                              transformer_layers =transformer_layers,
                                              attention_heads=attention_heads,
                                              activation = activation)
+    if spp:
+            x1 = common.convolutional(conv, (1, 1, 1024, 512))
+            x2 = common.convolutional(x1, (3, 1, 512, 1024))
+            x3 = common.convolutional(x2, (1, 1, 1024, 512))
+            mxp1 = tf.keras.layers.MaxPool2D(pool_size = (5, 5), strides = 1, padding = 'same')(x3)
+            mxp2 = tf.keras.layers.MaxPool2D(pool_size=(9, 9), strides = 1, padding = 'same')(x3)
+            mxp3 = tf.keras.layers.MaxPool2D(pool_size = (13, 13), strides = 1, padding = 'same')(x3)
+            spp = tf.keras.layers.concatenate([mxp1, mxp2, mxp3, x3], axis = -1)
+            x4 = common.convolutional(spp, (1, 1, 2048, 512))
+            x5 = common.convolutional(x4, (3, 1, 512, 1024))
+            x6 = common.convolutional(x5, (1, 1, 1024, 512))
+            conv = x6
+    
 
     route = conv
     conv = common.convolutional(conv, (1, 1, 512, 256))
