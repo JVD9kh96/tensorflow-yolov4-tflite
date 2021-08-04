@@ -31,6 +31,9 @@ def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'ge
             return YOLOv4_vit_v1(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads, spp)
         elif model == 'yolov4_vit_v1_light':
             return YOLOv4_vit_v1_light(input_layer, NUM_CLASS, activation)
+        elif model == 'yolov4_vit_v2':
+            return YOLOv4_vit_v2(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads, spp)
+
 def YOLOv3(input_layer, NUM_CLASS):
     route_1, route_2, conv = backbone.darknet53(input_layer)
 
@@ -223,6 +226,93 @@ def YOLOv4_vit_v1(input_layer,
 
     return [conv_sbbox, conv_mbbox, conv_lbbox]
 
+
+def YOLOv4_vit_v2(input_layer,
+                  NUM_CLASS,
+                  activation = 'gelu',
+                  projection_dim = 128,
+                  transformer_layers =[6, 6, 6],
+                  attention_heads=[4, 4, 4],
+                  spp = 0):
+    
+    route_1, route_2, conv = backbone.VIT_v2(input_layer,
+                                             projection_dim = projection_dim,
+                                             transformer_layers =transformer_layers,
+                                             attention_heads=attention_heads,
+                                             activation = activation)
+    
+    conv    = common.convolutional(conv, (3, 3, 128, 256), downsample=True)
+    conv    = common.convolutional(conv, (3, 3, 128, 512), downsample=True)
+    route_2 = common.convolutional(route_2, (3, 3, 128, 256), downsample=True)
+    
+    if spp:
+            x1 = common.convolutional(conv, (1, 1, 1024, 512))
+            x2 = common.convolutional(x1, (3, 1, 512, 1024))
+            x3 = common.convolutional(x2, (1, 1, 1024, 512))
+            mxp1 = tf.keras.layers.MaxPool2D(pool_size = (5, 5), strides = 1, padding = 'same')(x3)
+            mxp2 = tf.keras.layers.MaxPool2D(pool_size=(9, 9), strides = 1, padding = 'same')(x3)
+            mxp3 = tf.keras.layers.MaxPool2D(pool_size = (13, 13), strides = 1, padding = 'same')(x3)
+            spp = tf.keras.layers.concatenate([mxp1, mxp2, mxp3, x3], axis = -1)
+            x4 = common.convolutional(spp, (1, 1, 2048, 512))
+            x5 = common.convolutional(x4, (3, 1, 512, 1024))
+            x6 = common.convolutional(x5, (1, 1, 1024, 512))
+            conv = x6
+    
+
+    route = conv
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.upsample(conv)
+    route_2 = common.convolutional(route_2, (1, 1, 512, 256))
+    conv = tf.concat([route_2, conv], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+
+    route_2 = conv
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.upsample(conv)
+    route_1 = common.convolutional(route_1, (1, 1, 256, 128))
+    conv = tf.concat([route_1, conv], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+
+    route_1 = conv
+    conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv_sbbox = common.convolutional(conv, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    conv = common.convolutional(route_1, (3, 3, 128, 256), downsample=True)
+    conv = tf.concat([conv, route_2], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+
+    route_2 = conv
+    conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv_mbbox = common.convolutional(conv, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    conv = common.convolutional(route_2, (3, 3, 256, 512), downsample=True)
+    conv = tf.concat([conv, route], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 1024, 512))
+    conv = common.convolutional(conv, (3, 3, 512, 1024))
+    conv = common.convolutional(conv, (1, 1, 1024, 512))
+    conv = common.convolutional(conv, (3, 3, 512, 1024))
+    conv = common.convolutional(conv, (1, 1, 1024, 512))
+
+    conv = common.convolutional(conv, (3, 3, 512, 1024))
+    conv_lbbox = common.convolutional(conv, (1, 1, 1024, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    return [conv_sbbox, conv_mbbox, conv_lbbox]
 
 def YOLOv4_vit_v1_light(input_layer, NUM_CLASS, activation = 'gelu'):
     route_1, route_2, conv = backbone.VIT_v1(input_layer,
