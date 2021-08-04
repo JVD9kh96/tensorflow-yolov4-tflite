@@ -232,7 +232,19 @@ def darknet53_tiny(input_data):
 
     return route_1, input_data
 
-
+def ordered_patch_list(image_size, patch_size):
+    patches_num = image_size // patch_size
+    a = np.array([i for i in range(patches_num*patches_num)]).reshape((patches_num, patches_num))
+    b = []
+    for i in range(patches_num // 4):
+        for j in range(patches_num // 4):
+            for x in range(2):
+                for y in range(2):
+                    b.append(a[i*4+x*2, j*4+y*2])
+                    b.append(a[i*4+x*2, j*4+y*2+1])
+                    b.append(a[i*4+x*2+1, j*4+y*2])
+                    b.append(a[i*4+x*2+1, j*4+y*2+1])
+    return b
 
 def VIT_v1(inputs, image_size = 416,
                           patch_size=8,
@@ -244,9 +256,8 @@ def VIT_v1(inputs, image_size = 416,
     transformer_units = [projection_dim * 2, projection_dim] 
     # inputs = layers.Input(shape=(image_size, image_size, 3))
     patches = Patches(patch_size)(inputs)
-    print('xxxxxxxxxxxxxxxxxxxxxxxxx')
-    print(tf.shape(patches))
-    print('xxxxxxxxxxxxxxxxxxxxxxxxx')
+    order = ordered_patch_list(416, 8)
+    patches = tf.gather(patches, order, axis=1)
     encoded_patches = PatchEncoder(num_patches, projection_dim)(patches)    
     encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation)
     encoded_patches = layers.BatchNormalization()(encoded_patches)
