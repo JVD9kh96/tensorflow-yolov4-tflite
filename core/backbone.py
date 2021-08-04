@@ -278,6 +278,7 @@ def VIT_v1_tiny(inputs, image_size = 416,
                           activation = 'gelu'):
     
     num_patches = (image_size // patch_size) ** 2
+    print(num_patches)
     transformer_units = [projection_dim * 2, projection_dim] 
     # inputs = layers.Input(shape=(image_size, image_size, 3))
     patches = Patches(patch_size)(inputs)
