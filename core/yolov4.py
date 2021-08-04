@@ -241,9 +241,12 @@ def YOLOv4_vit_v2(input_layer,
                                              attention_heads=attention_heads,
                                              activation = activation)
     
-    conv    = common.convolutional(conv, (3, 3, 128, 256), downsample=True)
+    conv    = common.convolutional(conv, (3, 3, 128, 256))
     conv    = common.convolutional(conv, (3, 3, 128, 512), downsample=True)
+    conv    = common.convolutional(conv, (3, 3, 128, 1024), downsample=True)
     route_2 = common.convolutional(route_2, (3, 3, 128, 256), downsample=True)
+    route_2 = common.convolutional(route_2, (3, 3, 128, 512))
+
     
     if spp:
             x1 = common.convolutional(conv, (1, 1, 1024, 512))
