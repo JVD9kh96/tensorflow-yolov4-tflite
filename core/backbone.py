@@ -256,8 +256,8 @@ def VIT_v1(inputs, image_size = 416,
     transformer_units = [projection_dim * 2, projection_dim] 
     # inputs = layers.Input(shape=(image_size, image_size, 3))
     patches = Patches(patch_size)(inputs)
-    order = ordered_patch_list(416, 8)
-    patches = tf.gather(patches, order, axis=1)
+    #order = ordered_patch_list(416, 8)
+    #patches = tf.gather(patches, order, axis=1)
     encoded_patches = PatchEncoder(num_patches, projection_dim)(patches)    
     encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation)
     encoded_patches = layers.BatchNormalization()(encoded_patches)
