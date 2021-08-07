@@ -78,11 +78,16 @@ def mlp(x, hidden_units, dropout_rate, activation = 'gelu'):
         x = layers.Dropout(dropout_rate)(x)
     return x
 
-def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, num_heads = 4, activation = 'gelu'):
+def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, num_heads = 4, activation = 'gelu', normal = 0):
     encoded_patches = input_layer
     for _ in range(num_layers):
         # Layer normalization 1.
-        x1 = layers.BatchNormalization()(encoded_patches)
+        if normal == 0:
+            x1 = layers.BatchNormalization()(encoded_patches)
+        elif normal == 1:
+            x1 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+        elif normal == 2:
+            x1 = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
         # Create a multi-head attention layer.
         attention_output = layers.MultiHeadAttention(
             num_heads=num_heads, key_dim=projection_dim, dropout=0.1
@@ -90,7 +95,12 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
         # Skip connection 1.
         x2 = layers.Add()([attention_output, encoded_patches])
         # Layer normalization 2.
-        x3 = layers.BatchNormalization()(x2)
+        if normal == 0:
+            x3 = layers.BatchNormalization()(x2)
+        elif normal == 1:
+            x3 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(x2)
+        elif normal ==2:
+            x3 = layers.LayerNormalization(epsilon=1e-6)(x2)
         # MLP.
         x3 = mlp(x3, hidden_units=transformer_units, dropout_rate=0.1, activation = activation)
         # Skip connection 2.
