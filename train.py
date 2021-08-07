@@ -28,7 +28,7 @@ flags.DEFINE_integer('projection_dim', 128, 'projection dim for transformer')
 flags.DEFINE_integer('heads', 4, 'attention heads')
 flags.DEFINE_integer('att_layer', 6, 'attention layers')
 flags.DEFINE_boolean('spp', False, 'use spp layer in vit or not')
-flags.DEFINE_integer('normal', 0, '0 for batch, 1 for group')
+flags.DEFINE_integer('normal', 0, '0, 1, 2 for batch normalization, 3, 4 or 5 for gropu normalization')
 
 def main(_argv):
     if not os.path.isdir(FLAGS.model_path):
