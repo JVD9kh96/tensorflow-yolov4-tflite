@@ -28,7 +28,7 @@ flags.DEFINE_integer('projection_dim', 128, 'projection dim for transformer')
 flags.DEFINE_integer('heads', 4, 'attention heads')
 flags.DEFINE_integer('att_layer', 6, 'attention layers')
 flags.DEFINE_boolean('spp', False, 'use spp layer in vit or not')
-
+flags.DEFINE_integer('normal', 0, '0 for batch, 1 for group')
 
 def main(_argv):
     if not os.path.isdir(FLAGS.model_path):
@@ -65,7 +65,8 @@ def main(_argv):
                         FLAGS.projection_dim,
                         [FLAGS.att_layer, FLAGS.att_layer, FLAGS.att_layer],
                         [FLAGS.heads, FLAGS.heads, FLAGS.heads],
-                        FLAGS.spp)
+                        FLAGS.spp,
+                        FLAGS.normal)
     if FLAGS.tiny:
         bbox_tensors = []
         for i, fm in enumerate(feature_maps):
