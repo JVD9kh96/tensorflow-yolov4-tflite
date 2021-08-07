@@ -312,7 +312,7 @@ def VIT_v2(inputs, image_size = 416,
     #     encoded_patches = tf.keras.layers.MaxPooling1D(pool_size = 4, strides=4)(encoded_patches)
 
     encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*2, projection_dim*1], transformer_layers[1], num_heads = attention_heads[1], activation = activation, normal = temp_norm)
-    if normal <3
+    if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
     else:
         encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
