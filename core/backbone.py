@@ -250,9 +250,9 @@ def VIT_v1(inputs, image_size = 416,
     
     encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation, normal = temp_norm)
     encoded_patches = layers.BatchNormalization()(encoded_patches)
-    if normal == 0 or normal == 2 or normal == 4:
+    if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    elif normal == 1 or normal == 3 or normal == 5:
+    else:
         encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route1 = encoded_patches
     route1 = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(route1)
@@ -265,9 +265,9 @@ def VIT_v1(inputs, image_size = 416,
     #     encoded_patches = tf.keras.layers.MaxPooling1D(pool_size = 4, strides=4)(encoded_patches)
 
     encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*4, projection_dim*2], transformer_layers[1], num_heads = attention_heads[1], activation = activation, normal = temp_norm)
-    if normal == 0 or normal == 2 or normal == 4:
+    if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    elif normal == 1 or normal == 3 or normal == 5:
+    else:
         encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route2 = encoded_patches
     route2 = tf.keras.layers.Reshape((image_size//16, image_size//16, projection_dim*2))(route2)
@@ -275,9 +275,9 @@ def VIT_v1(inputs, image_size = 416,
     encoded_patches = Patches_sp([4, projection_dim*2])(encoded_patches)
     encoded_patches = PatchEncoder(dict_size[1]//16, projection_dim*4)(encoded_patches)    
     encoded_patches = common.transformer(encoded_patches, projection_dim*4, [projection_dim*8, projection_dim*4], transformer_layers[2], num_heads = attention_heads[2], activation = activation, normal = temp_norm)
-    if normal == 0 or normal == 2 or normal == 4:
+    if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    elif normal == 1 or normal == 3 or normal == 5:
+    else:
         encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     encoded_patches = tf.keras.layers.Reshape((image_size//32, image_size//32, projection_dim*4))(encoded_patches)
     # model = keras.Model(inputs=inputs, outputs=[route1, route2, encoded_patches])
@@ -297,9 +297,9 @@ def VIT_v2(inputs, image_size = 416,
     patches = Patches(patch_size)(inputs)
     encoded_patches = PatchEncoder(num_patches, projection_dim)(patches)    
     encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation, normal = temp_norm)
-    if normal == 0 or normal == 2 or normal == 4:
+    if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    elif normal == 1 or normal == 3 or normal == 5:
+    else:
         encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route1 = encoded_patches
     route1 = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(route1)
@@ -312,9 +312,9 @@ def VIT_v2(inputs, image_size = 416,
     #     encoded_patches = tf.keras.layers.MaxPooling1D(pool_size = 4, strides=4)(encoded_patches)
 
     encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*2, projection_dim*1], transformer_layers[1], num_heads = attention_heads[1], activation = activation, normal = temp_norm)
-    if normal == 0 or normal == 2 or normal == 4:
+    if normal <3
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    elif normal == 1 or normal == 3 or normal == 5:
+    else:
         encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route2 = encoded_patches
     route2 = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(route2)
@@ -322,9 +322,9 @@ def VIT_v2(inputs, image_size = 416,
     #encoded_patches = Patches_sp([4, projection_dim*2])(encoded_patches)
     #encoded_patches = PatchEncoder(dict_size[1]//16, projection_dim*4)(encoded_patches)    
     encoded_patches = common.transformer(encoded_patches, projection_dim, [projection_dim*2, projection_dim*1], transformer_layers[2], num_heads = attention_heads[2], activation = activation, normal = temp_norm)
-    if normal == 0 or normal == 2 or normal == 4:
+    if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    elif normal == 1 or normal == 3 or normal == 5:
+    else:
         encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     encoded_patches = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(encoded_patches)
     # model = keras.Model(inputs=inputs, outputs=[route1, route2, encoded_patches])
