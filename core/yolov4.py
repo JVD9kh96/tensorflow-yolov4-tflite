@@ -331,8 +331,8 @@ def YOLOv4_vit_v3(input_layer,
                   attention_heads=[4, 4, 4],
                   spp = 0,
                   normal = 0):
-    if normal ==7 :
-        normal = 6
+    if normal == 6:
+        normal = 5
         norm = 1
     route_1, route_2, conv = backbone.VIT_v3(input_layer,
                                              projection_dim = projection_dim,
