@@ -19,7 +19,7 @@ class BatchNormalization(tf.keras.layers.BatchNormalization):
         training = tf.logical_and(training, self.trainable)
         return super().call(x, training)
 
-def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky'):
+def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0):
     if downsample:
         input_layer = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(input_layer)
         padding = 'valid'
@@ -33,7 +33,11 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                   bias_initializer=tf.constant_initializer(0.))(input_layer)
 
-    if bn: conv = BatchNormalization()(conv)
+    if bn and norm==0: 
+        conv = BatchNormalization()(conv)
+    elif bn and norm==1:
+        conv = tfa.layers.GroupNormalization(groups = min(filters_shape[-1], 32))(conv)
+     
     if activate == True:
         if activate_type == "leaky":
             conv = tf.nn.leaky_relu(conv, alpha=0.1)
