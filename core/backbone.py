@@ -352,7 +352,7 @@ def VIT_v3(inputs, image_size = 416,
     route1 = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(route1)
     dict_size = getattr(encoded_patches, 'shape')
     route1_shape = getattr(route1, 'shape')
-    num_patches = (route1_shape[0] // (2)) ** 2
+    num_patches = (route1_shape[1] // (2)) ** 2
     patches = Patches(2)(route1)
     encoded_patches = PatchEncoder(num_patches, projection_dim*2)(patches)    
     # if not down_sample[0]:
@@ -367,7 +367,7 @@ def VIT_v3(inputs, image_size = 416,
     route2 = encoded_patches
     route2 = tf.keras.layers.Reshape((image_size//16, image_size//16, projection_dim*2))(route2)
     route2_shape = getattr(route2, 'shape')
-    num_patches = (route2_shape[0] // (2)) ** 2
+    num_patches = (route2_shape[1] // (2)) ** 2
     patches = Patches(2)(route2)
     encoded_patches = PatchEncoder(num_patches, projection_dim*4)(patches)   
     encoded_patches = common.transformer(encoded_patches, projection_dim*4, [projection_dim*8, projection_dim*4], transformer_layers[2], num_heads = attention_heads[2], activation = activation, normal = temp_norm)
