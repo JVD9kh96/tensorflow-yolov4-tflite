@@ -334,6 +334,8 @@ def YOLOv4_vit_v3(input_layer,
     if normal == 6:
         normal = 5
         norm = 1
+    else:
+        norm = 0
     route_1, route_2, conv = backbone.VIT_v3(input_layer,
                                              projection_dim = projection_dim,
                                              transformer_layers =transformer_layers,
