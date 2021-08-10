@@ -27,6 +27,10 @@ flags.DEFINE_string('activation', 'gelu', 'gelu, mish')
 flags.DEFINE_integer('projection_dim', 128, 'projection dim for transformer')
 flags.DEFINE_integer('heads', 4, 'attention heads')
 flags.DEFINE_integer('att_layer', 6, 'attention layers')
+flags.DEFINE_integer('h_projection_dim', 64, 'projection dim for transformer')
+flags.DEFINE_integer('h_heads', 4, 'attention heads')
+flags.DEFINE_integer('h_att_layer', 3, 'attention layers')
+flags.DEFINE_string('h_activation', 'gelu', 'gelu, mish')
 flags.DEFINE_boolean('spp', False, 'use spp layer in vit or not')
 flags.DEFINE_integer('normal', 0, '0, 1, 2 for batch normalization, 3, 4 or 5 for gropu normalization')
 
@@ -66,7 +70,11 @@ def main(_argv):
                         [FLAGS.att_layer, FLAGS.att_layer, FLAGS.att_layer],
                         [FLAGS.heads, FLAGS.heads, FLAGS.heads],
                         FLAGS.spp,
-                        FLAGS.normal)
+                        FLAGS.normal,
+                        FLAGS.h_activation,
+                        FLAGS.h_projection_dim,
+                        [FLAGS.h_att_layer, FLAGS.h_att_layer, FLAGS.h_att_layer],
+                        [FLAGS.h_heads, FLAGS.h_heads, FLAGS.h_heads])
     if FLAGS.tiny:
         bbox_tensors = []
         for i, fm in enumerate(feature_maps):

@@ -7,6 +7,8 @@ import core.utils as utils
 import core.common as common
 import core.backbone as backbone
 from core.config import cfg
+from core.backbone import Patches, PatchEncoder
+
 
 # NUM_CLASS       = len(utils.read_class_names(cfg.YOLO.CLASSES))
 # STRIDES         = np.array(cfg.YOLO.STRIDES)
@@ -14,7 +16,7 @@ from core.config import cfg
 # XYSCALE = cfg.YOLO.XYSCALE
 # ANCHORS = utils.get_anchors(cfg.YOLO.ANCHORS)
 
-def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4], spp=0, normal=0):
+def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4], spp=0, normal=0, h_activation = 'gelu', h_projection_dim = 64, h_transformer_layers = [3, 3, 3], h_attention_heads = [4, 4, 4]):
     if is_tiny:
         if model == 'yolov4':
             return YOLOv4_tiny(input_layer, NUM_CLASS)
@@ -35,6 +37,8 @@ def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'ge
             return YOLOv4_vit_v2(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads, spp, normal)
         elif model == 'yolov4_vit_v3':
             return YOLOv4_vit_v3(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads, spp, normal)
+        elif model == 'YOLO_Former_v3':
+            return YOLO_Former_v3(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads, h_activation, h_projection_dim, h_transformer_layers, h_attention_heads, spp, normal)
         
 def YOLOv3(input_layer, NUM_CLASS):
     route_1, route_2, conv = backbone.darknet53(input_layer)
@@ -406,6 +410,122 @@ def YOLOv4_vit_v3(input_layer,
     conv_lbbox = common.convolutional(conv, (1, 1, 1024, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
 
     return [conv_sbbox, conv_mbbox, conv_lbbox]
+
+def YOLO_Former_v3(input_layer,
+                  NUM_CLASS,
+                  activation = 'gelu',
+                  projection_dim = 16,
+                  transformer_layers =[6, 6, 6],
+                  attention_heads=[4, 4, 4],
+                  h_activation = 'gelu',
+                  h_projection_dim = 64,
+                  h_transformer_layers =[3, 3, 3],
+                  h_attention_heads=[4, 4, 4],
+                  spp = 0,
+                  normal = 0):
+    
+    route_1, route_2, route_3 = backbone.VIT_v4(input_layer,
+                                             projection_dim = projection_dim,
+                                             transformer_layers =transformer_layers,
+                                             attention_heads=attention_heads,
+                                             activation=activation,
+                                             normal=normal)
+
+    
+    input_shape = getattr(input_layer, 'shape')[1]
+    route_3_shape = getattr(route_3, 'shape')[-1]
+    route_3 = tf.keras.layers.Reshape((input_shape // 32, input_shape // 32, route_3_shape))(route_3)
+    patches = Patches(1)(route_3)
+    route_3 = PatchEncoder((input_shape // 32)**2, h_projection_dim)(patches)
+
+    temp_norm = normal if normal<3 else normal-3
+    #num_patches = (image_size // patch_size) ** 2
+    h_transformer_units = [h_projection_dim * 2, h_projection_dim]  
+    
+    encoded_patches = common.transformer(route_3, h_projection_dim, h_transformer_units, h_transformer_layers[0], num_heads = h_attention_heads[0], activation = h_activation, normal = temp_norm)
+    
+    if normal <3:
+        encoded_patches = layers.BatchNormalization()(encoded_patches)
+    else:
+        encoded_patches = tfa.layers.GroupNormalization(groups = min(h_projection_dim, 16))(encoded_patches)
+
+    transformer_lobj_branch = common.transformer(encoded_patches, h_projection_dim, h_transformer_units, 1, num_heads = h_attention_heads[0], activation = h_activation, normal = temp_norm)
+    if normal <3:
+        transformer_lobj_branch = layers.BatchNormalization()(transformer_lobj_branch)
+    else:
+        transformer_lobj_branch = tfa.layers.GroupNormalization(groups = min(h_projection_dim, 16))(transformer_lobj_branch)
+
+    transformer_lbbox = tf.keras.layers.Dense(3 * (NUM_CLASS + 5))(transformer_lobj_branch)
+    lbbox_shape = getattr(input_layer, 'shape')[1] // 32
+    transformer_lbbox = tf.keras.layers.Reshape((lbbox_shape, lbbox_shape, 3 * (NUM_CLASS + 5)))(transformer_lbbox)
+    
+    encoded_patches = common.transformer(encoded_patches, h_projection_dim, h_transformer_units, 1, num_heads = h_attention_heads[0], activation = h_activation, normal = temp_norm)
+    encoded_patches_shape = getattr(encoded_patches, 'shape')[-1]
+    encoded_patches = tf.keras.layers.Reshape((lbbox_shape, lbbox_shape, encoded_patches_shape))(encoded_patches)
+    encoded_patches = common.upsample(encoded_patches)
+    route_2_shape = getattr(route_2, 'shape')[-1]
+    route_2 = tf.keras.layers.Reshape((lbbox_shape * 2, lbbox_shape * 2, route_2_shape))(route_2)
+    
+    encoded_patches = tf.concat([encoded_patches, route_2], axis=-1)
+
+    patches = Patches(1)(encoded_patches)
+    encoded_patches = PatchEncoder((lbbox_shape * 2)**2, h_projection_dim // 2)(patches) 
+
+    #2
+    h_transformer_units = [(h_projection_dim * 2) // 2, h_projection_dim // 2] 
+    encoded_patches = common.transformer(encoded_patches, h_projection_dim // 2, h_transformer_units, h_transformer_layers[1], num_heads = h_attention_heads[1], activation = h_activation, normal = temp_norm)
+    if normal <3:
+        encoded_patches = layers.BatchNormalization()(encoded_patches)
+    else:
+        encoded_patches = tfa.layers.GroupNormalization(groups = min(h_projection_dim // 2, 16))(encoded_patches)
+
+    transformer_mobj_branch = common.transformer(encoded_patches, h_projection_dim // 2, h_transformer_units, 1, num_heads = h_attention_heads[1], activation = h_activation, normal = temp_norm)
+    if normal <3:
+        transformer_lobj_branch = layers.BatchNormalization()(transformer_mobj_branch)
+    else:
+        transformer_lobj_branch = tfa.layers.GroupNormalization(groups = min(h_projection_dim // 2 , 16))(transformer_mobj_branch)
+
+    transformer_mbbox = tf.keras.layers.Dense(3 * (NUM_CLASS + 5))(transformer_mobj_branch)
+    mbbox_shape = getattr(input_layer, 'shape')[1] // 16
+    transformer_mbbox = tf.keras.layers.Reshape((mbbox_shape, mbbox_shape, 3 * (NUM_CLASS + 5)))(transformer_mbbox)
+    
+    encoded_patches = common.transformer(encoded_patches, h_projection_dim // 2, h_transformer_units, 1, num_heads = h_attention_heads[1], activation = h_activation, normal = temp_norm)
+    
+    encoded_patches_shape = getattr(encoded_patches, 'shape')[-1]
+    encoded_patches = tf.keras.layers.Reshape((mbbox_shape, mbbox_shape, encoded_patches_shape))(encoded_patches)
+    encoded_patches = common.upsample(encoded_patches)
+
+    
+    route_1_shape = getattr(route_1, 'shape')[-1]
+    route_1 = tf.keras.layers.Reshape((mbbox_shape * 2, mbbox_shape * 2, route_1_shape))(route_1)
+    encoded_patches = tf.concat([encoded_patches, route_1], axis=-1)
+
+    patches = Patches(1)(encoded_patches)
+    encoded_patches = PatchEncoder((mbbox_shape * 2)**2, h_projection_dim // 4)(patches)  
+    
+    
+    #3
+
+    h_transformer_units = [(h_projection_dim * 2) // 4, h_projection_dim // 4] 
+    encoded_patches = common.transformer(encoded_patches, h_projection_dim // 4, h_transformer_units, h_transformer_layers[2], num_heads = h_attention_heads[2], activation = h_activation, normal = temp_norm)
+    if normal <3:
+        encoded_patches = layers.BatchNormalization()(encoded_patches)
+    else:
+        encoded_patches = tfa.layers.GroupNormalization(groups = min(h_projection_dimn// 4, 16))(encoded_patches)
+
+    transformer_sobj_branch = common.transformer(encoded_patches, h_projection_dim // 4, h_transformer_units, 1, num_heads = h_attention_heads[2], activation = h_activation, normal = temp_norm)
+    if normal <3:
+        transformer_sobj_branch = layers.BatchNormalization()(transformer_sobj_branch)
+    else:
+        transformer_sobj_branch = tfa.layers.GroupNormalization(groups = min(h_projection_dim // 4, 16))(transformer_sobj_branch)
+
+    transformer_sbbox = tf.keras.layers.Dense(3 * (NUM_CLASS + 5))(transformer_sobj_branch)
+    sbbox_shape = getattr(input_layer, 'shape')[1] // 8
+    transformer_sbbox = tf.keras.layers.Reshape((sbbox_shape, sbbox_shape, 3 * (NUM_CLASS + 5)))(transformer_sbbox)
+
+
+    return [transformer_sbbox, transformer_mbbox, transformer_lbbox]
+    
 
 def YOLOv4_vit_v1_light(input_layer, NUM_CLASS, activation = 'gelu'):
     route_1, route_2, conv = backbone.VIT_v1(input_layer,

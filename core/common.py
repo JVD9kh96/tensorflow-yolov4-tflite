@@ -68,6 +68,9 @@ def route_group(input_layer, groups, group_id):
 def upsample(input_layer):
     return tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear')
 
+def upsample_t(input_layer):
+    return tf.image.resize(input_layer, (input_layer.shape[1] * 4, input_layer.shape[2] // 2), method='bilinear')
+
 def mlp(x, hidden_units, dropout_rate, activation = 'gelu'):
     for units in hidden_units:
         if activation == 'gelu':

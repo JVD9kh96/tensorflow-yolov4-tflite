@@ -86,11 +86,11 @@ def load_config(FLAGS):
         XYSCALE = cfg.YOLO.XYSCALE_TINY if (FLAGS.model == 'yolov4' or FLAGS.model == 'yolov4_vit_v1', FLAGS.model == 'yolov4_vit_v2', FLAGS.model == 'yolov4_vit_v3') else [1, 1]
     else:
         STRIDES = np.array(cfg.YOLO.STRIDES)
-        if (FLAGS.model == 'yolov4' or FLAGS.model == 'yolov4_vit_v1', FLAGS.model == 'yolov4_vit_v2'):
+        if (FLAGS.model == 'yolov4' or FLAGS.model == 'yolov4_vit_v1', FLAGS.model == 'yolov4_vit_v2', FLAGS.model == 'yolov4_vit_v3', FLAGS.model == 'YOLO_Former_v3'):
             ANCHORS = get_anchors(cfg.YOLO.ANCHORS, FLAGS.tiny)
         elif FLAGS.model == 'yolov3':
             ANCHORS = get_anchors(cfg.YOLO.ANCHORS_V3, FLAGS.tiny)
-        XYSCALE = cfg.YOLO.XYSCALE if (FLAGS.model == 'yolov4' or FLAGS.model == 'yolov4_vit_v1', FLAGS.model == 'yolov4_vit_v2', FLAGS.model == 'yolov4_vit_v3') else [1, 1, 1]
+        XYSCALE = cfg.YOLO.XYSCALE if (FLAGS.model == 'yolov4' or FLAGS.model == 'yolov4_vit_v1', FLAGS.model == 'yolov4_vit_v2', FLAGS.model == 'yolov4_vit_v3', FLAGS.model == 'YOLO_Former_v3') else [1, 1, 1]
     NUM_CLASS = len(read_class_names(cfg.YOLO.CLASSES))
 
     return STRIDES, ANCHORS, NUM_CLASS, XYSCALE
