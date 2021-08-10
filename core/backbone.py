@@ -172,6 +172,97 @@ def cspdarknet53(input_data):
 
     return route_1, route_2, input_data
 
+def cspdarknet53_att_v1(input_data,
+                 att_layers = [1, 1, 1],
+                 att_heads = [4, 4, 4],
+                 att_activation = 'mish',
+                 att_normal = 2):
+
+    input_data = common.convolutional(input_data, (3, 3,  3,  32), activate_type="mish")
+    input_data = common.convolutional(input_data, (3, 3, 32,  64), downsample=True, activate_type="mish")
+
+    route = input_data
+    route = common.convolutional(route, (1, 1, 64, 64), activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
+    for i in range(1):
+        input_data = common.residual_block(input_data,  64,  32, 64, activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
+
+    input_data = tf.concat([input_data, route], axis=-1)
+    input_data = common.convolutional(input_data, (1, 1, 128, 64), activate_type="mish")
+    input_data = common.convolutional(input_data, (3, 3, 64, 128), downsample=True, activate_type="mish")
+    route = input_data
+    route = common.convolutional(route, (1, 1, 128, 64), activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 128, 64), activate_type="mish")
+    for i in range(2):
+        input_data = common.residual_block(input_data, 64,  64, 64, activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
+    input_data = tf.concat([input_data, route], axis=-1)
+
+    input_data = common.convolutional(input_data, (1, 1, 128, 128), activate_type="mish")
+    input_data = common.convolutional(input_data, (3, 3, 128, 256), downsample=True, activate_type="mish")
+    route = input_data
+    route = common.convolutional(route, (1, 1, 256, 128), activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 256, 128), activate_type="mish")
+    for i in range(8):
+        input_data = common.residual_block(input_data, 128, 128, 128, activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 128, 128), activate_type="mish")
+    input_data = tf.concat([input_data, route], axis=-1)
+
+    input_data = common.convolutional(input_data, (1, 1, 256, 256), activate_type="mish")
+    route_1 = input_data
+    route_1_shape = getattr(route_1, 'shape')
+    patches = Patches(1)(route_1)
+    encoded_patches = PatchEncoder((route_1_shape[1]**2), route_1_shape[-1])(patches)
+    encoded_patches = common.transformer(encoded_patches, projection_dim = route_1_shape[-1], transformer_units=[route_1_shape[-1]*2, route_1_shape[-1]], num_layers = att_layers[0], num_heads = att_heads[0], activation=att_activation, normal = att_normal)
+    encoded_patches = tf.keras.layers.Reshape(route_1.shape[1:])(encoded_patches)
+    route_1 = route_1 + encoded_patches
+
+    input_data = common.convolutional(input_data, (3, 3, 256, 512), downsample=True, activate_type="mish")
+    route = input_data
+    route = common.convolutional(route, (1, 1, 512, 256), activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 512, 256), activate_type="mish")
+    for i in range(8):
+        input_data = common.residual_block(input_data, 256, 256, 256, activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 256, 256), activate_type="mish")
+    input_data = tf.concat([input_data, route], axis=-1)
+
+    input_data = common.convolutional(input_data, (1, 1, 512, 512), activate_type="mish")
+    route_2 = input_data
+    route_2_shape = getattr(route_2, 'shape')
+    patches = Patches(1)(route_2)
+    encoded_patches = PatchEncoder((route_2_shape[1]**2), route_2_shape[-1])(patches)
+    encoded_patches = common.transformer(encoded_patches, projection_dim = route_2_shape[-1], transformer_units=[route_2_shape[-1]*2, route_2_shape[-1]], num_layers = att_layers[1], num_heads = att_heads[1], activation=att_activation, normal = att_normal)
+    encoded_patches = tf.keras.layers.Reshape(route_2.shape[1:])(encoded_patches)
+    route_2 = route_2 + encoded_patches
+
+    input_data = common.convolutional(input_data, (3, 3, 512, 1024), downsample=True, activate_type="mish")
+    route = input_data
+    route = common.convolutional(route, (1, 1, 1024, 512), activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 1024, 512), activate_type="mish")
+    for i in range(4):
+        input_data = common.residual_block(input_data, 512, 512, 512, activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 512, 512), activate_type="mish")
+    input_data = tf.concat([input_data, route], axis=-1)
+
+    input_data = common.convolutional(input_data, (1, 1, 1024, 1024), activate_type="mish")
+    input_data = common.convolutional(input_data, (1, 1, 1024, 512))
+    input_data = common.convolutional(input_data, (3, 3, 512, 1024))
+    input_data = common.convolutional(input_data, (1, 1, 1024, 512))
+
+    input_data = tf.concat([tf.nn.max_pool(input_data, ksize=13, padding='SAME', strides=1), tf.nn.max_pool(input_data, ksize=9, padding='SAME', strides=1)
+                            , tf.nn.max_pool(input_data, ksize=5, padding='SAME', strides=1), input_data], axis=-1)
+    input_data = common.convolutional(input_data, (1, 1, 2048, 512))
+    input_data = common.convolutional(input_data, (3, 3, 512, 1024))
+    input_data = common.convolutional(input_data, (1, 1, 1024, 512))
+    input_data_shape = getattr(input_data, 'shape')
+    patches = Patches(1)(input_data)
+    encoded_patches = PatchEncoder((input_data_shape[1]**2), input_data_shape[-1])(patches)
+    encoded_patches = common.transformer(encoded_patches, projection_dim = input_data_shape[-1], transformer_units=[input_data_shape[-1]*2, input_data_shape[-1]], num_layers = att_layers[2], num_heads = att_heads[1], activation=att_activation, normal = att_normal)
+    encoded_patches = tf.keras.layers.Reshape(input_data.shape[1:])(encoded_patches)
+    input_data = input_data + encoded_patches
+    return route_1, route_2, input_data
+
 def cspdarknet53_tiny(input_data):
     input_data = common.convolutional(input_data, (3, 3, 3, 32), downsample=True)
     input_data = common.convolutional(input_data, (3, 3, 32, 64), downsample=True)
