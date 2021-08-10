@@ -3,11 +3,13 @@
 
 import numpy as np
 import tensorflow as tf
+import tensorflow_addons as tfa
 import core.utils as utils
 import core.common as common
 import core.backbone as backbone
 from core.config import cfg
 from core.backbone import Patches, PatchEncoder
+from tensorflow.keras import layers
 
 
 # NUM_CLASS       = len(utils.read_class_names(cfg.YOLO.CLASSES))
@@ -511,7 +513,7 @@ def YOLO_Former_v3(input_layer,
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
     else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(h_projection_dimn// 4, 16))(encoded_patches)
+        encoded_patches = tfa.layers.GroupNormalization(groups = min(h_projection_dim// 4, 16))(encoded_patches)
 
     transformer_sobj_branch = common.transformer(encoded_patches, h_projection_dim // 4, h_transformer_units, 1, num_heads = h_attention_heads[2], activation = h_activation, normal = temp_norm)
     if normal <3:
