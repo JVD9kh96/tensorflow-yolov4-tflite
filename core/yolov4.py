@@ -157,9 +157,9 @@ def YOLOv4_att_v1(input_layer, NUM_CLASS,
         normal = normal - 3
     
     route_1, route_2, conv = backbone.cspdarknet53_att_v1(input_layer, 
-                                                          activation ,
-                                                          transformer_layers,
+                                                          transformer_layers ,
                                                           attention_heads,
+                                                          activation,
                                                           normal)
 
     route = conv
