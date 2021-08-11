@@ -95,7 +95,7 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
         # Create a multi-head attention layer.
         attention_output = layers.MultiHeadAttention(
             num_heads=num_heads, key_dim=projection_dim, dropout=0.1
-        , attention_axes = [1, 2])(x1, x1)
+        , attention_axes = 2)(x1, x1)
         # Skip connection 1.
         x2 = layers.Add()([attention_output, encoded_patches])
         # Layer normalization 2.
