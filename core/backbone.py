@@ -575,3 +575,315 @@ def VIT_v1_tiny(inputs, image_size = 416,
 
     # model = keras.Model(inputs=inputs, outputs=[route1, route2, encoded_patches])
     return route1, route2
+
+
+
+def cspdarkernet53(input_data,
+                   attention_axes = 1,
+                   activation = 'mish',
+                   normalization = 'group'):
+
+    input_data = common.transformer_block(input_data, out_filt = 32,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    
+    input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    route = input_data
+    route = common.transformer_block(route, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    
+    input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    for i in range(1):
+        input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+
+    input_data = tf.concat([input_data, route], axis=-1)
+    input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    input_data = common.transformer_block(input_data, out_filt = 128,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    route = input_data
+    route = common.transformer_block(route, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    
+    input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    for i in range(2):
+        input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    
+    input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    input_data = tf.concat([input_data, route], axis=-1)
+
+    input_data = common.transformer_block(input_data, out_filt = 128,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    input_data = common.transformer_block(input_data, out_filt = 256,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    route = input_data
+    route = common.transformer_block(route, out_filt = 128,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    input_data = common.transformer_block(input_data, out_filt = 128,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    for i in range(8):
+        input_data = common.transformer_block(input_data, out_filt = 128,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    input_data = common.transformer_block(input_data, out_filt = 128,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    input_data = tf.concat([input_data, route], axis=-1)
+    input_data = common.transformer_block(input_data, out_filt = 256,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    route_1 = input_data
+    input_data = common.transformer_block(input_data, out_filt = 512,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    route = input_data
+    input_data = common.transformer_block(input_data, out_filt = 256,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+
+    for i in range(8):
+        input_data = common.transformer_block(input_data, out_filt = 256,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    input_data = common.transformer_block(input_data, out_filt = 256,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    input_data = tf.concat([input_data, route], axis=-1)
+
+    input_data = common.convolutional(input_data, (1, 1, 512, 512), activate_type="mish")
+    input_data = common.transformer_block(input_data, out_filt = 512,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    route_2 = input_data
+    input_data = common.transformer_block(input_data, out_filt = 1024,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    route = input_data
+    route = common.transformer_block(route, out_filt = 512,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    input_data = common.transformer_block(input_data, out_filt = 512,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    for i in range(4):
+        input_data = common.transformer_block(input_data, out_filt = 512,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    input_data = common.transformer_block(input_data, out_filt = 512,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    input_data = tf.concat([input_data, route], axis=-1)
+    input_data = common.transformer_block(input_data, out_filt = 1024,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 1,
+                                          normalization = normalization)
+    input_data = common.convolutional(input_data, (1, 1, 1024, 512))
+    input_data = common.convolutional(input_data, (3, 3, 512, 1024))
+    input_data = common.convolutional(input_data, (1, 1, 1024, 512))
+
+    input_data = tf.concat([tf.nn.max_pool(input_data, ksize=13, padding='SAME', strides=1), tf.nn.max_pool(input_data, ksize=9, padding='SAME', strides=1)
+                            , tf.nn.max_pool(input_data, ksize=5, padding='SAME', strides=1), input_data], axis=-1)
+    input_data = common.convolutional(input_data, (1, 1, 2048, 512))
+    input_data = common.convolutional(input_data, (3, 3, 512, 1024))
+    input_data = common.convolutional(input_data, (1, 1, 1024, 512))
+
+    return route_1, route_2, input_data
+
+
+def darkernet53(input_data,
+                   attention_axes = 1,
+                   activation = 'mish',
+                   normalization = 'group'):
+
+    input_data = common.transformer_block(input_data, out_filt = 32,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+
+    for i in range(1):
+        input_data = common.transformer_block(input_data, out_filt = 64,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+
+    input_data = common.transformer_block(input_data, out_filt = 128,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    for i in range(2):
+        input_data = common.residual_block(input_data, 128,  64, 128)
+        input_data = common.transformer_block(input_data, out_filt = 128,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+
+    input_data = common.transformer_block(input_data, out_filt = 256,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    for i in range(8):
+        input_data = common.transformer_block(input_data, out_filt = 256,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    route_1 = input_data
+    input_data = common.transformer_block(input_data, out_filt = 256,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    for i in range(8):
+        input_data = common.transformer_block(input_data, out_filt = 512,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+
+    route_2 = input_data
+    input_data = common.transformer_block(input_data, out_filt = 1024,
+                                          activation = activation,
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    for i in range(4):
+        input_data = common.transformer_block(input_data, out_filt = 1024,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+
+    return route_1, route_2, input_data

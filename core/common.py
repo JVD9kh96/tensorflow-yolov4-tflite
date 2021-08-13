@@ -4,6 +4,7 @@
 import tensorflow as tf
 from tensorflow.keras import layers
 import tensorflow_addons as tfa
+from tensorflow.keras import regularizers
 
 # import tensorflow_addons as tfa
 class BatchNormalization(tf.keras.layers.BatchNormalization):
@@ -110,3 +111,151 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
         # Skip connection 2.
         encoded_patches = layers.Add()([x3, x2])
     return encoded_patches
+
+
+def kai_attention(key,
+                  value,
+                  query,
+                  heads=32,
+                  out_filters=32,
+                  axis = 1,
+                  activation = 'gelu',
+                  kernel_size = 3):
+    """
+    heads: number of filters in query, key and value 
+    out_filters: number of the output in the output channgel
+    axis: if 1, the attention will be calculated in height of the image, 
+          if 2, the attention will be calculated in the width of the image, 
+          if 3, the attention will be calculated in the depth of the image, 
+          if [1, 2], the attention will be calculated in height and width, then
+             they are summed up
+          if [1, 2, 3], the attention will be calculated in the heigth, width
+             and the depth of the image, then the results will be summed up.
+          if '2d', the attention will be calculated in 2D (hight and width 
+             simultaneously) 
+    """
+    key = tf.keras.layers.Conv2D(filters = heads,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same')(key)
+    value = tf.keras.layers.Conv2D(filters = heads,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same')(value)
+    query = tf.keras.layers.Conv2D(filters = heads,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same')(query)
+    shape = getattr(value, 'shape')
+    dk = tf.cast(shape[1]*shape[2], tf.float32)
+    qk = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
+
+    if axis == 1:
+        qk = tf.nn.softmax(qk, axis = 1)
+    elif axis ==2:
+        qk = tf.nn.softmax(qk, axis = 2)
+    elif axis == 3:
+        qk = tf.nn.softmax(qk, axis = 3)
+    elif axis == [1, 2]:
+        qk_1 = tf.nn.softmax(qk, axis = 1)
+        qk_2 = tf.nn.softmax(qk, axis = 2)
+        qk = tf.keras.layers.Add()[qk_1, qk_2]
+    elif axis == [1, 2, 3]:
+        qk_1 = tf.nn.softmax(qk, axis = 1)
+        qk_2 = tf.nn.softmax(qk, axis = 2)
+        qk_3 = tf.nn.softmax(qk, axis = 3)
+        qk = tf.keras.layers.Add()[qk_1, qk_2, qk_3]
+    elif axis == '2d':
+        qk = softmax_2d()(qk)
+
+    attention = tf.einsum('aijb,ajkb->aikb', qk, value)
+    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
+                                        kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+                                        bias_regularizer=regularizers.l2(1e-4),
+                                        activity_regularizer=regularizers.l2(1e-5))(attention)
+    if activation == 'mish':
+        attention = mish(attention)
+    elif activation == 'gelu':
+        attention = tfa.activations.gelu(attention)
+    elif activation == 'leaky':
+        attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
+
+    return attention
+
+def transformer_block(inp,
+                      out_filt = 128,
+                      activation = 'mish',
+                      down_sample = False,
+                      attention_axes = 1,
+                      kernel_size = 3,
+                      normalization = 'batch'):
+    
+    inp = tf.keras.layers.Conv2D(filters = out_filt,
+                                 kernel_size = kernel_size,
+                                 strides = (1, 1),
+                                 padding='same')(inp)
+    if activation == 'mish':
+        inp = mish(inp)
+    elif activation == 'gelu':
+        inp = tfa.activations.gelu(inp)
+    elif activation == 'leaky':
+        inp = tf.keras.layers.LeakyReLU(alpha = 0.3)(inp)
+
+    x1 = tf.keras.layers.BatchNormalization()(inp)
+    x2 = kai_attention(x1,
+                       x1,
+                       x1,
+                       heads=out_filt,
+                       out_filters=out_filt,
+                       axis = attention_axes,
+                       activation = activation
+                       )
+    x3 = tf.keras.layers.Add()([x1, inp])
+    if normalization == 'batch':
+        x4 = tf.keras.layers.BatchNormalization()(x3)
+    elif normalization == 'group':
+        x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
+    elif normalization == 'layer':
+        x4 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x3)
+    
+    x5 = tf.keras.layers.Conv2D(filters = out_filt,
+                                kernel_size=(3, 3),
+                                strides=(1, 1),
+                                padding = 'same')(x4)
+    if activation == 'mish':
+        x6 = mish(x5)
+    elif activation == 'gelu':
+        x6 = tfa.activations.gelu(x5)
+    elif activation == 'leaky':
+        x6 = tf.keras.layers.LeakyReLU(alpha = 0.3)(x5)
+    else:
+        x6 = x5
+    x7 = tf.keras.layers.Conv2D(filters = out_filt,
+                                kernel_size=kernel_size,
+                                strides=(1, 1),
+                                padding = 'same',
+                                kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+                                bias_regularizer=regularizers.l2(1e-4),
+                                activity_regularizer=regularizers.l2(1e-5))(x6)
+    if activation == 'mish':
+        x7 = mish(x7)
+    elif activation == 'gelu':
+        x7 = tfa.activations.gelu(x7)
+    elif activation == 'leaky':
+        x7 = tf.keras.layers.LeakyReLU(alpha = 0.3)(x7)
+    else:
+        x7 = x7
+              
+    x8 = tf.keras.layers.Add()([x7, x3])
+
+    if normalization == 'batch':
+        x8 = tf.keras.layers.BatchNormalization()(x8)
+    elif normalization == 'group':
+        x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
+    elif normalization == 'layer':
+        x8 = tf.keras.layers.LayerNormalization(epsilon=0.001)(x8)
+
+    if down_sample:
+        x8 = tf.keras.layers.MaxPooling2D(pool_size = (2, 2), strides = (2, 2))(x8)
+    
+    return x8
