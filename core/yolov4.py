@@ -35,6 +35,8 @@ def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'ge
             return YOLOv4_vit_v2(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads, spp, normal)
         elif model == 'yolov4_vit_v3':
             return YOLOv4_vit_v3(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads, spp, normal)
+        elif model == 'yolov3_vit_v3':
+            return YOLOv3_vit_v3(input_layer, NUM_CLASS, activation, projection_dim, transformer_layers, attention_heads, spp, normal)
         elif model == 'yolov4_att_v1':
             return YOLOv4_att_v1(input_layer, NUM_CLASS, activation, transformer_layers, attention_heads, normal)
         elif model == 'yolov4_vit_v5':
@@ -49,6 +51,65 @@ def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'ge
 
 def YOLOv3(input_layer, NUM_CLASS):
     route_1, route_2, conv = backbone.darknet53(input_layer)
+
+    conv = common.convolutional(conv, (1, 1, 1024, 512))
+    conv = common.convolutional(conv, (3, 3, 512, 1024))
+    conv = common.convolutional(conv, (1, 1, 1024, 512))
+    conv = common.convolutional(conv, (3, 3, 512, 1024))
+    conv = common.convolutional(conv, (1, 1, 1024, 512))
+
+    conv_lobj_branch = common.convolutional(conv, (3, 3, 512, 1024))
+    conv_lbbox = common.convolutional(conv_lobj_branch, (1, 1, 1024, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.upsample(conv)
+
+    conv = tf.concat([conv, route_2], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 768, 256))
+    conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+
+    conv_mobj_branch = common.convolutional(conv, (3, 3, 256, 512))
+    conv_mbbox = common.convolutional(conv_mobj_branch, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.upsample(conv)
+
+    conv = tf.concat([conv, route_1], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 384, 128))
+    conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+
+    conv_sobj_branch = common.convolutional(conv, (3, 3, 128, 256))
+    conv_sbbox = common.convolutional(conv_sobj_branch, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+
+    return [conv_sbbox, conv_mbbox, conv_lbbox]
+
+def YOLOv3_vit_v3(input_layer,
+                  NUM_CLASS,
+                  activation = 'gelu',
+                  projection_dim = 128,
+                  transformer_layers =[6, 6, 6],
+                  attention_heads=[4, 4, 4],
+                  spp = 0,
+                  normal = 0):
+    if normal == 6:
+        normal = 5
+        norm = 1
+    else:
+        norm = 0
+    route_1, route_2, conv = backbone.VIT_v3(input_layer,
+                                             projection_dim = projection_dim,
+                                             transformer_layers =transformer_layers,
+                                             attention_heads=attention_heads,
+                                             activation=activation,
+                                             normal=normal)
 
     conv = common.convolutional(conv, (1, 1, 1024, 512))
     conv = common.convolutional(conv, (3, 3, 512, 1024))
