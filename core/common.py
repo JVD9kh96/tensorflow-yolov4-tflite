@@ -159,12 +159,12 @@ def kai_attention(key,
     elif axis == [1, 2]:
         qk_1 = tf.nn.softmax(qk, axis = 1)
         qk_2 = tf.nn.softmax(qk, axis = 2)
-        qk = tf.keras.layers.Add()[qk_1, qk_2]
+        qk = tf.keras.layers.Add()([qk_1, qk_2])
     elif axis == [1, 2, 3]:
         qk_1 = tf.nn.softmax(qk, axis = 1)
         qk_2 = tf.nn.softmax(qk, axis = 2)
         qk_3 = tf.nn.softmax(qk, axis = 3)
-        qk = tf.keras.layers.Add()[qk_1, qk_2, qk_3]
+        qk = tf.keras.layers.Add()([qk_1, qk_2, qk_3])
     elif axis == '2d':
         qk = softmax_2d()(qk)
 
