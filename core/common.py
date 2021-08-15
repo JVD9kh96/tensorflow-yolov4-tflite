@@ -218,8 +218,8 @@ def transformer_block(inp,
     elif normalization == 'layer':
         x4 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x3)
     
-    x5 = tf.keras.layers.Conv2D(filters = out_filt,
-                                kernel_size=(3, 3),
+    x5 = tf.keras.layers.Conv2D(filters = out_filt//2,
+                                kernel_size=(1, 1),
                                 strides=(1, 1),
                                 padding = 'same')(x4)
     if activation == 'mish':
