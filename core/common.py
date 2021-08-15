@@ -50,6 +50,15 @@ def mish(x):
     return x * tf.math.tanh(tf.math.softplus(x))
     # return tf.keras.layers.Lambda(lambda x: x*tf.tanh(tf.math.log(1+tf.exp(x))))(x)
 
+class softmax_2d(tf.keras.layers.Layer):
+    def __init__(self):
+        super(softmax_2d, self).__init__()
+    def call(self, images):
+        exp = tf.math.exp(images)
+        sum_ = tf.reduce_sum(exp, axis = [1, 2])
+        return exp/sum_
+ 
+    
 def residual_block(input_layer, input_channel, filter_num1, filter_num2, activate_type='leaky'):
     short_cut = input_layer
     conv = convolutional(input_layer, filters_shape=(1, 1, input_channel, filter_num1), activate_type=activate_type)
