@@ -452,7 +452,7 @@ def YOLOv4_att_v4(input_layer,
                                                           attention_axes = [1, 2],
                                                           activation=activation,
                                                           normalization = normal)
-
+    normalization = normal
     route = conv
     conv = common.convolutional(conv, (1, 1, 512, 256))
     conv = common.upsample(conv)
@@ -478,7 +478,13 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 256, 128))
 
     route_1 = conv
-    conv = common.convolutional(conv, (3, 3, 128, 256))
+    #conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.transformer_block(conv, out_filt = 256,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv_sbbox = common.convolutional(conv, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
 
     conv = common.convolutional(route_1, (3, 3, 128, 256), downsample=True)
@@ -491,7 +497,14 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 512, 256))
 
     route_2 = conv
-    conv = common.convolutional(conv, (3, 3, 256, 512))
+    #conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.transformer_block(conv, out_filt = 512,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    
     conv_mbbox = common.convolutional(conv, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
 
     conv = common.convolutional(route_2, (3, 3, 256, 512), downsample=True)
@@ -503,7 +516,13 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (3, 3, 512, 1024))
     conv = common.convolutional(conv, (1, 1, 1024, 512))
 
-    conv = common.convolutional(conv, (3, 3, 512, 1024))
+    #conv = common.convolutional(conv, (3, 3, 512, 1024))
+    conv = common.transformer_block(conv, out_filt = 1024,
+                                          activation = activation,
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv_lbbox = common.convolutional(conv, (1, 1, 1024, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
 
     return [conv_sbbox, conv_mbbox, conv_lbbox]
