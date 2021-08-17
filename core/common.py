@@ -183,9 +183,9 @@ def kai_attention(key,
                                         bias_regularizer=regularizers.l2(1e-4),
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
    # attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = (3, 1), strides = (1, 1), padding = 'same',
-                                        kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-                                        bias_regularizer=regularizers.l2(1e-4),
-                                        activity_regularizer=regularizers.l2(1e-5))(attention)
+#                                         kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+#                                         bias_regularizer=regularizers.l2(1e-4),
+#                                         activity_regularizer=regularizers.l2(1e-5))(attention)
     if activation == 'mish':
         attention = mish(attention)
     elif activation == 'gelu':
