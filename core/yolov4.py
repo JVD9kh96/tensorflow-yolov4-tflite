@@ -452,6 +452,7 @@ def YOLOv4_att_v4(input_layer,
                                                           attention_axes = [1, 2],
                                                           activation=activation,
                                                           normalization = normal)
+    attention_axes = [1, 2]
     normalization = normal
     route = conv
     conv = common.convolutional(conv, (1, 1, 512, 256))
