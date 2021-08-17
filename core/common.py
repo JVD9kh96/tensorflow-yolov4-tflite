@@ -178,11 +178,11 @@ def kai_attention(key,
         qk = softmax_2d()(qk)
 
     attention = tf.einsum('aijb,ajkb->aikb', qk, value)
-    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = (1, 3), strides = (1, 1), padding = 'same',
+    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = (3, 3), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
                                         bias_regularizer=regularizers.l2(1e-4),
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
-    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = (3, 1), strides = (1, 1), padding = 'same',
+   # attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = (3, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
                                         bias_regularizer=regularizers.l2(1e-4),
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
@@ -252,19 +252,19 @@ def transformer_block(inp,
     else:
         x6 = x5
     x7 = tf.keras.layers.Conv2D(filters = out_filt,
-                                kernel_size=(1, 3),
+                                kernel_size=(3, 3),
                                 strides=(1, 1),
                                 padding = 'same',
                                 kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
                                 bias_regularizer=regularizers.l2(1e-4),
                                 activity_regularizer=regularizers.l2(1e-5))(x6)
-    x7 = tf.keras.layers.Conv2D(filters = out_filt,
-                                kernel_size=(3, 1),
-                                strides=(1, 1),
-                                padding = 'same',
-                                kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
-                                bias_regularizer=regularizers.l2(1e-4),
-                                activity_regularizer=regularizers.l2(1e-5))(x7)
+#     x7 = tf.keras.layers.Conv2D(filters = out_filt,
+#                                 kernel_size=(3, 1),
+#                                 strides=(1, 1),
+#                                 padding = 'same',
+#                                 kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+#                                 bias_regularizer=regularizers.l2(1e-4),
+#                                 activity_regularizer=regularizers.l2(1e-5))(x7)
     if activation == 'mish':
         x7 = mish(x7)
     elif activation == 'gelu':
