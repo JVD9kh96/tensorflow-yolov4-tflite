@@ -463,7 +463,7 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 512, 256))
     #conv = common.convolutional(conv, (3, 3, 256, 512))
     conv = common.transformer_block(conv, out_filt = 512,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -472,14 +472,14 @@ def YOLOv4_att_v4(input_layer,
 
     #conv = common.convolutional(conv, (3, 3, 256, 512))
     conv = common.transformer_block(conv, out_filt = 512,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
                                           normalization = normalization)
     conv = common.convolutional(conv, (1, 1, 512, 256))
     conv = common.transformer_block(conv, out_filt = 256,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -493,7 +493,7 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 256, 128))
     #conv = common.convolutional(conv, (3, 3, 128, 256))
     conv = common.transformer_block(conv, out_filt = 256,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -501,7 +501,7 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 256, 128))
     #conv = common.convolutional(conv, (3, 3, 128, 256))
     conv = common.transformer_block(conv, out_filt = 256,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -511,7 +511,7 @@ def YOLOv4_att_v4(input_layer,
     route_1 = conv
     #conv = common.convolutional(conv, (3, 3, 128, 256))
     conv = common.transformer_block(conv, out_filt = 256,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -520,7 +520,7 @@ def YOLOv4_att_v4(input_layer,
 
     #conv = common.convolutional(route_1, (3, 3, 128, 256), downsample=True)
     conv = common.transformer_block(route_1, out_filt = 256,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = True,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -530,7 +530,7 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 512, 256))
     #conv = common.convolutional(conv, (3, 3, 256, 512))
     conv = common.transformer_block(conv, out_filt = 512,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -538,7 +538,7 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 512, 256))
     #conv = common.convolutional(conv, (3, 3, 256, 512))
     conv = common.transformer_block(conv, out_filt = 512,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -549,7 +549,7 @@ def YOLOv4_att_v4(input_layer,
     route_2 = conv
     #conv = common.convolutional(conv, (3, 3, 256, 512))
     conv = common.transformer_block(conv, out_filt = 512,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -559,7 +559,7 @@ def YOLOv4_att_v4(input_layer,
 
     #conv = common.convolutional(route_2, (3, 3, 256, 512), downsample=True)
     conv = common.transformer_block(route_2, out_filt = 512,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = True,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -569,7 +569,7 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 1024, 512))
     #conv = common.convolutional(conv, (3, 3, 512, 1024))
     conv = common.transformer_block(conv, out_filt = 1024,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -577,7 +577,7 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 1024, 512))
     #conv = common.convolutional(conv, (3, 3, 512, 1024))
     conv = common.transformer_block(conv, out_filt = 1024,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -586,7 +586,7 @@ def YOLOv4_att_v4(input_layer,
 
     #conv = common.convolutional(conv, (3, 3, 512, 1024))
     conv = common.transformer_block(conv, out_filt = 1024,
-                                          activation = 'leaky',
+                                          activation = 'mish',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
