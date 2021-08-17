@@ -461,11 +461,29 @@ def YOLOv4_att_v4(input_layer,
     conv = tf.concat([route_2, conv], axis=-1)
 
     conv = common.convolutional(conv, (1, 1, 512, 256))
-    conv = common.convolutional(conv, (3, 3, 256, 512))
-    conv = common.convolutional(conv, (1, 1, 512, 256))
-    conv = common.convolutional(conv, (3, 3, 256, 512))
+    #conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.transformer_block(conv, out_filt = 512,
+                                          activation = 'leaky',
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv = common.convolutional(conv, (1, 1, 512, 256))
 
+    #conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.transformer_block(conv, out_filt = 512,
+                                          activation = 'leaky',
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.transformer_block(conv, out_filt = 256,
+                                          activation = 'leaky',
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     route_2 = conv
     conv = common.convolutional(conv, (1, 1, 256, 128))
     conv = common.upsample(conv)
@@ -473,34 +491,65 @@ def YOLOv4_att_v4(input_layer,
     conv = tf.concat([route_1, conv], axis=-1)
 
     conv = common.convolutional(conv, (1, 1, 256, 128))
-    conv = common.convolutional(conv, (3, 3, 128, 256))
+    #conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.transformer_block(conv, out_filt = 256,
+                                          activation = 'leaky',
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv = common.convolutional(conv, (1, 1, 256, 128))
-    conv = common.convolutional(conv, (3, 3, 128, 256))
+    #conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.transformer_block(conv, out_filt = 256,
+                                          activation = 'leaky',
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv = common.convolutional(conv, (1, 1, 256, 128))
 
     route_1 = conv
     #conv = common.convolutional(conv, (3, 3, 128, 256))
     conv = common.transformer_block(conv, out_filt = 256,
-                                          activation = activation,
+                                          activation = 'leaky',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
                                           normalization = normalization)
     conv_sbbox = common.convolutional(conv, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
 
-    conv = common.convolutional(route_1, (3, 3, 128, 256), downsample=True)
+    #conv = common.convolutional(route_1, (3, 3, 128, 256), downsample=True)
+    conv = common.transformer_block(route_1, out_filt = 256,
+                                          activation = 'leaky',
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv = tf.concat([conv, route_2], axis=-1)
 
     conv = common.convolutional(conv, (1, 1, 512, 256))
-    conv = common.convolutional(conv, (3, 3, 256, 512))
+    #conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.transformer_block(conv, out_filt = 512,
+                                          activation = 'leaky',
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv = common.convolutional(conv, (1, 1, 512, 256))
-    conv = common.convolutional(conv, (3, 3, 256, 512))
+    #conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.transformer_block(conv, out_filt = 512,
+                                          activation = 'leaky',
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv = common.convolutional(conv, (1, 1, 512, 256))
+    
 
     route_2 = conv
     #conv = common.convolutional(conv, (3, 3, 256, 512))
     conv = common.transformer_block(conv, out_filt = 512,
-                                          activation = activation,
+                                          activation = 'leaky',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
@@ -508,18 +557,36 @@ def YOLOv4_att_v4(input_layer,
     
     conv_mbbox = common.convolutional(conv, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
 
-    conv = common.convolutional(route_2, (3, 3, 256, 512), downsample=True)
+    #conv = common.convolutional(route_2, (3, 3, 256, 512), downsample=True)
+    conv = common.transformer_block(route_2, out_filt = 512,
+                                          activation = 'leaky',
+                                          down_sample = True,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv = tf.concat([conv, route], axis=-1)
 
     conv = common.convolutional(conv, (1, 1, 1024, 512))
-    conv = common.convolutional(conv, (3, 3, 512, 1024))
+    #conv = common.convolutional(conv, (3, 3, 512, 1024))
+    conv = common.transformer_block(conv, out_filt = 1024,
+                                          activation = 'leaky',
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv = common.convolutional(conv, (1, 1, 1024, 512))
-    conv = common.convolutional(conv, (3, 3, 512, 1024))
+    #conv = common.convolutional(conv, (3, 3, 512, 1024))
+    conv = common.transformer_block(conv, out_filt = 1024,
+                                          activation = 'leaky',
+                                          down_sample = False,
+                                          attention_axes = attention_axes,
+                                          kernel_size = 3,
+                                          normalization = normalization)
     conv = common.convolutional(conv, (1, 1, 1024, 512))
 
     #conv = common.convolutional(conv, (3, 3, 512, 1024))
     conv = common.transformer_block(conv, out_filt = 1024,
-                                          activation = activation,
+                                          activation = 'leaky',
                                           down_sample = False,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
