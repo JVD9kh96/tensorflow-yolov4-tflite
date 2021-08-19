@@ -112,27 +112,62 @@ def main(_argv):
 
     # define training step function
     # @tf.function
-    def train_step(image_data, target):
-        with tf.GradientTape() as tape:
-            pred_result = model(image_data, training=True)
-            giou_loss = conf_loss = prob_loss = 0
+    def train_step(image_data, target, mini_batch_size = 4):
 
-            # optimizing process
-            for i in range(num_yolo_head):
-                conv, pred = pred_result[i * 2], pred_result[i * 2 + 1]
-                loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
-                giou_loss += loss_items[0]
-                conf_loss += loss_items[1]
-                prob_loss += loss_items[2]
+            sum = 0
+            flag = 0
+            gradients_all = []
+            gradient_update = []
+            total_loss_av = 0
+            giou_loss_av = 0
+            conf_loss_av = 0
+            prob_loss_av = 0
 
-            total_loss = giou_loss + conf_loss + prob_loss
+            image_shape = image_data.shape
 
-            gradients = tape.gradient(total_loss, model.trainable_variables)
-            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+            for batch_size in range(image_shape[0]//mini_batch_size):
+              with tf.GradientTape() as tape:
+                  pred_result = model(image_data[batch_size * mini_batch_size:(batch_size + 1) * mini_batch_size,:,:,:], training=True)
+                  total_loss = giou_loss = conf_loss = prob_loss = 0
+
+                # optimizing process
+                  for i in range(3):
+                      conv, pred = pred_result[i*2], pred_result[i*2+1]
+                      loss_items = compute_loss(pred, conv,
+                                                target[i][0][batch_size * mini_batch_size:(batch_size + 1) * mini_batch_size,:,:,:],
+                                                target[i][1][batch_size * mini_batch_size:(batch_size + 1) * mini_batch_size,:,:], 
+                                                STRIDES=STRIDES, NUM_CLASS=NUM_CLASS,
+                                                IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
+                      giou_loss += loss_items[0]
+                      conf_loss += loss_items[1]
+                      prob_loss += loss_items[2]
+
+                  total_loss = giou_loss + conf_loss + prob_loss
+                  gradients = tape.gradient(total_loss, model.trainable_variables)
+
+                  if flag == 0:
+                    gradient_update = gradients
+                    flag = 1
+                  else:
+                    for num,gradient in enumerate(gradients):
+                      if batch_size == image_shape[0] // mini_batch_size - 1:
+                        gradient_update[num] = (gradient + gradient_update[num])/float(image_shape[0])
+                      else:
+                        gradient_update[num] = gradient + gradient_update[num]
+
+                  total_loss_av = total_loss_av + total_loss
+                  giou_loss_av = giou_loss_av + giou_loss
+                  conf_loss_av = conf_loss_av + conf_loss
+                  prob_loss_av = prob_loss_av + prob_loss
+
+
+            optimizer.apply_gradients(zip(gradient_update, model.trainable_variables))
             tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
-                     "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
-                                                               giou_loss, conf_loss,
-                                                               prob_loss, total_loss))
+                      "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
+                                                                giou_loss_av/image_shape[0], conf_loss_av/image_shape[0],
+                                                                prob_loss_av/image_shape[0], total_loss_av/image_shape[0]))
+        
             # update learning rate
             global_steps.assign_add(1)
             if global_steps < warmup_steps:
@@ -199,7 +234,7 @@ def main(_argv):
             if toc - tic > FLAGS.time_lim:
                 flg = True
                 break
-            train_step(image_data, target)
+            train_step(image_data, target, cfg.TRAIN.MINI_BATCH_SIZE)
             if i % 1000 == 0 :
                 #model.save(FLAGS.model_path)
                 model.save_weights(FLAGS.model_path + 'ModelWeights')

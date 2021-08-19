@@ -209,7 +209,13 @@ def transformer_block(inp,
     elif activation == 'leaky':
         inp = tf.keras.layers.LeakyReLU(alpha = 0.3)(inp)
 
-    x1 = tf.keras.layers.BatchNormalization()(inp)
+    if normalization == 'batch':
+        x1 = tf.keras.layers.BatchNormalization()(inp)
+    elif normalization == 'group':
+        x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+    elif normalization == 'layer':
+        x1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(inp)
+        
     x2 = kai_attention(x1,
                        x1,
                        x1,
