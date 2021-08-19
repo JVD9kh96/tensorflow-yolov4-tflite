@@ -224,7 +224,7 @@ def transformer_block(inp,
                        axis = attention_axes,
                        activation = activation
                        )
-    x3 = tf.keras.layers.Add()([x1, inp])
+    x3 = tf.keras.layers.Add()([x2, inp])
     if normalization == 'batch':
         x4 = tf.keras.layers.BatchNormalization()(x3)
     elif normalization == 'group':
