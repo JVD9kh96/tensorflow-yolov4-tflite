@@ -115,7 +115,7 @@ def main(_argv):
     def train_step(image_data, target, mini_batch_size = 4):
 
             sum = 0
-            flag = 0
+            flag1 = 0
             gradients_all = []
             gradient_update = []
             total_loss_av = 0
@@ -146,9 +146,9 @@ def main(_argv):
                   total_loss = giou_loss + conf_loss + prob_loss
                   gradients = tape.gradient(total_loss, model.trainable_variables)
 
-                  if flag == 0:
+                  if flag1 == 0:
                     gradient_update = gradients
-                    flag = 1
+                    flag1 = 1
                   else:
                     for num,gradient in enumerate(gradients):
                       if batch_size == image_shape[0] // mini_batch_size - 1:
@@ -161,6 +161,12 @@ def main(_argv):
                   conf_loss_av = conf_loss_av + conf_loss
                   prob_loss_av = prob_loss_av + prob_loss
 
+                  tf.print("=> MINI_STEP %4d/%4d  giou_loss: %4.2f   conf_loss: %4.2f   "
+                      "prob_loss: %4.2f   total_loss: %4.2f" % (batch_size, image_shape[0]//mini_batch_size,
+                                                                giou_loss, conf_loss,
+                                                                prob_loss, total_loss))
+        
+
 
             optimizer.apply_gradients(zip(gradient_update, model.trainable_variables))
             tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
@@ -168,6 +174,8 @@ def main(_argv):
                                                                 giou_loss_av/image_shape[0], conf_loss_av/image_shape[0],
                                                                 prob_loss_av/image_shape[0], total_loss_av/image_shape[0]))
         
+            print('****************************************************************************************************')
+            
             # update learning rate
             global_steps.assign_add(1)
             if global_steps < warmup_steps:
