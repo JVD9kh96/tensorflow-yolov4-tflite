@@ -1,56 +1,255 @@
-from absl import app, flags, logging
-from absl.flags import FLAGS
 import cv2
 import os
 import shutil
 import numpy as np
 import tensorflow as tf
-from core.yolov4 import filter_boxes
-from tensorflow.python.saved_model import tag_constants
 import core.utils as utils
 from core.config import cfg
+from core.yolov4 import YOLO
+from core.yolov4 import decode_train as decode
+import random
+import colorsys
+import argparse
 
-flags.DEFINE_string('weights', './checkpoints/yolov4-416',
-                    'path to weights file')
-flags.DEFINE_string('framework', 'tf', 'select model type in (tf, tflite, trt)'
-                    'path to weights file')
-flags.DEFINE_string('model', 'yolov4', 'yolov3 or yolov4')
-flags.DEFINE_boolean('tiny', False, 'yolov3 or yolov3-tiny')
-flags.DEFINE_integer('size', 416, 'resize images to')
-flags.DEFINE_string('annotation_path', "./data/dataset/val2017.txt", 'annotation path')
-flags.DEFINE_string('write_image_path', "./data/detection/", 'write image path')
-flags.DEFINE_float('iou', 0.5, 'iou threshold')
-flags.DEFINE_float('score', 0.25, 'score threshold')
+def read_class_names(class_file_name):
+    '''loads class name from a file'''
+    names = {}
+    with open(class_file_name, 'r') as data:
+        for ID, name in enumerate(data):
+            names[ID] = name.strip('\n')
+    return names
 
-def main(_argv):
-    INPUT_SIZE = FLAGS.size
-    STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
-    CLASSES = utils.read_class_names(cfg.YOLO.CLASSES)
+def get_anchors(anchors_path):
+    '''loads the anchors from a file'''
+    with open(anchors_path) as f:
+        anchors = f.readline()
+    anchors = np.array(anchors.split(','), dtype=np.float32)
+    return anchors.reshape(3, 3, 2)
 
-    predicted_dir_path = './mAP/predicted'
-    ground_truth_dir_path = './mAP/ground-truth'
+
+def image_preporcess(image, target_size, gt_boxes=None):
+
+    ih, iw    = target_size
+    h,  w, _  = image.shape
+
+    scale = min(iw/w, ih/h)
+    nw, nh  = int(scale * w), int(scale * h)
+    image_resized = cv2.resize(image, (nw, nh))
+
+    image_paded = np.full(shape=[ih, iw, 3], fill_value=128.0)
+    dw, dh = (iw - nw) // 2, (ih-nh) // 2
+    image_paded[dh:nh+dh, dw:nw+dw, :] = image_resized
+    image_paded = image_paded / 255.
+
+    if gt_boxes is None:
+        return image_paded
+
+    else:
+        gt_boxes[:, [0, 2]] = gt_boxes[:, [0, 2]] * scale + dw
+        gt_boxes[:, [1, 3]] = gt_boxes[:, [1, 3]] * scale + dh
+        return image_paded, gt_boxes
+
+
+def draw_bbox(image, bboxes, classes=read_class_names(cfg.YOLO.CLASSES), show_label=True):
+    """
+    bboxes: [x_min, y_min, x_max, y_max, probability, cls_id] format coordinates.
+    """
+
+    num_classes = len(classes)
+    image_h, image_w, _ = image.shape
+    hsv_tuples = [(1.0 * x / num_classes, 1., 1.) for x in range(num_classes)]
+    colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
+    colors = list(map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors))
+
+    random.seed(0)
+    random.shuffle(colors)
+    random.seed(None)
+
+    for i, bbox in enumerate(bboxes):
+        coor = np.array(bbox[:4], dtype=np.int32)
+        fontScale = 0.5
+        score = bbox[4]
+        class_ind = int(bbox[5])
+        bbox_color = colors[class_ind]
+        bbox_thick = int(0.6 * (image_h + image_w) / 600)
+        c1, c2 = (coor[0], coor[1]), (coor[2], coor[3])
+        cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
+
+        if show_label:
+            bbox_mess = '%s: %.2f' % (classes[class_ind], score)
+            t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick//2)[0]
+            cv2.rectangle(image, c1, (c1[0] + t_size[0], c1[1] - t_size[1] - 3), bbox_color, -1)  # filled
+
+            cv2.putText(image, bbox_mess, (c1[0], c1[1]-2), cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale, (0, 0, 0), bbox_thick//2, lineType=cv2.LINE_AA)
+
+    return image
+
+
+
+def bboxes_iou(boxes1, boxes2):
+
+    boxes1 = np.array(boxes1)
+    boxes2 = np.array(boxes2)
+
+    boxes1_area = (boxes1[..., 2] - boxes1[..., 0]) * (boxes1[..., 3] - boxes1[..., 1])
+    boxes2_area = (boxes2[..., 2] - boxes2[..., 0]) * (boxes2[..., 3] - boxes2[..., 1])
+
+    left_up       = np.maximum(boxes1[..., :2], boxes2[..., :2])
+    right_down    = np.minimum(boxes1[..., 2:], boxes2[..., 2:])
+
+    inter_section = np.maximum(right_down - left_up, 0.0)
+    inter_area    = inter_section[..., 0] * inter_section[..., 1]
+    union_area    = boxes1_area + boxes2_area - inter_area
+    ious          = np.maximum(1.0 * inter_area / union_area, np.finfo(np.float32).eps)
+
+    return ious
+
+
+def nms(bboxes, iou_threshold, sigma=0.3, method='nms'):
+    """
+    :param bboxes: (xmin, ymin, xmax, ymax, score, class)
+    Note: soft-nms, https://arxiv.org/pdf/1704.04503.pdf
+          https://github.com/bharatsingh430/soft-nms
+    """
+    classes_in_img = list(set(bboxes[:, 5]))
+    best_bboxes = []
+
+    for cls in classes_in_img:
+        cls_mask = (bboxes[:, 5] == cls)
+        cls_bboxes = bboxes[cls_mask]
+
+        while len(cls_bboxes) > 0:
+            max_ind = np.argmax(cls_bboxes[:, 4])
+            best_bbox = cls_bboxes[max_ind]
+            best_bboxes.append(best_bbox)
+            cls_bboxes = np.concatenate([cls_bboxes[: max_ind], cls_bboxes[max_ind + 1:]])
+            iou = bboxes_iou(best_bbox[np.newaxis, :4], cls_bboxes[:, :4])
+            weight = np.ones((len(iou),), dtype=np.float32)
+
+            assert method in ['nms', 'soft-nms']
+
+            if method == 'nms':
+                iou_mask = iou > iou_threshold
+                weight[iou_mask] = 0.0
+
+            if method == 'soft-nms':
+                weight = np.exp(-(1.0 * iou ** 2 / sigma))
+
+            cls_bboxes[:, 4] = cls_bboxes[:, 4] * weight
+            score_mask = cls_bboxes[:, 4] > 0.
+            cls_bboxes = cls_bboxes[score_mask]
+
+    return best_bboxes
+
+
+
+def postprocess_boxes(pred_bbox, org_img_shape, input_size, score_threshold):
+
+    valid_scale=[0, np.inf]
+    pred_bbox = np.array(pred_bbox)
+
+    pred_xywh = pred_bbox[:, 0:4]
+    pred_conf = pred_bbox[:, 4]
+    pred_prob = pred_bbox[:, 5:]
+
+    # # (1) (x, y, w, h) --> (xmin, ymin, xmax, ymax)
+    pred_coor = np.concatenate([pred_xywh[:, :2] - pred_xywh[:, 2:] * 0.5,
+                                pred_xywh[:, :2] + pred_xywh[:, 2:] * 0.5], axis=-1)
+    # # (2) (xmin, ymin, xmax, ymax) -> (xmin_org, ymin_org, xmax_org, ymax_org)
+    org_h, org_w = org_img_shape
+    resize_ratio = min(input_size / org_w, input_size / org_h)
+
+    dw = (input_size - resize_ratio * org_w) / 2
+    dh = (input_size - resize_ratio * org_h) / 2
+
+    pred_coor[:, 0::2] = 1.0 * (pred_coor[:, 0::2] - dw) / resize_ratio
+    pred_coor[:, 1::2] = 1.0 * (pred_coor[:, 1::2] - dh) / resize_ratio
+
+    # # (3) clip some boxes those are out of range
+    pred_coor = np.concatenate([np.maximum(pred_coor[:, :2], [0, 0]),
+                                np.minimum(pred_coor[:, 2:], [org_w - 1, org_h - 1])], axis=-1)
+    invalid_mask = np.logical_or((pred_coor[:, 0] > pred_coor[:, 2]), (pred_coor[:, 1] > pred_coor[:, 3]))
+    pred_coor[invalid_mask] = 0
+
+    # # (4) discard some invalid boxes
+    bboxes_scale = np.sqrt(np.multiply.reduce(pred_coor[:, 2:4] - pred_coor[:, 0:2], axis=-1))
+    scale_mask = np.logical_and((valid_scale[0] < bboxes_scale), (bboxes_scale < valid_scale[1]))
+
+    # # (5) discard some boxes with low scores
+    classes = np.argmax(pred_prob, axis=-1)
+    scores = pred_conf * pred_prob[np.arange(len(pred_coor)), classes]
+    score_mask = scores > score_threshold
+    mask = np.logical_and(scale_mask, score_mask)
+    coors, scores, classes = pred_coor[mask], scores[mask], classes[mask]
+
+    return np.concatenate([coors, scores[:, np.newaxis], classes[:, np.newaxis]], axis=-1)
+
+def evaluate(weights = "/kaggle/working/Model/ModelF",
+             INPUT_SIZE = 416,
+             predicted_dir_path = 'mAP/predicted',
+             ground_truth_dir_path = 'mAP/ground-truth',
+             model_name = 'yolov4_vit_v1',
+             activation = 'gelu',
+             projection_dim = 128,
+             transformer_layers = [6, 6, 6],
+             heads = [4, 4, 4],
+             spp = False,
+             normal = 1,
+             eval_on = 'test'):
+
+    NUM_CLASS    = len(read_class_names(cfg.YOLO.CLASSES))
+    CLASSES      = read_class_names(cfg.YOLO.CLASSES)
+
     if os.path.exists(predicted_dir_path): shutil.rmtree(predicted_dir_path)
     if os.path.exists(ground_truth_dir_path): shutil.rmtree(ground_truth_dir_path)
-    if os.path.exists(cfg.TEST.DECTECTED_IMAGE_PATH): shutil.rmtree(cfg.TEST.DECTECTED_IMAGE_PATH)
+    if os.path.exists( cfg.TEST.DECTECTED_IMAGE_PATH): shutil.rmtree(cfg.TEST.DECTECTED_IMAGE_PATH)
 
     os.mkdir(predicted_dir_path)
     os.mkdir(ground_truth_dir_path)
-    os.mkdir(cfg.TEST.DECTECTED_IMAGE_PATH)
+    os.mkdir( cfg.TEST.DECTECTED_IMAGE_PATH)
 
     # Build Model
-    if FLAGS.framework == 'tflite':
-        interpreter = tf.lite.Interpreter(model_path=FLAGS.weights)
-        interpreter.allocate_tensors()
-        input_details = interpreter.get_input_details()
-        output_details = interpreter.get_output_details()
-        print(input_details)
-        print(output_details)
-    else:
-        saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
-        infer = saved_model_loaded.signatures['serving_default']
+    input_tensor = tf.keras.layers.Input([416, 416, 3])
+    conv_tensors = YOLO(input_tensor,
+                        NUM_CLASS=NUM_CLASS,
+                        model = model_name,
+                        activation = activation,
+                        projection_dim=projection_dim,
+                        transformer_layers=transformer_layers,
+                        attention_heads=heads,
+                        spp=spp,
+                        normal=normal)
 
-    num_lines = sum(1 for line in open(FLAGS.annotation_path))
-    with open(cfg.TEST.ANNOT_PATH, 'r') as annotation_file:
+    output_tensors = []
+    for i, conv_tensor in enumerate(conv_tensors):
+        print(i, int(2**(i+3)))
+        pred_tensor = decode(conv_tensor,
+                             output_size=cfg.TRAIN.INPUT_SIZE // int(2**(i+3)),
+                             NUM_CLASS=NUM_CLASS,
+                             STRIDES=cfg.YOLO.STRIDES,
+                             ANCHORS=cfg.YOLO.ANCHORS,
+                             XYSCALE=cfg.YOLO.XYSCALE,
+                             i=i)
+        output_tensors.append(conv_tensor)
+        output_tensors.append(pred_tensor)
+
+    model = tf.keras.Model(input_tensor, output_tensors)
+    for weight in model.weights:
+        print(weight)
+        break
+    for layer in model.layers:
+        try:
+            layer.trainable = False
+        except:
+            continue
+    model.load_weights(weights)
+    for weight in model.weights:
+        print(weight)
+        break
+#     model.summary()
+    annot_path = cfg.TEST.ANNOT_PATH if eval_on == 'test' else cfg.TRAIN.ANNOT_PATH
+    with open(annot_path, 'r') as annotation_file:
         for num, line in enumerate(annotation_file):
             annotation = line.strip().split()
             image_path = annotation[0]
@@ -60,8 +259,8 @@ def main(_argv):
             bbox_data_gt = np.array([list(map(int, box.split(','))) for box in annotation[1:]])
 
             if len(bbox_data_gt) == 0:
-                bboxes_gt = []
-                classes_gt = []
+                bboxes_gt=[]
+                classes_gt=[]
             else:
                 bboxes_gt, classes_gt = bbox_data_gt[:, :4], bbox_data_gt[:, 4]
             ground_truth_path = os.path.join(ground_truth_dir_path, str(num) + '.txt')
@@ -79,65 +278,108 @@ def main(_argv):
             predict_result_path = os.path.join(predicted_dir_path, str(num) + '.txt')
             # Predict Process
             image_size = image.shape[:2]
-            # image_data = utils.image_preprocess(np.copy(image), [INPUT_SIZE, INPUT_SIZE])
-            image_data = cv2.resize(np.copy(image), (INPUT_SIZE, INPUT_SIZE))
-            image_data = image_data / 255.
+            image_data = image_preporcess(np.copy(image), [INPUT_SIZE, INPUT_SIZE])
             image_data = image_data[np.newaxis, ...].astype(np.float32)
+            #print(image_data.shape)
+            # model.load_weights(weights)
+            pred_bbox = model.predict(image_data)
+            pred_bbox = [pred_bbox[1], pred_bbox[3], pred_bbox[5]]
+            pred_bbox = [tf.reshape(x, (-1, tf.shape(x)[-1])) for x in pred_bbox]
+            pred_bbox = tf.concat(pred_bbox, axis=0)
+            bboxes = postprocess_boxes(pred_bbox, image_size, INPUT_SIZE, cfg.TEST.SCORE_THRESHOLD)
+            bboxes = nms(bboxes, cfg.TEST.IOU_THRESHOLD, method='nms')
+            #print(bboxes, len(bboxes))
 
-            if FLAGS.framework == 'tflite':
-                interpreter.set_tensor(input_details[0]['index'], image_data)
-                interpreter.invoke()
-                pred = [interpreter.get_tensor(output_details[i]['index']) for i in range(len(output_details))]
-                if FLAGS.model == 'yolov4' and FLAGS.tiny == True:
-                    boxes, pred_conf = filter_boxes(pred[1], pred[0], score_threshold=0.25)
-                else:
-                    boxes, pred_conf = filter_boxes(pred[0], pred[1], score_threshold=0.25)
-            else:
-                batch_data = tf.constant(image_data)
-                pred_bbox = infer(batch_data)
-                for key, value in pred_bbox.items():
-                    boxes = value[:, :, 0:4]
-                    pred_conf = value[:, :, 4:]
-
-            boxes, scores, classes, valid_detections = tf.image.combined_non_max_suppression(
-                boxes=tf.reshape(boxes, (tf.shape(boxes)[0], -1, 1, 4)),
-                scores=tf.reshape(
-                    pred_conf, (tf.shape(pred_conf)[0], -1, tf.shape(pred_conf)[-1])),
-                max_output_size_per_class=50,
-                max_total_size=50,
-                iou_threshold=FLAGS.iou,
-                score_threshold=FLAGS.score
-            )
-            boxes, scores, classes, valid_detections = [boxes.numpy(), scores.numpy(), classes.numpy(), valid_detections.numpy()]
-
-            # if cfg.TEST.DECTECTED_IMAGE_PATH is not None:
-            #     image_result = utils.draw_bbox(np.copy(image), [boxes, scores, classes, valid_detections])
-            #     cv2.imwrite(cfg.TEST.DECTECTED_IMAGE_PATH + image_name, image_result)
+            if cfg.TEST.DECTECTED_IMAGE_PATH is not None:
+                image = draw_bbox(image, bboxes)
+                cv2.imwrite(cfg.TEST.DECTECTED_IMAGE_PATH+image_name, image)
 
             with open(predict_result_path, 'w') as f:
-                image_h, image_w, _ = image.shape
-                for i in range(valid_detections[0]):
-                    if int(classes[0][i]) < 0 or int(classes[0][i]) > NUM_CLASS: continue
-                    coor = boxes[0][i]
-                    coor[0] = int(coor[0] * image_h)
-                    coor[2] = int(coor[2] * image_h)
-                    coor[1] = int(coor[1] * image_w)
-                    coor[3] = int(coor[3] * image_w)
-
-                    score = scores[0][i]
-                    class_ind = int(classes[0][i])
+                for bbox in bboxes:
+                    coor = np.array(bbox[:4], dtype=np.int32)
+                    score = bbox[4]
+                    class_ind = int(bbox[5])
                     class_name = CLASSES[class_ind]
                     score = '%.4f' % score
-                    ymin, xmin, ymax, xmax = list(map(str, coor))
+                    xmin, ymin, xmax, ymax = list(map(str, coor))
                     bbox_mess = ' '.join([class_name, score, xmin, ymin, xmax, ymax]) + '\n'
                     f.write(bbox_mess)
                     print('\t' + str(bbox_mess).strip())
-            print(num, num_lines)
+def main():
+    parser = argparse.ArgumentParser()
 
-if __name__ == '__main__':
-    try:
-        app.run(main)
-    except SystemExit:
-        pass
+    parser.add_argument('--weights',
+                        type=str,
+                        default='Model/ModelF',
+                        help='path to saved weights of the model')
 
+    parser.add_argument('--model',
+                        type=str,
+                        default='yolov4_att_v4',
+                        help='model name')
 
+    parser.add_argument('--activation',
+                        type=str,
+                        default='mish',
+                        help='activation name')
+
+    parser.add_argument('--projection_dim',
+                        type=int,
+                        default=16,
+                        help='projection dimension for vit based models')
+
+    parser.add_argument('--att_layer',
+                        type=int,
+                        default=16,
+                        help='projection dimension for vit based models')
+
+    parser.add_argument('--heads',
+                        type=int,
+                        default=4,
+                        help='attention heads in vit based models')
+
+    parser.add_argument('--spp',
+                        type=int,
+                        default=0,
+                        help='whether to use spp layer or not')
+
+    parser.add_argument('--normal',
+                        type=int,
+                        default=5,
+                        help='normalization type')
+
+    parser.add_argument('--input_size',
+                        type=int,
+                        default=416,
+                        help='Input resolution')                      
+    
+    parser.add_argument('--predicted_dir_path',
+                        type=str,
+                        default='mAP/predicted/',
+                        help='Input resolution')    
+
+    parser.add_argument('--ground_truth_dir_path',
+                        type=str,
+                        default='mAP/ground-truth/',
+                        help='Input resolution')    
+    parser.add_argument('--eval_on',
+                        type=str,
+                        default='test',
+                        help='evaluate on test or train data')  
+    args = parser.parse_args()
+
+    evaluate(weights = args.weights,
+                INPUT_SIZE = args.input_size,
+                predicted_dir_path = args.predicted_dir_path,
+                ground_truth_dir_path = args.ground_truth_dir_path,
+                model_name = args.model,
+                activation = args.activation,
+                projection_dim = args.projection_dim,
+                transformer_layers = [args.att_layer]*3,
+                heads = [args.heads]*3,
+                spp = args.spp,
+                normal = args.normal,
+                eval_on = args.eval_on)
+
+if __name__ == "__main__":
+    main()
