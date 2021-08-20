@@ -152,7 +152,7 @@ def main(_argv):
                   else:
                     for num,gradient in enumerate(gradients):
                       if batch_size == image_shape[0] // mini_batch_size - 1:
-                        gradient_update[num] = (gradient + gradient_update[num])/float(image_shape[0])
+                        gradient_update[num] = (gradient + gradient_update[num])/float(image_shape[0]//mini_batch_size)
                       else:
                         gradient_update[num] = gradient + gradient_update[num]
 
@@ -171,8 +171,8 @@ def main(_argv):
             optimizer.apply_gradients(zip(gradient_update, model.trainable_variables))
             tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
                       "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
-                                                                giou_loss_av/image_shape[0], conf_loss_av/image_shape[0],
-                                                                prob_loss_av/image_shape[0], total_loss_av/image_shape[0]))
+                                                                giou_loss_av/(image_shape[0]//mini_batch_size), conf_loss_av/(image_shape[0]//mini_batch_size),
+                                                                prob_loss_av/(image_shape[0]//mini_batch_size), total_loss_av/(image_shape[0]//mini_batch_size)))
         
             print('****************************************************************************************************')
             
