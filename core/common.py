@@ -56,7 +56,7 @@ class softmax_2d(tf.keras.layers.Layer):
     def call(self, images):
         exp = tf.math.exp(images)
         sum_ = tf.reduce_sum(exp, axis = [1, 2])
-        return exp/sum_    
+        return exp/(sum_[:, tf.newaxis, tf.newaxis, :]) 
 
 def residual_block(input_layer, input_channel, filter_num1, filter_num2, activate_type='leaky'):
     short_cut = input_layer
