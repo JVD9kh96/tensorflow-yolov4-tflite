@@ -7,6 +7,13 @@ import tensorflow_addons as tfa
 from tensorflow.keras import regularizers
 
 # import tensorflow_addons as tfa
+def ws_reg(kernel):
+    kernel_mean = tf.math.reduce_mean(kernel, axis=[0, 1, 2], keepdims=True, name='kernel_mean')
+    kernel = kernel - kernel_mean
+    kernel_std = tf.keras.backend.std(kernel, axis=[0, 1, 2], keepdims=True)
+    kernel = kernel / (kernel_std + 1e-5)
+    return kernel
+
 class BatchNormalization(tf.keras.layers.BatchNormalization):
     """
     "Frozen state" and "inference mode" are two separate concepts.
@@ -145,15 +152,18 @@ def kai_attention(key,
     key = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
-                                 padding = 'same')(key)
+                                 padding = 'same',
+                                 kernel_regularizer=ws_reg)(key)
     value = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
-                                 padding = 'same')(value)
+                                 padding = 'same',
+                                 kernel_regularizer=ws_reg)(value)
     query = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
-                                 padding = 'same')(query)
+                                 padding = 'same',
+                                 kernel_regularizer=ws_reg)(query)
     shape = getattr(value, 'shape')
     dk = tf.cast(shape[1]*shape[2], tf.float32)
     qk = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
@@ -178,7 +188,7 @@ def kai_attention(key,
 
     attention = tf.einsum('aijb,ajkb->aikb', qk, value)
     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
-                                        kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+                                        kernel_regularizer=ws_reg,
                                         bias_regularizer=regularizers.l2(1e-4),
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
     if activation == 'mish':
@@ -209,7 +219,13 @@ def transformer_block(inp,
     elif activation == 'leaky':
         inp = tf.keras.layers.LeakyReLU(alpha = 0.3)(inp)
 
-    x1 = tf.keras.layers.BatchNormalization()(inp)
+    if normalization == 'batch':
+        x1 = tf.keras.layers.BatchNormalization()(inp)
+    elif normalization == 'group':
+        x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+    elif normalization == 'layer':
+        x1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(inp)
+        
     x2 = kai_attention(x1,
                        x1,
                        x1,
@@ -229,7 +245,8 @@ def transformer_block(inp,
     x5 = tf.keras.layers.Conv2D(filters = out_filt//2,
                                 kernel_size=(1, 1),
                                 strides=(1, 1),
-                                padding = 'same')(x4)
+                                padding = 'same', 
+                                kernel_regularizer=ws_reg)(x4)
     if activation == 'mish':
         x6 = mish(x5)
     elif activation == 'gelu':
@@ -242,7 +259,7 @@ def transformer_block(inp,
                                 kernel_size=kernel_size,
                                 strides=(1, 1),
                                 padding = 'same',
-                                kernel_regularizer=regularizers.l1_l2(l1=1e-5, l2=1e-4),
+                                kernel_regularizer=ws_reg,
                                 bias_regularizer=regularizers.l2(1e-4),
                                 activity_regularizer=regularizers.l2(1e-5))(x6)
     if activation == 'mish':
