@@ -142,15 +142,15 @@ def kai_attention(key,
           if '2d', the attention will be calculated in 2D (hight and width 
              simultaneously) 
     """
-    key = tf.keras.layers.Conv2D(filters = heads,
+    key = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same')(key)
-    value = tf.keras.layers.Conv2D(filters = heads,
+    value = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same')(value)
-    query = tf.keras.layers.Conv2D(filters = heads,
+    query = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same')(query)
