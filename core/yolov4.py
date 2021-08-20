@@ -449,7 +449,7 @@ def YOLOv4_att_v4(input_layer,
         normal = 'layer'
 
     route_1, route_2, conv = backbone.cspdarkerattnet53(input_layer, 
-                                                          attention_axes = '2d',
+                                                          attention_axes = 1,
                                                           activation=activation,
                                                           normalization = normal)
 
