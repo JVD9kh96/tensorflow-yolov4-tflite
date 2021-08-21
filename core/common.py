@@ -51,6 +51,8 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
             conv = tf.nn.leaky_relu(conv, alpha=0.1)
         elif activate_type == "mish":
             conv = mish(conv)
+        elif activate_type == 'gelu':
+            conv = tfa.activations.gelu(conv)
     return conv
 
 def mish(x):
