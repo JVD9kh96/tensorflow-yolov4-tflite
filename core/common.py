@@ -6,13 +6,147 @@ from tensorflow.keras import layers
 import tensorflow_addons as tfa
 from tensorflow.keras import regularizers
 
-# import tensorflow_addons as tfa
-def ws_reg(kernel):
-    kernel_mean = tf.math.reduce_mean(kernel, axis=[0, 1, 2], keepdims=True, name='kernel_mean')
-    kernel = kernel - kernel_mean
-    kernel_std = tf.keras.backend.std(kernel, axis=[0, 1, 2], keepdims=True)
-    kernel = kernel / (kernel_std + 1e-5)
-    return kernel
+class normalize(tf.keras.layers.Layer):
+    def __init__(self):
+        super(normalize, self).__init__()
+    def call(self, kernel):
+        kernel_mean = tf.math.reduce_mean(kernel, axis=[0, 1, 2], keepdims=True, name='kernel_mean')
+        kernel = kernel - kernel_mean
+        kernel_std = tf.keras.backend.std(kernel, axis=[0, 1, 2], keepdims=True)
+        kernel = kernel / (kernel_std + 1e-5)
+        return kernel
+# def normalize(kernel):
+#     kernel_mean = tf.math.reduce_mean(kernel, axis=[0, 1, 2], keepdims=True, name='kernel_mean')
+#     kernel = kernel - kernel_mean
+#     kernel_std = tf.keras.backend.std(kernel, axis=[0, 1, 2], keepdims=True)
+#     kernel = kernel / (kernel_std + 1e-5)
+#     return kernel
+
+class CConv2D(tf.keras.layers.Layer):
+  def __init__(self,
+               filters, 
+               kernel_size = (3, 3),
+               strides = (1, 1), 
+               activation = 'leaky',
+               padding = 'SAME',
+               use_bias = False,
+               kernel_initializer = 'xavier',
+               kernel_regularizer = 'l2',
+               normalization = None,
+               bias_initializer = 'zero',
+               bias_regularizer = None,
+               ws = True,
+               down_sample = False,
+               non_attention = True):
+    
+    super(CConv2D, self).__init__()
+    self.filters = filters
+    self.kernel_size = kernel_size
+    self.activation = activation
+    self.strides = strides
+    self.use_bias = use_bias
+    self.normalization = normalization
+    self.ws = ws
+    self.padding = padding
+    self.down_sample = down_sample
+    self.non_attention = non_attention
+    self.normalize = normalize()
+    if self.non_attention:
+        if self.down_sample:
+            self.padding = 'VALID'
+            self.strides = (2, 2)
+            self.zeropad = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))
+        else:
+            self.strides = (1, 1)
+            self.padding = 'SAME'
+    
+    if normalization == 'bn':
+        self.norm_layer = tf.keras.layers.BatchNormalization()
+    elif normalization == 'gp':
+        self.norm_layer = tfa.layers.GroupNormalization(32)
+
+    if kernel_regularizer is None:
+        self.kernel_regularizer = None
+    elif kernel_regularizer == 'l2':
+        self.kernel_regularizer = tf.keras.regularizers.l2(0.0005)
+    else:
+        raise ValueError('at the moment, only l2 is acceptable')
+
+    if kernel_initializer == 'xavier':
+        self.kernel_initializer = tf.keras.initializers.GlorotNormal()
+    elif kernel_initializer == 'he':
+        self.kernel_initializer = tf.keras.initializers.he_normal()
+    elif kernel_initializer == 'random':
+        self.kernel_initializer = tf.random_normal_initializer(stddev=0.01)
+
+
+    if use_bias:
+        if bias_initializer == 'xavier':
+            self.bias_initializer = tf.keras.initializers.GlorotNormal()
+        elif bias_initializer == 'he':
+            self.bias_initializer = tf.keras.initializers.he_normal()
+        elif bias_initializer == 'random':
+            self.bias_initializer = tf.random_normal_initializer(stddev=0.01)
+        elif bias_initializer == 'zero': 
+            self.bias_initializer = tf.constant_initializer(0.)
+
+        if bias_regularizer is None:
+            self.bias_regularizer = None
+        elif bias_regularizer == 'l2':
+            self.bias_regularizer = tf.keras.regularizers.l2(0.0005)
+        else:
+            raise ValueError('at the moment, only l2 is acceptable')
+
+  def build(self, input_shape):
+
+    kernel_shape = [self.kernel_size[0],
+                    self.kernel_size[1],
+                    int(input_shape[-1]),
+                    self.filters]
+
+    self.kernel = self.add_weight(name="kernel",
+                                    shape=kernel_shape,
+                                    initializer=self.kernel_initializer,
+                                    regularizer=self.kernel_regularizer,
+                                    trainable=True)
+     
+    if self.use_bias:
+        self.bias = self.add_weight(name="bias",
+                                    shape=(self.filters, ),
+                                    initializer=self.bias_initializer,
+                                    regularizer=self.bias_regularizer,
+                                    trainable=True)
+  def call(self, inputs):
+
+      with tf.compat.v1.variable_scope("kernel"):
+        if (self.down_sample and self.non_attention):
+            inputs = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(inputs)
+        if self.ws and self.normalization:
+            # kernel_mean = tf.math.reduce_mean(self.kernel, axis=[0, 1, 2], keepdims=True, name='kernel_mean')
+            # self.kernel = self.kernel - kernel_mean
+            # kernel_std = tf.keras.backend.std(self.kernel, axis=[0, 1, 2], keepdims=True)
+            # self.kernel = self.kernel / (kernel_std + 1e-5)
+            # kernel = tf.keras.layers.Lambda(function=normalize)(self.kernel)
+            kernel = self.normalize(self.kernel)
+        else:
+            kernel= self.kernel
+        outputs = tf.nn.conv2d(inputs, kernel,
+                                [1, self.strides[0], self.strides[1], 1],
+                                padding=self.padding)
+        if self.use_bias:
+            outputs = outputs + self.bias
+        if self.normalization is not None:
+            outputs = self.norm_layer(outputs)
+
+        if self.activation == 'relu':
+            outputs = tf.nn.relu(outputs)
+        elif self.activation == 'leaky':
+            outputs = tf.nn.leaky_relu(outputs, alpha = 0.1)
+        elif self.activation == 'gelu':
+            outputs = tfa.activations.gelu(outputs)
+        elif self.activation == 'mish':
+            outputs = mish(outputs)
+        return outputs
 
 class BatchNormalization(tf.keras.layers.BatchNormalization):
     """
@@ -27,7 +161,7 @@ class BatchNormalization(tf.keras.layers.BatchNormalization):
         training = tf.logical_and(training, self.trainable)
         return super().call(x, training)
 
-def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0):
+def convolutional1(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0):
     if downsample:
         input_layer = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(input_layer)
         padding = 'valid'
@@ -51,6 +185,24 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
             conv = tf.nn.leaky_relu(conv, alpha=0.1)
         elif activate_type == "mish":
             conv = mish(conv)
+    return conv
+
+def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0):
+    if norm == 0:
+        norm = 'bn'
+    elif norm == 1:
+        norm = 'gp'
+    else:
+        norm = None
+    conv = CConv2D(filters=filters_shape[-1],
+                                  kernel_size = (filters_shape[0], filters_shape[0]),
+                                  use_bias=not bn,
+                                  down_sample = downsample,
+                                  kernel_regularizer='l2',
+                                  kernel_initializer='xavier',
+                                  bias_initializer='zero',
+                                  activation = activate_type,
+                                  normalization = norm)(input_layer)
     return conv
 
 def mish(x):
@@ -153,17 +305,23 @@ def kai_attention(key,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
-                                 kernel_regularizer=ws_reg)(key)
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                  bias_initializer=tf.constant_initializer(0.))(key)
     value = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
-                                 kernel_regularizer=ws_reg)(value)
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                  bias_initializer=tf.constant_initializer(0.))(value)
     query = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
-                                 kernel_regularizer=ws_reg)(query)
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                 bias_initializer=tf.constant_initializer(0.))(query)
     shape = getattr(value, 'shape')
     dk = tf.cast(shape[1]*shape[2], tf.float32)
     qk = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
@@ -188,7 +346,9 @@ def kai_attention(key,
 
     attention = tf.einsum('aijb,ajkb->aikb', qk, value)
     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
-                                        kernel_regularizer=ws_reg,
+                                        kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                        bias_initializer=tf.constant_initializer(0.),
                                         bias_regularizer=regularizers.l2(1e-4),
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
     if activation == 'mish':
@@ -246,7 +406,9 @@ def transformer_block(inp,
                                 kernel_size=(1, 1),
                                 strides=(1, 1),
                                 padding = 'same', 
-                                kernel_regularizer=ws_reg)(x4)
+                                kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                  bias_initializer=tf.constant_initializer(0.))(x4)
     if activation == 'mish':
         x6 = mish(x5)
     elif activation == 'gelu':
@@ -259,7 +421,9 @@ def transformer_block(inp,
                                 kernel_size=kernel_size,
                                 strides=(1, 1),
                                 padding = 'same',
-                                kernel_regularizer=ws_reg,
+                                kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                bias_initializer=tf.constant_initializer(0.),
                                 bias_regularizer=regularizers.l2(1e-4),
                                 activity_regularizer=regularizers.l2(1e-5))(x6)
     if activation == 'mish':
