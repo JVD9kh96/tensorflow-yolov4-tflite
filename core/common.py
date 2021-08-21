@@ -155,16 +155,19 @@ def kai_attention(key,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
+                                 use_bias = False,
                                  kernel_regularizer=ws_reg)(key)
     value = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
+                                 use_bias = False,
                                  kernel_regularizer=ws_reg)(value)
     query = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
+                                 use_bias = False,
                                  kernel_regularizer=ws_reg)(query)
     shape = getattr(value, 'shape')
     dk = tf.cast(shape[1]*shape[2], tf.float32)
@@ -191,7 +194,7 @@ def kai_attention(key,
     attention = tf.einsum('aijb,ajkb->aikb', qk, value)
     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
                                         kernel_regularizer=ws_reg,
-                                        bias_regularizer=regularizers.l2(1e-4),
+                                        use_bias = False,
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
     if activation == 'mish':
         attention = mish(attention)
@@ -213,6 +216,7 @@ def transformer_block(inp,
     inp = tf.keras.layers.Conv2D(filters = out_filt,
                                  kernel_size = kernel_size,
                                  strides = (1, 1),
+                                 use_bias = False,
                                  padding='same')(inp)
     if activation == 'mish':
         inp = mish(inp)
@@ -247,7 +251,8 @@ def transformer_block(inp,
     x5 = tf.keras.layers.Conv2D(filters = out_filt//2,
                                 kernel_size=(1, 1),
                                 strides=(1, 1),
-                                padding = 'same', 
+                                padding = 'same',
+                                use_bias = False,
                                 kernel_regularizer=ws_reg)(x4)
     if activation == 'mish':
         x6 = mish(x5)
@@ -261,6 +266,7 @@ def transformer_block(inp,
                                 kernel_size=kernel_size,
                                 strides=(1, 1),
                                 padding = 'same',
+                                use_bias = False,
                                 kernel_regularizer=ws_reg,
                                 bias_regularizer=regularizers.l2(1e-4),
                                 activity_regularizer=regularizers.l2(1e-5))(x6)
