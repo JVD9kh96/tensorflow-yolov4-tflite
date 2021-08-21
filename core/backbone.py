@@ -924,7 +924,7 @@ def cspdarkerattnet53(input_data,
                                           kernel_size = 3,
                                           normalization = normalization)
 
-    input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish"
+    input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
     input_data = common.convolutional(input_data, (1, 1, 128, 128), activate_type="mish")
