@@ -893,7 +893,7 @@ def cspdarkerattnet53(input_data,
                    activation = 'mish',
                    normalization = 'group'):
 
-
+    print(attention_axes)
     input_data = common.convolutional(input_data, (3, 3,  3,  32), activate_type="mish")
     input_data = common.convolutional(input_data, (3, 3, 32,  64), downsample=True, activate_type="mish")
 
