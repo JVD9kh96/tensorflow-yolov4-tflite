@@ -364,7 +364,8 @@ def YOLOv4_att_v2(input_layer,
 def YOLOv4_att_v3(input_layer,
                   NUM_CLASS,
                   activation = 'mish',
-                  normal = 2):
+                  normal = 2,
+                  attention_axes = [1, 2]):
     if normal > 2:
         normal = normal - 3
     if normal == 0:
@@ -375,7 +376,7 @@ def YOLOv4_att_v3(input_layer,
         normal = 'layer'
 
     route_1, route_2, conv = backbone.darkernet53(input_layer, 
-                                                          attention_axes = [1, 2],
+                                                          attention_axes = attention_axes,
                                                           activation=activation,
                                                           normalization = normal)
 
@@ -438,7 +439,8 @@ def YOLOv4_att_v3(input_layer,
 def YOLOv4_att_v4(input_layer,
                   NUM_CLASS,
                   activation = 'mish',
-                  normal = 2):
+                  normal = 2,
+                  attention_axes = [1, 2]):
     if normal > 2:
         normal = normal - 3
     if normal == 0:
@@ -449,7 +451,7 @@ def YOLOv4_att_v4(input_layer,
         normal = 'layer'
 
     route_1, route_2, conv = backbone.cspdarkerattnet53(input_layer, 
-                                                          attention_axes = [1, 2], 
+                                                          attention_axes = attention_axes, 
                                                           activation=activation,
                                                           normalization = normal)
 
