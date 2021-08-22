@@ -44,10 +44,9 @@ def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'ge
         elif model == 'yolov4_att_v2':
             return YOLOv4_att_v2(input_layer, NUM_CLASS, activation=activation, normal = normal)
         elif model == 'yolov4_att_v3':
-            return YOLOv4_att_v3(input_layer, NUM_CLASS, activation=activation, attention_axess = axes, normal = normal)
+            return YOLOv4_att_v3(input_layer, NUM_CLASS, activation=activation, attention_axes = axes, normal = normal)
         elif model == 'yolov4_att_v4':
-            print(axes)
-            return YOLOv4_att_v4(input_layer, NUM_CLASS, activation=activation, attention_axess = axes, normal = normal)
+            return YOLOv4_att_v4(input_layer, NUM_CLASS, activation=activation, attention_axes = axes, normal = normal)
 
 
 def YOLOv3(input_layer, NUM_CLASS):
@@ -441,7 +440,7 @@ def YOLOv4_att_v4(input_layer,
                   NUM_CLASS,
                   activation = 'mish',
                   normal = 2,
-                  attention_axess = [1, 2]):
+                  attention_axes = [1, 2]):
     if normal > 2:
         normal = normal - 3
     if normal == 0:
@@ -450,9 +449,9 @@ def YOLOv4_att_v4(input_layer,
         normal = 'group'
     elif normal == 2:
         normal = 'layer'
-    print(attention_axess)
+
     route_1, route_2, conv = backbone.cspdarkerattnet53(input_layer, 
-                                                          attention_axes = attention_axess, 
+                                                          attention_axes = attention_axes, 
                                                           activation=activation,
                                                           normalization = normal)
 
