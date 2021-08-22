@@ -14,7 +14,7 @@ from core.config import cfg
 # XYSCALE = cfg.YOLO.XYSCALE
 # ANCHORS = utils.get_anchors(cfg.YOLO.ANCHORS)
 
-def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4], spp=0, normal=0):
+def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4], spp=0, normal=0, axes = [1, 2]):
     if is_tiny:
         if model == 'yolov4':
             return YOLOv4_tiny(input_layer, NUM_CLASS)
@@ -44,9 +44,9 @@ def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'ge
         elif model == 'yolov4_att_v2':
             return YOLOv4_att_v2(input_layer, NUM_CLASS, activation=activation, normal = normal)
         elif model == 'yolov4_att_v3':
-            return YOLOv4_att_v3(input_layer, NUM_CLASS, activation=activation, normal = normal)
+            return YOLOv4_att_v3(input_layer, NUM_CLASS, activation=activation, attention_axes = axes, normal = normal)
         elif model == 'yolov4_att_v4':
-            return YOLOv4_att_v4(input_layer, NUM_CLASS, activation=activation, normal = normal)
+            return YOLOv4_att_v4(input_layer, NUM_CLASS, activation=activation, attention_axes = axes, normal = normal)
 
 
 def YOLOv3(input_layer, NUM_CLASS):
