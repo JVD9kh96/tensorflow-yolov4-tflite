@@ -174,7 +174,7 @@ def main(_argv):
                                                                 giou_loss_av/(image_shape[0]//mini_batch_size), conf_loss_av/(image_shape[0]//mini_batch_size),
                                                                 prob_loss_av/(image_shape[0]//mini_batch_size), total_loss_av/(image_shape[0]//mini_batch_size)))
         
-            print('****************************************************************************************************')
+            #print('****************************************************************************************************')
             
             # update learning rate
             global_steps.assign_add(1)
