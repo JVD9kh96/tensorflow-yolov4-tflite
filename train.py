@@ -161,10 +161,10 @@ def main(_argv):
                   conf_loss_av = conf_loss_av + conf_loss
                   prob_loss_av = prob_loss_av + prob_loss
 
-                  tf.print("=> MINI_STEP %4d/%4d  giou_loss: %4.2f   conf_loss: %4.2f   "
-                      "prob_loss: %4.2f   total_loss: %4.2f" % (batch_size, image_shape[0]//mini_batch_size,
-                                                                giou_loss, conf_loss,
-                                                                prob_loss, total_loss))
+#                   tf.print("=> MINI_STEP %4d/%4d  giou_loss: %4.2f   conf_loss: %4.2f   "
+#                       "prob_loss: %4.2f   total_loss: %4.2f" % (batch_size, image_shape[0]//mini_batch_size,
+#                                                                 giou_loss, conf_loss,
+#                                                                 prob_loss, total_loss))
         
 
 
