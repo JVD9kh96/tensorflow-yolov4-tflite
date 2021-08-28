@@ -285,7 +285,7 @@ class Dataset(object):
         self.jitter = JITTER 
         if self.mosaic_augmentation:
             self.data_aug = False
-
+        self.counter = 0
     def load_annotations(self):
         with open(self.annot_path, "r") as f:
             txt = f.readlines()
@@ -329,8 +329,21 @@ class Dataset(object):
     def __next__(self):
         with tf.device("/cpu:0"):
             # self.train_input_size = random.choice(self.train_input_sizes)
-            self.train_input_size = cfg.TRAIN.INPUT_SIZE
-            self.train_output_sizes = self.train_input_size // self.strides
+            self.counter +=1
+            if self.counter % 10 == 0:
+                self.train_input_size = random.choice([320, 352, 384, 448])
+                print('Resolution changed to: ', self.train_input_size)
+                self.train_output_sizes = self.train_input_size // self.strides
+            elif self.counter % 10 == 1:
+                self.train_input_size = self.train_input_size
+                self.train_output_sizes = self.train_output_sizes
+            elif self.counter % 10 == 2:
+                self.train_input_size = cfg.TRAIN.INPUT_SIZE
+                print('Resolution changed to: ', self.train_input_size)
+                self.train_output_sizes = self.train_input_size // self.strides
+            else:
+                self.train_input_size = cfg.TRAIN.INPUT_SIZE
+                self.train_output_sizes = self.train_input_size // self.strides
 
             batch_image = np.zeros(
                 (
