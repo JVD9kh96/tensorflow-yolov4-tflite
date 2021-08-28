@@ -985,12 +985,12 @@ def decode(conv_output, output_size, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE=[1,
 
 def decode_train(conv_output, output_size, NUM_CLASS, STRIDES, ANCHORS, i=0, XYSCALE=[1, 1, 1]):
     conv_output = tf.reshape(conv_output,
-                             (tf.shape(conv_output)[0], output_size, output_size, 3, 5 + NUM_CLASS))
+                             (tf.shape(conv_output)[0], tf.shape(conv_output)[1], tf.shape(conv_output)[2], 3, 5 + NUM_CLASS))
 
     conv_raw_dxdy, conv_raw_dwdh, conv_raw_conf, conv_raw_prob = tf.split(conv_output, (2, 2, 1, NUM_CLASS),
                                                                           axis=-1)
 
-    xy_grid = tf.meshgrid(tf.range(output_size), tf.range(output_size))
+    xy_grid = tf.meshgrid(tf.range(tf.shape(conv_output)[1]), tf.range(tf.shape(conv_output)[2]))
     xy_grid = tf.expand_dims(tf.stack(xy_grid, axis=-1), axis=2)  # [gx, gy, 1, 2]
     xy_grid = tf.tile(tf.expand_dims(xy_grid, axis=0), [tf.shape(conv_output)[0], 1, 1, 3, 1])
 
