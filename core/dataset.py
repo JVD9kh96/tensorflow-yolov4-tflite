@@ -329,7 +329,7 @@ class Dataset(object):
     def __next__(self):
         with tf.device("/cpu:0"):
             # self.train_input_size = random.choice(self.train_input_sizes)
-            self.counter +=1
+            
             if self.counter % 10 == 0:
                 self.train_input_size = random.choice([320, 352, 384, 448])
                 print('Resolution changed to: ', self.train_input_size)
@@ -344,7 +344,7 @@ class Dataset(object):
             else:
                 self.train_input_size = cfg.TRAIN.INPUT_SIZE
                 self.train_output_sizes = self.train_input_size // self.strides
-
+            self.counter += 1
             batch_image = np.zeros(
                 (
                     self.batch_size,
