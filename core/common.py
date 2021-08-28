@@ -176,7 +176,7 @@ def kai_attention(key,
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
 #     shape = getattr(value, 'shape')
     
-    dk = tf.cast(tf.shape(value)[1]*tf.shape(value)[2]), tf.float32)
+    dk = tf.cast(tf.shape(value)[1]*tf.shape(value)[2], tf.float32)
     qk = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
 
     if axis == 1:
