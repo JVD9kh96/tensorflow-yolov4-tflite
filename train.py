@@ -44,6 +44,7 @@ def main(_argv):
     steps_per_epoch = len(trainset)
     first_stage_epochs = cfg.TRAIN.FISRT_STAGE_EPOCHS
     second_stage_epochs = cfg.TRAIN.SECOND_STAGE_EPOCHS
+    nan_counter = tf.Variable(0, trainable=False, dtype=tf.int64)
     global_steps = tf.Variable(FLAGS.init_step, trainable=False, dtype=tf.int64)
     warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
     total_steps = (first_stage_epochs + second_stage_epochs) * steps_per_epoch
