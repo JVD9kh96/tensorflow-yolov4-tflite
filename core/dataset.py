@@ -331,7 +331,7 @@ class Dataset(object):
             # self.train_input_size = random.choice(self.train_input_sizes)
             
             if self.counter % 10 == 0:
-                self.train_input_size = random.choice([320, 352, 384, 448])
+                self.train_input_size = random.choice([320, 352, 384, 416])
                 print('Resolution changed to: ', self.train_input_size)
                 self.train_output_sizes = self.train_input_size // self.strides
             elif self.counter % 10 == 1:
