@@ -44,13 +44,12 @@ def main(_argv):
     steps_per_epoch = len(trainset)
     first_stage_epochs = cfg.TRAIN.FISRT_STAGE_EPOCHS
     second_stage_epochs = cfg.TRAIN.SECOND_STAGE_EPOCHS
-    nan_counter = tf.Variable(0, trainable=False, dtype=tf.int64)
     global_steps = tf.Variable(FLAGS.init_step, trainable=False, dtype=tf.int64)
     warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
     total_steps = (first_stage_epochs + second_stage_epochs) * steps_per_epoch
     # train_steps = (first_stage_epochs + second_stage_epochs) * steps_per_period
 
-    input_layer = tf.keras.layers.Input([None, None, 3])
+    input_layer = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
     IOU_LOSS_THRESH = cfg.YOLO.IOU_LOSS_THRESH
     weight_decay = 0.0005
@@ -117,7 +116,6 @@ def main(_argv):
     # @tf.function
     def train_step(image_data, target):
         with tf.GradientTape() as tape:
-            nan_flg = 0
             pred_result = model(image_data, training=True)
             giou_loss = conf_loss = prob_loss = 0
 
@@ -130,46 +128,35 @@ def main(_argv):
                 prob_loss += loss_items[2]
 
             total_loss = giou_loss + conf_loss + prob_loss
-            try:
-                tf.debugging.check_numerics( total_loss, 'checking for nan')
-                nan_flg = 1
-            except Exception as e:
-                nan_flg = 2
-                nan_counter.assign_add(1)
-                if nan_counter > 10:
-                    assert "Checking loss : Tensor had Inf values" in e.message
-            if nan_flg == 1:
-                gradients = tape.gradient(total_loss, model.trainable_variables)
-                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-                tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
-                         "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
-                                                                   giou_loss, conf_loss,
-                                                                   prob_loss, total_loss))
-                # update learning rate
-                global_steps.assign_add(1)
-                if global_steps < warmup_steps:
-                   lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
-                else:
-                   lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
-                       (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
-                   )
-                optimizer.lr.assign(lr.numpy())
-    #             if global_steps.numpy() > 0.8 * total_steps and global_steps.numpy() < 0.9 * total_steps:
-    #                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/10.0)
-    #             elif global_steps.numpy() > 0.9 * total_steps:
-    #                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/100.0)
-
-
-                # writing summary data
-                with writer.as_default():
-                    tf.summary.scalar("train/lr", optimizer.lr, step=global_steps)
-                    tf.summary.scalar("train/loss/total_loss", total_loss, step=global_steps)
-                    tf.summary.scalar("train/loss/giou_loss", giou_loss, step=global_steps)
-                    tf.summary.scalar("train/loss/conf_loss", conf_loss, step=global_steps)
-                    tf.summary.scalar("train/loss/prob_loss", prob_loss, step=global_steps)
-                writer.flush()
+            gradients = tape.gradient(total_loss, model.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+            tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
+                     "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
+                                                               giou_loss, conf_loss,
+                                                               prob_loss, total_loss))
+            # update learning rate
+            global_steps.assign_add(1)
+            if global_steps < warmup_steps:
+               lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
             else:
-                pass
+               lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
+                   (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
+               )
+            optimizer.lr.assign(lr.numpy())
+#             if global_steps.numpy() > 0.8 * total_steps and global_steps.numpy() < 0.9 * total_steps:
+#                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/10.0)
+#             elif global_steps.numpy() > 0.9 * total_steps:
+#                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/100.0)
+
+
+            # writing summary data
+            with writer.as_default():
+                tf.summary.scalar("train/lr", optimizer.lr, step=global_steps)
+                tf.summary.scalar("train/loss/total_loss", total_loss, step=global_steps)
+                tf.summary.scalar("train/loss/giou_loss", giou_loss, step=global_steps)
+                tf.summary.scalar("train/loss/conf_loss", conf_loss, step=global_steps)
+                tf.summary.scalar("train/loss/prob_loss", prob_loss, step=global_steps)
+            writer.flush()
     def test_step(image_data, target):
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
