@@ -330,8 +330,6 @@ class Dataset(object):
             bbox_coor = bbox[:4]
             bbox_class_ind = bbox[4]
             
-            print(bbox_class_ind)
-            
             onehot = tf.zeros(self.num_classes, dtype=tf.float64)
             
             onehot[bbox_class_ind] = 1.0
