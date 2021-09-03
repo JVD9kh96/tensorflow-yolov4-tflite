@@ -231,10 +231,10 @@ class Dataset(object):
 
             image = image[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
 
-            bboxes[:, 0] = bboxes[:, 0] - crop_xmin
-            bboxes[:, 2] = bboxes[:, 2] - crop_xmin
-            bboxes[:, 1] = bboxes[:, 1] - crop_ymin
-            bboxes[:, 3] = bboxes[:, 3] - crop_ymin
+            bboxes[:, 0].assign(bboxes[:, 0] - crop_xmin)
+            bboxes[:, 2].assign(bboxes[:, 2] - crop_xmin)
+            bboxes[:, 1].assign(bboxes[:, 1] - crop_ymin)
+            bboxes[:, 3].assign(bboxes[:, 3] - crop_ymin)
 
         return image, bboxes
 
@@ -264,8 +264,10 @@ class Dataset(object):
                     channel_axis=2, fill_mode='constant', cval=0.0, order=1
             )
 
-            bboxes[:, [0, 2]] = bboxes[:, [0, 2]] + tx
-            bboxes[:, [1, 3]] = bboxes[:, [1, 3]] + ty
+            bboxes[:, 0].assign(bboxes[:, 0] + tx)
+            bboxes[:, 2].assign(bboxes[:, 2] + tx)
+            bboxes[:, 1].assign(bboxes[:, 1] + ty)
+            bboxes[:, 3].assign(bboxes[:, 3] + ty)
 
         return image, bboxes
 
