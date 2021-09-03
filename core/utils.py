@@ -109,11 +109,11 @@ def image_preprocess(image, target_size, gt_boxes=None):
 
     scale = min(iw/w, ih/h)
     nw, nh  = int(scale * w), int(scale * h)
-    image_resized = cv2.resize(image, (nw, nh))
+    image_resized = tf.image.resize(image, (nw, nh))
 
-    image_paded = np.full(shape=[ih, iw, 3], fill_value=128.0)
+    image_paded = tf.Variable(tf.fill([ih, iw, 3], 128.0))
     dw, dh = (iw - nw) // 2, (ih-nh) // 2
-    image_paded[dh:nh+dh, dw:nw+dw, :] = image_resized
+    image_paded[dh:nh+dh, dw:nw+dw, :].assign(image_resized)
     image_paded = image_paded / 255.
 
     if gt_boxes is None:
