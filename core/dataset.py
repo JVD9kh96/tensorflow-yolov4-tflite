@@ -302,8 +302,7 @@ class Dataset(object):
         bboxes_xywh = [np.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)]
         bbox_count = np.zeros((3,))
 
-        for i in range(bboxes.shape[0]):
-            bbox = bboxes[i]
+        for bbox in bboxes:
             bbox_coor = bbox[:4]
             bbox_class_ind = bbox[4]
 
