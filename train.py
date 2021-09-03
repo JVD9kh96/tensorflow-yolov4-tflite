@@ -177,13 +177,12 @@ def main(_argv):
                 tf.summary.scalar("train/loss/conf_loss", conf_loss, step=global_steps)
                 tf.summary.scalar("train/loss/prob_loss", prob_loss, step=global_steps)
             writer.flush()
-        return total_loss 
+        return total_loss, giou_loss, conf_loss, prob_loss
 
     @tf.function
     def distributed_train_step(dataset_inputs):
-        per_replica_losses = strategy.run(train_step, args=(dataset_inputs,))
-        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
-                                axis=None)
+        per_replica_losses, giou_loss, conf_loss, prob_loss = strategy.run(train_step, args=(dataset_inputs,))
+        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, giou_loss, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, conf_loss, axis=None), strategy.reduce(tf.distribute.ReduceOp.SUM, prob_loss, axis=None)
     def test_step(image_data, target):
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
@@ -228,8 +227,8 @@ def main(_argv):
                 flg = True
                 break
             # train_step(image_data, target)
-            loss = distributed_train_step([image_data, target])
-            print("Loss!:", loss)
+            loss, giou_loss, conf_loss, prob_loss = distributed_train_step([image_data, target])
+            print("total_loss:", loss, "giou_loss:", giou_loss, "conf_loss:", conf_loss,"prob_loss:", prob_loss)
             if i % 1000 == 0 :
                 #model.save(FLAGS.model_path)
                 model.save_weights(FLAGS.model_path + 'ModelWeights')
