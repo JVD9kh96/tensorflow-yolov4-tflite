@@ -95,6 +95,7 @@ class Dataset(object):
                 ),
                 dtype=tf.dtypes.float32,
             )
+            batch_image = tf.Variable(batch_image)
 
             batch_label_sbbox = tf.zeros(
                 (
@@ -106,6 +107,8 @@ class Dataset(object):
                 ),
                 dtype=tf.dtypes.float32,
             )
+            batch_label_sbbox = tf.Variable(batch_label_sbbox)
+            
             batch_label_mbbox = tf.zeros(
                 (
                     self.batch_size,
@@ -116,6 +119,8 @@ class Dataset(object):
                 ),
                 dtype=tf.dtypes.float32,
             )
+            batch_label_mbbox = tf.Variable(batch_label_mbbox)
+            
             batch_label_lbbox = tf.zeros(
                 (
                     self.batch_size,
@@ -126,17 +131,23 @@ class Dataset(object):
                 ),
                 dtype=tf.dtypes.float32,
             )
+            batch_label_lbbox = tf.Variable(batch_label_lbbox)
 
             batch_sbboxes = tf.zeros(
                 (self.batch_size, self.max_bbox_per_scale, 4), dtype=tf.dtypes.float32
             )
+            batch_sbboxes = tf.Variable(batch_sbboxes)
+            
             batch_mbboxes = tf.zeros(
                 (self.batch_size, self.max_bbox_per_scale, 4), dtype=tf.dtypes.float32
             )
+            batch_mbboxes = tf.Variable(batch_mbboxes)
+            
             batch_lbboxes = tf.zeros(
                 (self.batch_size, self.max_bbox_per_scale, 4), dtype=tf.dtypes.float32
             )
-
+            batch_lbboxes = tf.Variable(batch_lbboxes)
+            
             num = 0
             if self.batch_count < self.num_batchs:
                 while num < self.batch_size:
@@ -184,8 +195,8 @@ class Dataset(object):
         if random.random() < 0.5:
             _, w, _ = image.shape
             image = image[:, ::-1, :]
-            bboxes[:, 0] = w - bboxes[:, 2]
-            bboxes[:, 2] = w - bboxes[:, 0]
+            bboxes[:, 0].assign(w - bboxes[:, 2])
+            bboxes[:, 2].assign(w - bboxes[:, 0])
 
         return image, bboxes
 
