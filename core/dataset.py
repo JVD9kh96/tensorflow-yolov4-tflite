@@ -280,12 +280,14 @@ class Dataset(object):
         image = tf.io.decode_jpeg(tf.io.read_file(image_path))
         if self.dataset_type == "converted_coco":
             bboxes = tf.constant(
-                [list(map(int, box.split(","))) for box in line[1:]]
+                [list(map(int, box.split(","))) for box in line[1:]],
+                dtype=tf.float64
             )
         elif self.dataset_type == "yolo":
             height, width, _ = image.shape
             bboxes = tf.constant(
-                [list(map(float, box.split(","))) for box in line[1:]]
+                [list(map(float, box.split(","))) for box in line[1:]],
+                dtype=tf.float64
             )
             bboxes = bboxes * tf.constant([width, height, width, height, 1], dtype=tf.int64)
 
