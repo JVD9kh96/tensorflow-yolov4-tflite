@@ -4,9 +4,9 @@ import os
 import shutil
 import tensorflow as tf
 import time
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-if len(physical_devices) > 0:
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+# physical_devices = tf.config.experimental.list_physical_devices('GPU')
+# if len(physical_devices) > 0:
+#     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 strategy = tf.distribute.MirroredStrategy()
 
 import tensorflow_addons as tfa
@@ -129,9 +129,8 @@ def main(_argv):
                 loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
                 giou_loss += tf.cast(loss_items[0], dtype = tf.float32)
                 conf_loss += tf.cast(loss_items[1], dtype = tf.float32)
-                prob_loss += tf.cast(loss_items[2], tf.float32)
+                prob_loss += tf.cast(loss_items[2], dtype = tf.float32)
             total_loss = giou_loss + conf_loss + prob_loss
-            print("heyyy!" , total_loss, type(total_loss))
             total_loss = tf.cast(tf.reshape(total_loss, (1, 1)), dtype = tf.float32)
             giou_loss  = tf.cast(tf.reshape(giou_loss, (1, 1)), dtype = tf.float32)
             conf_loss  = tf.cast(tf.reshape(conf_loss, (1, 1)), dtype = tf.float32)
@@ -158,9 +157,9 @@ def main(_argv):
             # print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
             #             "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr,
             #                                                     giou_loss, conf_loss,
-                                                                # prob_loss, total_loss))
-                # update learning rate
-            print("LOSSSSSS!: ", total_loss)
+            #                                                     prob_loss, total_loss))
+            #     # update learning rate
+            # print("LOSSSSSS!: ", total_loss)
             global_steps.assign_add(1)
             if global_steps < warmup_steps:
                 lr = tf.cast(global_steps / warmup_steps * cfg.TRAIN.LR_INIT, dtype = tf.float32)
@@ -171,13 +170,13 @@ def main(_argv):
             optimizer.lr.assign(tf.cast(lr, tf.float32))
 
                 # writing summary data
-            # with writer.as_default():
-            #     tf.summary.scalar("train/lr", optimizer.lr, step=global_steps)
-            #     tf.summary.scalar("train/loss/total_loss", total_loss, step=global_steps)
-            #     tf.summary.scalar("train/loss/giou_loss", giou_loss, step=global_steps)
-            #     tf.summary.scalar("train/loss/conf_loss", conf_loss, step=global_steps)
-            #     tf.summary.scalar("train/loss/prob_loss", prob_loss, step=global_steps)
-            # writer.flush()
+            with writer.as_default():
+                tf.summary.scalar("train/lr", optimizer.lr, step=global_steps)
+                tf.summary.scalar("train/loss/total_loss", total_loss, step=global_steps)
+                tf.summary.scalar("train/loss/giou_loss", giou_loss, step=global_steps)
+                tf.summary.scalar("train/loss/conf_loss", conf_loss, step=global_steps)
+                tf.summary.scalar("train/loss/prob_loss", prob_loss, step=global_steps)
+            writer.flush()
         return total_loss 
 
     @tf.function
@@ -229,7 +228,8 @@ def main(_argv):
                 flg = True
                 break
             # train_step(image_data, target)
-            _ = distributed_train_step([image_data, target])
+            loss = distributed_train_step([image_data, target])
+            print("Loss!:", loss)
             if i % 1000 == 0 :
                 #model.save(FLAGS.model_path)
                 model.save_weights(FLAGS.model_path + 'ModelWeights')
