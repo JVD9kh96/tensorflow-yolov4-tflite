@@ -37,7 +37,7 @@ class Dataset(object):
 
         self.annotations = self.load_annotations()
         self.num_samples = len(self.annotations)
-        self.num_batchs = int(np.ceil(self.num_samples / self.batch_size))
+        self.num_batchs = int(tf.math.ceil(self.num_samples / self.batch_size))
         self.batch_count = 0
 
     def load_annotations(self):
@@ -74,7 +74,7 @@ class Dataset(object):
                             )
                         annotations.append(image_path + string)
 
-        np.random.shuffle(annotations)
+        tf.random.shuffle(annotations)
         return annotations
 
     def __iter__(self):
@@ -86,17 +86,17 @@ class Dataset(object):
             self.train_input_size = cfg.TRAIN.INPUT_SIZE
             self.train_output_sizes = self.train_input_size // self.strides
 
-            batch_image = np.zeros(
+            batch_image = tf.zeros(
                 (
                     self.batch_size,
                     self.train_input_size,
                     self.train_input_size,
                     3,
                 ),
-                dtype=np.float32,
+                dtype=tf.dtypes.float32,
             )
 
-            batch_label_sbbox = np.zeros(
+            batch_label_sbbox = tf.zeros(
                 (
                     self.batch_size,
                     self.train_output_sizes[0],
@@ -104,9 +104,9 @@ class Dataset(object):
                     self.anchor_per_scale,
                     5 + self.num_classes,
                 ),
-                dtype=np.float32,
+                dtype=tf.dtypes.float32,
             )
-            batch_label_mbbox = np.zeros(
+            batch_label_mbbox = tf.zeros(
                 (
                     self.batch_size,
                     self.train_output_sizes[1],
@@ -114,9 +114,9 @@ class Dataset(object):
                     self.anchor_per_scale,
                     5 + self.num_classes,
                 ),
-                dtype=np.float32,
+                dtype=tf.dtypes.float32,
             )
-            batch_label_lbbox = np.zeros(
+            batch_label_lbbox = tf.zeros(
                 (
                     self.batch_size,
                     self.train_output_sizes[2],
@@ -124,17 +124,17 @@ class Dataset(object):
                     self.anchor_per_scale,
                     5 + self.num_classes,
                 ),
-                dtype=np.float32,
+                dtype=tf.dtypes.float32,
             )
 
-            batch_sbboxes = np.zeros(
-                (self.batch_size, self.max_bbox_per_scale, 4), dtype=np.float32
+            batch_sbboxes = tf.zeros(
+                (self.batch_size, self.max_bbox_per_scale, 4), dtype=tf.dtypes.float32
             )
-            batch_mbboxes = np.zeros(
-                (self.batch_size, self.max_bbox_per_scale, 4), dtype=np.float32
+            batch_mbboxes = tf.zeros(
+                (self.batch_size, self.max_bbox_per_scale, 4), dtype=tf.dtypes.float32
             )
-            batch_lbboxes = np.zeros(
-                (self.batch_size, self.max_bbox_per_scale, 4), dtype=np.float32
+            batch_lbboxes = tf.zeros(
+                (self.batch_size, self.max_bbox_per_scale, 4), dtype=tf.dtypes.float32
             )
 
             num = 0
@@ -177,7 +177,7 @@ class Dataset(object):
                 )
             else:
                 self.batch_count = 0
-                np.random.shuffle(self.annotations)
+                tf.random.shuffle(self.annotations)
                 raise StopIteration
 
     def random_horizontal_flip(self, image, bboxes):
@@ -191,10 +191,10 @@ class Dataset(object):
     def random_crop(self, image, bboxes):
         if random.random() < 0.5:
             h, w, _ = image.shape
-            max_bbox = np.concatenate(
+            max_bbox = tf.concat(
                 [
-                    np.min(bboxes[:, 0:2], axis=0),
-                    np.max(bboxes[:, 2:4], axis=0),
+                    tf.math.minimum(bboxes[:, 0:2]),
+                    tf.math.maximum(bboxes[:, 2:4]),
                 ],
                 axis=-1,
             )
@@ -227,10 +227,10 @@ class Dataset(object):
     def random_translate(self, image, bboxes):
         if random.random() < 0.5:
             h, w, _ = image.shape
-            max_bbox = np.concatenate(
+            max_bbox = tf.concat(
                 [
-                    np.min(bboxes[:, 0:2], axis=0),
-                    np.max(bboxes[:, 2:4], axis=0),
+                    tf.math.minimum(bboxes[:, 0:2]),
+                    tf.math.maximum(bboxes[:, 2:4]),
                 ],
                 axis=-1,
             )
@@ -243,7 +243,7 @@ class Dataset(object):
             tx = random.uniform(-(max_l_trans - 1), (max_r_trans - 1))
             ty = random.uniform(-(max_u_trans - 1), (max_d_trans - 1))
 
-            M = np.array([[1, 0, tx], [0, 1, ty]])
+            M = tf.constant([[1, 0, tx], [0, 1, ty]])
             image = cv2.warpAffine(image, M, (w, h))
 
             bboxes[:, [0, 2]] = bboxes[:, [0, 2]] + tx
@@ -258,38 +258,37 @@ class Dataset(object):
             raise KeyError("%s does not exist ... " % image_path)
         image = cv2.imread(image_path)
         if self.dataset_type == "converted_coco":
-            bboxes = np.array(
+            bboxes = tf.constant(
                 [list(map(int, box.split(","))) for box in line[1:]]
             )
         elif self.dataset_type == "yolo":
             height, width, _ = image.shape
-            bboxes = np.array(
+            bboxes = tf.constant(
                 [list(map(float, box.split(","))) for box in line[1:]]
             )
-            bboxes = bboxes * np.array([width, height, width, height, 1])
-            bboxes = bboxes.astype(np.int64)
+            bboxes = bboxes * tf.constant([width, height, width, height, 1], dtype=tf.int64)
 
         if self.data_aug:
             image, bboxes = self.random_horizontal_flip(
-                np.copy(image), np.copy(bboxes)
+                tf.identity(image), tf.identity(bboxes)
             )
-            image, bboxes = self.random_crop(np.copy(image), np.copy(bboxes))
+            image, bboxes = self.random_crop(tf.identity(image), tf.identity(bboxes))
             image, bboxes = self.random_translate(
-                np.copy(image), np.copy(bboxes)
+                tf.identity(image), tf.identity(bboxes)
             )
 
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image, bboxes = utils.image_preprocess(
-            np.copy(image),
+            tf.identity(image),
             [self.train_input_size, self.train_input_size],
-            np.copy(bboxes),
+            tf.identity(bboxes),
         )
         return image, bboxes
 
 
     def preprocess_true_boxes(self, bboxes):
         label = [
-            np.zeros(
+            tf.zeros(
                 (
                     self.train_output_sizes[i],
                     self.train_output_sizes[i],
@@ -299,22 +298,22 @@ class Dataset(object):
             )
             for i in range(3)
         ]
-        bboxes_xywh = [np.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)]
-        bbox_count = np.zeros((3,))
+        bboxes_xywh = [tf.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)]
+        bbox_count = tf.zeros((3,))
 
         for bbox in bboxes:
             bbox_coor = bbox[:4]
             bbox_class_ind = bbox[4]
 
-            onehot = np.zeros(self.num_classes, dtype=np.float)
+            onehot = tf.zeros(self.num_classes, dtype=tf.float64)
             onehot[bbox_class_ind] = 1.0
-            uniform_distribution = np.full(
+            uniform_distribution = tf.fill(
                 self.num_classes, 1.0 / self.num_classes
             )
             deta = 0.01
             smooth_onehot = onehot * (1 - deta) + deta * uniform_distribution
 
-            bbox_xywh = np.concatenate(
+            bbox_xywh = tf.concat(
                 [
                     (bbox_coor[2:] + bbox_coor[:2]) * 0.5,
                     bbox_coor[2:] - bbox_coor[:2],
@@ -322,27 +321,27 @@ class Dataset(object):
                 axis=-1,
             )
             bbox_xywh_scaled = (
-                1.0 * bbox_xywh[np.newaxis, :] / self.strides[:, np.newaxis]
+                1.0 * bbox_xywh[tf.newaxis, :] / self.strides[:, tf.newaxis]
             )
 
             iou = []
             exist_positive = False
             for i in range(3):
-                anchors_xywh = np.zeros((self.anchor_per_scale, 4))
+                anchors_xywh = tf.zeros((self.anchor_per_scale, 4))
                 anchors_xywh[:, 0:2] = (
-                    np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32) + 0.5
+                    tf.math.floor(bbox_xywh_scaled[i, 0:2]).astype(tf.int32) + 0.5
                 )
                 anchors_xywh[:, 2:4] = self.anchors[i]
 
                 iou_scale = utils.bbox_iou(
-                    bbox_xywh_scaled[i][np.newaxis, :], anchors_xywh
+                    bbox_xywh_scaled[i][tf.newaxis, :], anchors_xywh
                 )
                 iou.append(iou_scale)
                 iou_mask = iou_scale > 0.3
 
-                if np.any(iou_mask):
-                    xind, yind = np.floor(bbox_xywh_scaled[i, 0:2]).astype(
-                        np.int32
+                if tf.math.reduce_any(iou_mask):
+                    xind, yind = tf.math.floor(bbox_xywh_scaled[i, 0:2]).astype(
+                        tf.int32
                     )
 
                     label[i][yind, xind, iou_mask, :] = 0
@@ -357,12 +356,12 @@ class Dataset(object):
                     exist_positive = True
 
             if not exist_positive:
-                best_anchor_ind = np.argmax(np.array(iou).reshape(-1), axis=-1)
+                best_anchor_ind = tf.math.argmax(tf.constant(iou).reshape(-1), axis=-1)
                 best_detect = int(best_anchor_ind / self.anchor_per_scale)
                 best_anchor = int(best_anchor_ind % self.anchor_per_scale)
-                xind, yind = np.floor(
+                xind, yind = tf.math.floor(
                     bbox_xywh_scaled[best_detect, 0:2]
-                ).astype(np.int32)
+                ).astype(tf.int32)
 
                 label[best_detect][yind, xind, best_anchor, :] = 0
                 label[best_detect][yind, xind, best_anchor, 0:4] = bbox_xywh
