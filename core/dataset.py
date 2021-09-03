@@ -194,8 +194,8 @@ class Dataset(object):
             h, w, _ = image.shape
             max_bbox = tf.concat(
                 [
-                    tf.math.minimum(bboxes[:, 0:2]),
-                    tf.math.maximum(bboxes[:, 2:4]),
+                    tf.math.reduce_min(bboxes[:, 0:2]),
+                    tf.math.reduce_min(bboxes[:, 2:4]),
                 ],
                 axis=-1,
             )
@@ -230,8 +230,8 @@ class Dataset(object):
             h, w, _ = image.shape
             max_bbox = tf.concat(
                 [
-                    tf.math.minimum(bboxes[:, 0:2]),
-                    tf.math.maximum(bboxes[:, 2:4]),
+                    tf.math.reduce_min(bboxes[:, 0:2]),
+                    tf.math.reduce_min(bboxes[:, 2:4]),
                 ],
                 axis=-1,
             )
