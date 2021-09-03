@@ -120,8 +120,10 @@ def image_preprocess(image, target_size, gt_boxes=None):
         return image_paded
 
     else:
-        gt_boxes[:, [0, 2]] = gt_boxes[:, [0, 2]] * scale + dw
-        gt_boxes[:, [1, 3]] = gt_boxes[:, [1, 3]] * scale + dh
+        gt_boxes[:, 0].assign(gt_boxes[:, 0] * scale + dw)
+        gt_boxes[:, 2].assign(gt_boxes[:, 2] * scale + dw)
+        gt_boxes[:, 1].assign(gt_boxes[:, 1] * scale + dh)
+        gt_boxes[:, 3].assign(gt_boxes[:, 3] * scale + dh)
         return image_paded, gt_boxes
 
 def draw_bbox(image, bboxes, classes=read_class_names(cfg.YOLO.CLASSES), show_label=True):
