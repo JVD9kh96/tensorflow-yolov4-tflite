@@ -7,6 +7,8 @@ import time
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
+strategy = tf.distribute.MirroredStrategy()
+
 import tensorflow_addons as tfa
 from core.yolov4 import YOLO, decode, compute_loss, decode_train
 from core.dataset import Dataset
@@ -49,50 +51,52 @@ def main(_argv):
     warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
     total_steps = (first_stage_epochs + second_stage_epochs) * steps_per_epoch
     # train_steps = (first_stage_epochs + second_stage_epochs) * steps_per_period
+    GLOBAL_BATCH_SIZE = cfg.TRAIN.BATCH_SIZE * strategy.num_replicas_in_sync
+    with strategy.scope():
+        input_layer = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
+        STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
+        IOU_LOSS_THRESH = cfg.YOLO.IOU_LOSS_THRESH
+        weight_decay = 0.0005
+        # freeze_layers = utils.load_freeze_layer(FLAGS.model, FLAGS.tiny)
+        if FLAGS.tiny:
+            num_yolo_head = 2
+        else:
+            num_yolo_head = 3
+        feature_maps = YOLO(input_layer,
+                            NUM_CLASS,
+                            FLAGS.model,
+                            FLAGS.tiny, 
+                            FLAGS.activation, 
+                            FLAGS.projection_dim,
+                            [FLAGS.att_layer, FLAGS.att_layer, FLAGS.att_layer],
+                            [FLAGS.heads, FLAGS.heads, FLAGS.heads],
+                            FLAGS.spp,
+                            FLAGS.normal,
+                            FLAGS.axes)
+        if FLAGS.tiny:
+            bbox_tensors = []
+            for i, fm in enumerate(feature_maps):
+                if i == 0:
+                    bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+                else:
+                    bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+                bbox_tensors.append(fm)
+                bbox_tensors.append(bbox_tensor)
+        else:
+            bbox_tensors = []
+            for i, fm in enumerate(feature_maps):
+                if i == 0:
+                    bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 8, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+                elif i == 1:
+                    bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+                else:
+                    bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+                bbox_tensors.append(fm)
+                bbox_tensors.append(bbox_tensor)
 
-    input_layer = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
-    STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
-    IOU_LOSS_THRESH = cfg.YOLO.IOU_LOSS_THRESH
-    weight_decay = 0.0005
-    # freeze_layers = utils.load_freeze_layer(FLAGS.model, FLAGS.tiny)
-    if FLAGS.tiny:
-        num_yolo_head = 2
-    else:
-        num_yolo_head = 3
-    feature_maps = YOLO(input_layer,
-                        NUM_CLASS,
-                        FLAGS.model,
-                        FLAGS.tiny, 
-                        FLAGS.activation, 
-                        FLAGS.projection_dim,
-                        [FLAGS.att_layer, FLAGS.att_layer, FLAGS.att_layer],
-                        [FLAGS.heads, FLAGS.heads, FLAGS.heads],
-                        FLAGS.spp,
-                        FLAGS.normal,
-                        FLAGS.axes)
-    if FLAGS.tiny:
-        bbox_tensors = []
-        for i, fm in enumerate(feature_maps):
-            if i == 0:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
-            else:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
-            bbox_tensors.append(fm)
-            bbox_tensors.append(bbox_tensor)
-    else:
-        bbox_tensors = []
-        for i, fm in enumerate(feature_maps):
-            if i == 0:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 8, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
-            elif i == 1:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
-            else:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
-            bbox_tensors.append(fm)
-            bbox_tensors.append(bbox_tensor)
-
-    model = tf.keras.Model(input_layer, bbox_tensors)
-    model.summary()
+        model = tf.keras.Model(input_layer, bbox_tensors)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=cfg.TRAIN.LR_INIT)
+        model.summary()
 
     if FLAGS.weights == None:
         print("Training from scratch")
@@ -104,7 +108,7 @@ def main(_argv):
         print('Restoring weights from: %s ... ' % FLAGS.weights)
 
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=cfg.TRAIN.LR_INIT)
+    
 #     optimizer = tfa.optimizers.AdamW(
 #         learning_rate=cfg.TRAIN.LR_INIT, weight_decay=weight_decay)
     
@@ -112,64 +116,75 @@ def main(_argv):
     os.makedirs(logdir + '/train/', exist_ok = True)
     os.makedirs(logdir + '/valid/', exist_ok = True)
     writer = tf.summary.create_file_writer(logdir)
-
-    # define training step function
-    # @tf.function
-    def train_step(image_data, target):
-        with tf.GradientTape() as tape:
-            nan_flg = 0
-            pred_result = model(image_data, training=True)
-            giou_loss = conf_loss = prob_loss = 0
-
-            # optimizing process
+    with strategy.scope():
+        # Set reduction to `none` so we can do the reduction afterwards and divide by
+        # global batch size.
+        def loss_(pred_result,  target):
+            giou_loss = 0.0
+            conf_loss = 0.0
+            prob_loss = 0.0
+               # optimizing process
             for i in range(num_yolo_head):
                 conv, pred = pred_result[i * 2], pred_result[i * 2 + 1]
                 loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
-                giou_loss += loss_items[0]
-                conf_loss += loss_items[1]
-                prob_loss += loss_items[2]
-
+                giou_loss += tf.cast(loss_items[0], dtype = tf.float32)
+                conf_loss += tf.cast(loss_items[1], dtype = tf.float32)
+                prob_loss += tf.cast(loss_items[2], tf.float32)
             total_loss = giou_loss + conf_loss + prob_loss
+            print("heyyy!" , total_loss, type(total_loss))
+            total_loss = tf.cast(tf.reshape(total_loss, (1, 1)), dtype = tf.float32)
+            giou_loss  = tf.cast(tf.reshape(giou_loss, (1, 1)), dtype = tf.float32)
+            conf_loss  = tf.cast(tf.reshape(conf_loss, (1, 1)), dtype = tf.float32)
+            prob_loss  = tf.cast(tf.reshape(prob_loss, (1, 1)), dtype = tf.float32)
+            
+            return total_loss, giou_loss, conf_loss, prob_loss
+
+        def computeLoss(pred_result, target):
+            per_example_loss, giou_loss, conf_loss, prob_loss = loss_(pred_result, target)
+            return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE), tf.nn.compute_average_loss(giou_loss, global_batch_size=GLOBAL_BATCH_SIZE), tf.nn.compute_average_loss(conf_loss, global_batch_size=GLOBAL_BATCH_SIZE), tf.nn.compute_average_loss(prob_loss, global_batch_size=GLOBAL_BATCH_SIZE)
+    # define training step function
+    # @tf.function
+    def train_step(input_):
+        image_data, target = input_
+        with tf.GradientTape() as tape:
+            pred_result = model(image_data, training=True)
+            total_loss, giou_loss, conf_loss, prob_loss = computeLoss(pred_result, target)
             try:
                 tf.debugging.check_numerics( total_loss, 'checking for nan')
-                nan_flg = 1
             except Exception as e:
-                nan_flg = 2
-                nan_counter.assign_add(1)
-                if nan_counter > 10:
-                    assert "Checking loss : Tensor had Inf values" in e.message
-            if nan_flg == 1:
-                gradients = tape.gradient(total_loss, model.trainable_variables)
-                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-                tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
-                         "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
-                                                                   giou_loss, conf_loss,
-                                                                   prob_loss, total_loss))
+                assert "Checking loss : Tensor had Inf values" in e.message
+            gradients = tape.gradient(total_loss, model.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+            # print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
+            #             "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr,
+            #                                                     giou_loss, conf_loss,
+                                                                # prob_loss, total_loss))
                 # update learning rate
-                global_steps.assign_add(1)
-                if global_steps < warmup_steps:
-                   lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
-                else:
-                   lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
-                       (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
-                   )
-                optimizer.lr.assign(lr.numpy())
-    #             if global_steps.numpy() > 0.8 * total_steps and global_steps.numpy() < 0.9 * total_steps:
-    #                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/10.0)
-    #             elif global_steps.numpy() > 0.9 * total_steps:
-    #                 optimizer.lr.assign(cfg.TRAIN.LR_INIT/100.0)
-
+            print("LOSSSSSS!: ", total_loss)
+            global_steps.assign_add(1)
+            if global_steps < warmup_steps:
+                lr = tf.cast(global_steps / warmup_steps * cfg.TRAIN.LR_INIT, dtype = tf.float32)
+            else:
+                lr =tf.cast(cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
+                    (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
+                ), dtype = tf.float32)
+            optimizer.lr.assign(tf.cast(lr, tf.float32))
 
                 # writing summary data
-                with writer.as_default():
-                    tf.summary.scalar("train/lr", optimizer.lr, step=global_steps)
-                    tf.summary.scalar("train/loss/total_loss", total_loss, step=global_steps)
-                    tf.summary.scalar("train/loss/giou_loss", giou_loss, step=global_steps)
-                    tf.summary.scalar("train/loss/conf_loss", conf_loss, step=global_steps)
-                    tf.summary.scalar("train/loss/prob_loss", prob_loss, step=global_steps)
-                writer.flush()
-            else:
-                pass
+            # with writer.as_default():
+            #     tf.summary.scalar("train/lr", optimizer.lr, step=global_steps)
+            #     tf.summary.scalar("train/loss/total_loss", total_loss, step=global_steps)
+            #     tf.summary.scalar("train/loss/giou_loss", giou_loss, step=global_steps)
+            #     tf.summary.scalar("train/loss/conf_loss", conf_loss, step=global_steps)
+            #     tf.summary.scalar("train/loss/prob_loss", prob_loss, step=global_steps)
+            # writer.flush()
+        return total_loss 
+
+    @tf.function
+    def distributed_train_step(dataset_inputs):
+        per_replica_losses = strategy.run(train_step, args=(dataset_inputs,))
+        return strategy.reduce(tf.distribute.ReduceOp.SUM, per_replica_losses,
+                                axis=None)
     def test_step(image_data, target):
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
@@ -213,7 +228,8 @@ def main(_argv):
             if toc - tic > FLAGS.time_lim:
                 flg = True
                 break
-            train_step(image_data, target)
+            # train_step(image_data, target)
+            _ = distributed_train_step([image_data, target])
             if i % 1000 == 0 :
                 #model.save(FLAGS.model_path)
                 model.save_weights(FLAGS.model_path + 'ModelWeights')
