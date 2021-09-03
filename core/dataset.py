@@ -2,9 +2,9 @@
 # coding=utf-8
 
 import os
-import cv2
+# import cv2
 import random
-import numpy as np
+# import numpy as np
 import tensorflow as tf
 import core.utils as utils
 from core.config import cfg
@@ -243,8 +243,12 @@ class Dataset(object):
             tx = random.uniform(-(max_l_trans - 1), (max_r_trans - 1))
             ty = random.uniform(-(max_u_trans - 1), (max_d_trans - 1))
 
-            M = tf.constant([[1, 0, tx], [0, 1, ty]])
-            image = cv2.warpAffine(image, M, (w, h))
+#             M = tf.constant([[1, 0, tx], [0, 1, ty]])
+#             image = cv2.warpAffine(image, M, (w, h))
+            tf.keras.preprocessing.image.apply_affine_transform(
+                    image, theta=0, tx=tx, ty=ty, shear=0, zx=1, zy=1, row_axis=0, col_axis=1,
+                    channel_axis=2, fill_mode='constant', cval=0.0, order=1
+            )
 
             bboxes[:, [0, 2]] = bboxes[:, [0, 2]] + tx
             bboxes[:, [1, 3]] = bboxes[:, [1, 3]] + ty
@@ -256,7 +260,7 @@ class Dataset(object):
         image_path = line[0]
         if not os.path.exists(image_path):
             raise KeyError("%s does not exist ... " % image_path)
-        image = cv2.imread(image_path)
+        image = tf.io.decode_jpeg(tf.io.read_file(image_path)
         if self.dataset_type == "converted_coco":
             bboxes = tf.constant(
                 [list(map(int, box.split(","))) for box in line[1:]]
@@ -277,7 +281,6 @@ class Dataset(object):
                 tf.identity(image), tf.identity(bboxes)
             )
 
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image, bboxes = utils.image_preprocess(
             tf.identity(image),
             [self.train_input_size, self.train_input_size],
