@@ -290,7 +290,8 @@ class Dataset(object):
                 dtype=tf.float64
             )
             bboxes = bboxes * tf.constant([width, height, width, height, 1], dtype=tf.int64)
-
+        bboxes = tf.Variable(bboxes)
+        
         if self.data_aug:
             image, bboxes = self.random_horizontal_flip(
                 tf.identity(image), tf.identity(bboxes)
