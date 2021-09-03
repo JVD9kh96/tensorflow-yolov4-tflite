@@ -260,7 +260,7 @@ class Dataset(object):
         image_path = line[0]
         if not os.path.exists(image_path):
             raise KeyError("%s does not exist ... " % image_path)
-        image = tf.io.decode_jpeg(tf.io.read_file(image_path)
+        image = tf.io.decode_jpeg(tf.io.read_file(image_path))
         if self.dataset_type == "converted_coco":
             bboxes = tf.constant(
                 [list(map(int, box.split(","))) for box in line[1:]]
