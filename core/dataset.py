@@ -184,6 +184,7 @@ class Dataset(object):
         if random.random() < 0.5:
             _, w, _ = image.shape
             image = image[:, ::-1, :]
+            print(bboxes)
             bboxes[:, [0, 2]] = w - bboxes[:, [2, 0]]
 
         return image, bboxes
