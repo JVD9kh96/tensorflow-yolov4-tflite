@@ -259,10 +259,11 @@ class Dataset(object):
 
 #             M = tf.constant([[1, 0, tx], [0, 1, ty]])
 #             image = cv2.warpAffine(image, M, (w, h))
-            tf.keras.preprocessing.image.apply_affine_transform(
+            image = tf.keras.preprocessing.image.apply_affine_transform(
                     image, theta=0, tx=tx, ty=ty, shear=0, zx=1, zy=1, row_axis=0, col_axis=1,
                     channel_axis=2, fill_mode='constant', cval=0.0, order=1
             )
+            image = tf.Variable(image)
 
             bboxes[:, 0].assign(bboxes[:, 0] + tx)
             bboxes[:, 2].assign(bboxes[:, 2] + tx)
