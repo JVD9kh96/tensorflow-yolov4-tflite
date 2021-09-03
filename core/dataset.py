@@ -294,17 +294,17 @@ class Dataset(object):
         
         if self.data_aug:
             image, bboxes = self.random_horizontal_flip(
-                tf.identity(image), tf.identity(bboxes)
+                tf.Variable(image), tf.Variable(bboxes)
             )
-            image, bboxes = self.random_crop(tf.identity(image), tf.identity(bboxes))
+            image, bboxes = self.random_crop(tf.Variable(image), tf.Variable(bboxes))
             image, bboxes = self.random_translate(
-                tf.identity(image), tf.identity(bboxes)
+                tf.Variable(image), tf.Variable(bboxes)
             )
 
         image, bboxes = utils.image_preprocess(
-            tf.identity(image),
+            tf.Variable(image),
             [self.train_input_size, self.train_input_size],
-            tf.identity(bboxes),
+            tf.Variable(bboxes),
         )
         return image, bboxes
 
