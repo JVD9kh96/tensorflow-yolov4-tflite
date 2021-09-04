@@ -51,7 +51,7 @@ def main(_argv):
     warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
     total_steps = (first_stage_epochs + second_stage_epochs) * steps_per_epoch
     # train_steps = (first_stage_epochs + second_stage_epochs) * steps_per_period
-    GLOBAL_BATCH_SIZE = cfg.TRAIN.BATCH_SIZE * strategy.num_replicas_in_sync
+    GLOBAL_BATCH_SIZE = cfg.TRAIN.BATCH_SIZE // strategy.num_replicas_in_sync
     with strategy.scope():
         input_layer = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
         STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
@@ -96,6 +96,7 @@ def main(_argv):
 
         model = tf.keras.Model(input_layer, bbox_tensors)
         optimizer = tf.keras.optimizers.Adam(learning_rate=cfg.TRAIN.LR_INIT)
+        checkpoint = tf.train.Checkpoint(optimizer=optimizer, model=model)
         model.summary()
 
     if FLAGS.weights == None:
@@ -131,15 +132,16 @@ def main(_argv):
                 conf_loss += tf.cast(loss_items[1], dtype = tf.float32)
                 prob_loss += tf.cast(loss_items[2], dtype = tf.float32)
             total_loss = giou_loss + conf_loss + prob_loss
-            total_loss = tf.cast(tf.reshape(total_loss, (1, 1)), dtype = tf.float32)
-            giou_loss  = tf.cast(tf.reshape(giou_loss, (1, 1)), dtype = tf.float32)
-            conf_loss  = tf.cast(tf.reshape(conf_loss, (1, 1)), dtype = tf.float32)
-            prob_loss  = tf.cast(tf.reshape(prob_loss, (1, 1)), dtype = tf.float32)
+            total_loss = tf.cast(total_loss, dtype = tf.float32)
+            giou_loss  = tf.cast(giou_loss, dtype = tf.float32)
+            conf_loss  = tf.cast(conf_loss, dtype = tf.float32)
+            prob_loss  = tf.cast(prob_loss, dtype = tf.float32)
             
             return total_loss, giou_loss, conf_loss, prob_loss
 
         def computeLoss(pred_result, target):
             per_example_loss, giou_loss, conf_loss, prob_loss = loss_(pred_result, target)
+            # print("kir khar per_example_loss : ", per_example_loss)
             return tf.nn.compute_average_loss(per_example_loss, global_batch_size=GLOBAL_BATCH_SIZE), tf.nn.compute_average_loss(giou_loss, global_batch_size=GLOBAL_BATCH_SIZE), tf.nn.compute_average_loss(conf_loss, global_batch_size=GLOBAL_BATCH_SIZE), tf.nn.compute_average_loss(prob_loss, global_batch_size=GLOBAL_BATCH_SIZE)
     # define training step function
     # @tf.function
@@ -160,6 +162,7 @@ def main(_argv):
             #                                                     prob_loss, total_loss))
             #     # update learning rate
             # print("LOSSSSSS!: ", total_loss)
+            # raise ValueError("______________kir________________")
             global_steps.assign_add(1)
             if global_steps < warmup_steps:
                 lr = tf.cast(global_steps / warmup_steps * cfg.TRAIN.LR_INIT, dtype = tf.float32)
@@ -208,7 +211,9 @@ def main(_argv):
                 tf.summary.scalar("valid/loss/prob_loss", prob_loss, step=global_steps)
             writer.flush()
     start_epoch = int((FLAGS.init_step)/total_steps*(first_stage_epochs + second_stage_epochs))
+    checkpoint_prefix = os.path.join(FLAGS.model_path, "ckpt")
     for epoch in range(start_epoch, first_stage_epochs + second_stage_epochs):
+        
         # if epoch < first_stage_epochs:
         #     if not isfreeze:
         #         isfreeze = True
@@ -228,10 +233,18 @@ def main(_argv):
                 break
             # train_step(image_data, target)
             loss, giou_loss, conf_loss, prob_loss = distributed_train_step([image_data, target])
-            print("total_loss:", loss, "giou_loss:", giou_loss, "conf_loss:", conf_loss,"prob_loss:", prob_loss)
-            if i % 1000 == 0 :
+            template = ("STEP : {}/{},  total_loss: {}, giou_loss: {}, conf_loss: {}, prob_loss: {}")
+            print (template.format(global_steps.numpy(), total_steps, loss, giou_loss, conf_loss, prob_loss))
+            # print("total_loss:", loss.eval(), "giou_loss:", giou_loss.eval(), "conf_loss:", conf_loss.eval(),"prob_loss:", prob_loss.eval())
+            if i % 1000 == 0 :                
+                checkpoint.save(checkpoint_prefix)
+                Files = os.listdir(FLAGS.model_path) 
+                Files.sort()
+                if len(Files) > 21 :
+                    os.unlink(FLAGS.model_path + "/" + Files[1])
+                    os.unlink(FLAGS.model_path + "/" + Files[2])
                 #model.save(FLAGS.model_path)
-                model.save_weights(FLAGS.model_path + 'ModelWeights')
+                # model.save_weights(FLAGS.model_path + 'ModelWeights')
         if FLAGS.test:
             for image_data, target in testset:
                 test_step(image_data, target)
