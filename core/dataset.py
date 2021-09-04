@@ -328,7 +328,7 @@ class Dataset(object):
 
         for i in range(bboxes.shape[0]):
             bbox = bboxes[i]
-            
+            print(bbox)
             bbox_coor = bbox[:4]
             bbox_class_ind = bbox[4]
             
