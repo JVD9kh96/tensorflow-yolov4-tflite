@@ -370,9 +370,7 @@ class Dataset(object):
                 iou_mask = iou_scale > 0.3
 
                 if tf.math.reduce_any(iou_mask):
-                    xind, yind = tf.math.floor(bbox_xywh_scaled[i, 0:2]).astype(
-                        tf.int32
-                    )
+                    xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[i, 0:2]), tf.int32)
 
                     label[i][yind, xind, iou_mask, :] = 0
                     label[i][yind, xind, iou_mask, 0:4] = bbox_xywh
@@ -389,9 +387,7 @@ class Dataset(object):
                 best_anchor_ind = tf.math.argmax(tf.constant(iou).reshape(-1), axis=-1)
                 best_detect = int(best_anchor_ind / self.anchor_per_scale)
                 best_anchor = int(best_anchor_ind % self.anchor_per_scale)
-                xind, yind = tf.math.floor(
-                    bbox_xywh_scaled[best_detect, 0:2]
-                ).astype(tf.int32)
+                xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[best_detect, 0:2]), tf.int32)
 
                 label[best_detect][yind, xind, best_anchor, :] = 0
                 label[best_detect][yind, xind, best_anchor, 0:4] = bbox_xywh
