@@ -338,7 +338,7 @@ class Dataset(object):
             uniform_distribution = tf.fill(
                 self.num_classes, 1.0 / self.num_classes
             )
-            deta = 0.01
+            deta = tf.constant(0.01, dtype=tf.float64)
             smooth_onehot = onehot * (1 - deta) + deta * uniform_distribution
 
             bbox_xywh = tf.concat(
