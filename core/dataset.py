@@ -329,10 +329,15 @@ class Dataset(object):
         for i in range(bboxes.shape[0]):
             bbox = bboxes[i]
             print(bbox)
+            
             bbox_coor = bbox[:4]
             bbox_class_ind = bbox[4]
             
+            
             onehot = tf.zeros(self.num_classes, dtype=tf.float64)
+            
+            print(onehot)
+            print(bbox_class_ind)
             
             onehot[bbox_class_ind] = 1.0
             uniform_distribution = tf.fill(
