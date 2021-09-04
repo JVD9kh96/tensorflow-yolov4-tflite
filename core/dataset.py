@@ -363,7 +363,8 @@ class Dataset(object):
                 
                 anchors_xywh[:, 0:2].assign(tf.ones(anchors_xywh[:, 0:2].shape)*(tf.cast(tf.math.floor(bbox_xywh_scaled[i, 0]), tf.float32) + 0.5))
                 anchors_xywh[:, 2:4].assign(tf.ones(anchors_xywh[:, 2:4].shape)*self.anchors[i])
-
+                print(bbox_xywh_scaled[i][tf.newaxis, :])
+                print(anchors_xywh)
                 iou_scale = utils.bbox_iou(
                     bbox_xywh_scaled[i][tf.newaxis, :], anchors_xywh
                 )
