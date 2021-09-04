@@ -334,7 +334,7 @@ class Dataset(object):
             onehot = tf.zeros(self.num_classes, dtype=tf.float64)
             onehot = tf.Variable(onehot)
             
-            onehot[int(bbox_class_ind)] = 1.0
+            onehot[int(bbox_class_ind)].assign(1.0)
             uniform_distribution = tf.fill(
                 self.num_classes, 1.0 / self.num_classes
             )
