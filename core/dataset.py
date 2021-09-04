@@ -359,10 +359,12 @@ class Dataset(object):
             exist_positive = False
             for i in range(3):
                 anchors_xywh = tf.zeros((self.anchor_per_scale, 4))
-                anchors_xywh[:, 0:2] = (
-                    tf.math.floor(bbox_xywh_scaled[i, 0:2]).astype(tf.int32) + 0.5
-                )
-                anchors_xywh[:, 2:4] = self.anchors[i]
+                anchors_xywh = tf.Variable(anchors_xywh)
+                
+                anchors_xywh[:, 0].assign(tf.math.floor(bbox_xywh_scaled[i, 0]) + 0.5)
+                anchors_xywh[:, 2].assign(tf.math.floor(bbox_xywh_scaled[i, 2]) + 0.5)
+                anchors_xywh[:, 2].assign(self.anchors[i])
+                anchors_xywh[:, 4].assign(self.anchors[i])
 
                 iou_scale = utils.bbox_iou(
                     bbox_xywh_scaled[i][tf.newaxis, :], anchors_xywh
