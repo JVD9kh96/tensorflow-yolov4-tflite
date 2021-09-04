@@ -329,6 +329,10 @@ class Dataset(object):
             exist_positive = False
             for i in range(3):
                 anchors_xywh = np.zeros((self.anchor_per_scale, 4))
+                print('-------')
+                print(anchors_xywh[:, 0])
+                print(np.floor(bbox_xywh_scaled[i, 0]).astype(np.int32) + 0.5)
+                print('-------')
                 anchors_xywh[:, 0:2] = (
                     np.floor(bbox_xywh_scaled[i, 0:2]).astype(np.int32) + 0.5
                 )
