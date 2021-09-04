@@ -362,8 +362,8 @@ class Dataset(object):
                 anchors_xywh = tf.Variable(anchors_xywh)
                 
                 print(tf.math.floor(bbox_xywh_scaled[i, 0]))
-                anchors_xywh[:, 0].assign(tf.math.floor(bbox_xywh_scaled[i, 0]) + tf.constant(0.5, dtype=tf.float64))
-                anchors_xywh[:, 2].assign(tf.math.floor(bbox_xywh_scaled[i, 2]) + tf.constant(0.5, dtype=tf.float64))
+                anchors_xywh[:, 0].assign(tf.cast(tf.math.floor(bbox_xywh_scaled[i, 0]), tf.float32) + tf.constant(0.5, dtype=tf.float32))
+                anchors_xywh[:, 2].assign(tf.cast(tf.math.floor(bbox_xywh_scaled[i, 2]), tf.float32) + tf.constant(0.5, dtype=tf.float32))
                 anchors_xywh[:, 2].assign(self.anchors[i])
                 anchors_xywh[:, 4].assign(self.anchors[i])
 
