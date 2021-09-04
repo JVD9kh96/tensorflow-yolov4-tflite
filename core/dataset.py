@@ -361,11 +361,8 @@ class Dataset(object):
                 anchors_xywh = tf.zeros((self.anchor_per_scale, 4))
                 anchors_xywh = tf.Variable(anchors_xywh)
                 
-                print(tf.math.floor(bbox_xywh_scaled[i, 0]))
-                anchors_xywh[:, 0].assign(tf.ones(anchors_xywh[:, 0].shape)*(tf.cast(tf.math.floor(bbox_xywh_scaled[i, 0]), tf.float32) + 0.5))
-                anchors_xywh[:, 2].assign(tf.ones(anchors_xywh[:, 2].shape)*(tf.cast(tf.math.floor(bbox_xywh_scaled[i, 2]), tf.float32) + 0.5))
-                anchors_xywh[:, 2].assign(tf.ones(anchors_xywh[:, 2].shape)*self.anchors[i])
-                anchors_xywh[:, 4].assign(tf.ones(anchors_xywh[:, 4].shape)*self.anchors[i])
+                anchors_xywh[:, 0:2].assign(tf.ones(anchors_xywh[:, 0:2].shape)*(tf.cast(tf.math.floor(bbox_xywh_scaled[i, 0]), tf.float32) + 0.5))
+                anchors_xywh[:, 2:4].assign(tf.ones(anchors_xywh[:, 2:4].shape)*self.anchors[i])
 
                 iou_scale = utils.bbox_iou(
                     bbox_xywh_scaled[i][tf.newaxis, :], anchors_xywh
