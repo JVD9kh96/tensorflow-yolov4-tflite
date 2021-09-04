@@ -1170,9 +1170,9 @@ def compute_loss(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH,
 
     prob_loss = respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_prob, logits=conv_raw_prob)
 
-    giou_loss = tf.reduce_mean(tf.reduce_sum(giou_loss, axis=[1,2,3,4]))
-    conf_loss = tf.reduce_mean(tf.reduce_sum(conf_loss, axis=[1,2,3,4]))
-    prob_loss = tf.reduce_mean(tf.reduce_sum(prob_loss, axis=[1,2,3,4]))
+    giou_loss = tf.reduce_sum(giou_loss, axis=[1,2,3,4])
+    conf_loss = tf.reduce_sum(conf_loss, axis=[1,2,3,4])
+    prob_loss = tf.reduce_sum(prob_loss, axis=[1,2,3,4])
 
     return giou_loss, conf_loss, prob_loss
 
