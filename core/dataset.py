@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+37#! /usr/bin/env python
 # coding=utf-8
 
 import os
@@ -313,16 +313,17 @@ class Dataset(object):
 
     def preprocess_true_boxes(self, bboxes):
         label = [
-            tf.zeros(
+            tf.Variable(tf.zeros(
                 (
                     self.train_output_sizes[i],
                     self.train_output_sizes[i],
                     self.anchor_per_scale,
                     5 + self.num_classes,
                 )
-            )
+            ))
             for i in range(3)
         ]
+        
         bboxes_xywh = [tf.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)]
         bbox_count = tf.zeros((3,))
 
