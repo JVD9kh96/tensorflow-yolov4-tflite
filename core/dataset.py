@@ -372,7 +372,10 @@ class Dataset(object):
 
                 if tf.math.reduce_any(iou_mask):
                     xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[i, 0:2]), tf.int32)
-
+                    print(yind)
+                    print(xind)
+                    print(iou_mask)
+                    print(label[i][yind, xind, iou_mask, :])
                     label[i][yind, xind, iou_mask, :].assign(0)
                     label[i][yind, xind, iou_mask, 0:4].assign(bbox_xywh)
                     label[i][yind, xind, iou_mask, 4:5].assign(1.0)
