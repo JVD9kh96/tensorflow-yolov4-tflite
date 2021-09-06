@@ -112,9 +112,11 @@ def random_crop(image, bboxes):
 class Dataset(object):
     """implement Dataset here"""
 
-    def __init__(self, FLAGS, is_training: bool, dataset_type: str = "converted_coco"):
-        self.tiny = FLAGS.tiny
-        self.strides, self.anchors, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
+    def __init__(self, is_training: bool = True, dataset_type: str = "converted_coco"):
+        self.tiny = False
+        self.strides = np.array(cfg.YOLO.STRIDES)
+        self.anchors = np.array(cfg.YOLO.ANCHORS).reshape((3, 3, 2))
+        XYSCALE = cfg.YOLO.XYSCALE
         self.dataset_type = dataset_type
 
         self.annot_path = (
@@ -130,6 +132,7 @@ class Dataset(object):
 
         self.train_input_sizes = cfg.TRAIN.INPUT_SIZE
         self.classes = utils.read_class_names(cfg.YOLO.CLASSES)
+        NUM_CLASS = len(self.classes)
         self.num_classes = len(self.classes)
         self.anchor_per_scale = cfg.YOLO.ANCHOR_PER_SCALE
         self.max_bbox_per_scale = 150
