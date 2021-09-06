@@ -1,18 +1,11 @@
 #! /usr/bin/env python
 # coding=utf-8
 
-import numpy as np
 import tensorflow as tf
 import core.utils as utils
 import core.common as common
 import core.backbone as backbone
-from core.config import cfg
 
-# NUM_CLASS       = len(utils.read_class_names(cfg.YOLO.CLASSES))
-# STRIDES         = np.array(cfg.YOLO.STRIDES)
-# IOU_LOSS_THRESH = cfg.YOLO.IOU_LOSS_THRESH
-# XYSCALE = cfg.YOLO.XYSCALE
-# ANCHORS = utils.get_anchors(cfg.YOLO.ANCHORS)
 
 def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4], spp=0, normal=0, axes = [1, 2]):
     if is_tiny:

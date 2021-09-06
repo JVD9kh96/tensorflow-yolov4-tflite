@@ -3,7 +3,7 @@
 
 import tensorflow as tf
 from tensorflow.keras import layers
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 from tensorflow.keras import regularizers
 
 # import tensorflow_addons as tfa
@@ -43,8 +43,8 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
 
     if bn and norm==0: 
         conv = BatchNormalization()(conv)
-    elif bn and norm==1:
-        conv = tfa.layers.GroupNormalization(groups = min(filters_shape[-1], 32))(conv)
+    # elif bn and norm==1:
+    #     conv = tfa.layers.GroupNormalization(groups = min(filters_shape[-1], 32))(conv)
      
     if activate == True:
         if activate_type == "leaky":
@@ -52,7 +52,8 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
         elif activate_type == "mish":
             conv = mish(conv)
         elif activate_type == 'gelu':
-            conv = tfa.activations.gelu(conv)
+            # conv = tfa.activations.gelu(conv)
+            conv = tf.nn.gelu(conv)
     return conv
 
 def mish(x):
@@ -106,8 +107,8 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
         # Layer normalization 1.
         if normal == 0:
             x1 = layers.BatchNormalization()(encoded_patches)
-        elif normal == 1:
-            x1 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+        # elif normal == 1:
+        #     x1 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
         elif normal == 2:
             x1 = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
         # Create a multi-head attention layer.
@@ -119,8 +120,8 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
         # Layer normalization 2.
         if normal == 0:
             x3 = layers.BatchNormalization()(x2)
-        elif normal == 1:
-            x3 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(x2)
+        # elif normal == 1:
+        #     x3 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(x2)
         elif normal ==2:
             x3 = layers.LayerNormalization(epsilon=1e-6)(x2)
         # MLP.
@@ -205,7 +206,8 @@ def kai_attention(key,
     if activation == 'mish':
         attention = mish(attention)
     elif activation == 'gelu':
-        attention = tfa.activations.gelu(attention)
+        # attention = tfa.activations.gelu(attention)
+        attention = tf.nn.gelu(attention)
     elif activation == 'leaky':
         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
 
@@ -229,14 +231,15 @@ def transformer_block(inp,
     if activation == 'mish':
         inp = mish(inp)
     elif activation == 'gelu':
-        inp = tfa.activations.gelu(inp)
+        # inp = tfa.activations.gelu(inp)
+        inp = tf.nn.gelu(inp)
     elif activation == 'leaky':
         inp = tf.keras.layers.LeakyReLU(alpha = 0.3)(inp)
 
     if normalization == 'batch':
         x1 = tf.keras.layers.BatchNormalization()(inp)
-    elif normalization == 'group':
-        x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+    # elif normalization == 'group':
+    #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
         x1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(inp)
         
@@ -251,8 +254,8 @@ def transformer_block(inp,
     x3 = tf.keras.layers.Add()([x2, inp])
     if normalization == 'batch':
         x4 = tf.keras.layers.BatchNormalization()(x3)
-    elif normalization == 'group':
-        x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
+    # elif normalization == 'group':
+    #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
     elif normalization == 'layer':
         x4 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x3)
     
@@ -266,7 +269,8 @@ def transformer_block(inp,
     if activation == 'mish':
         x6 = mish(x5)
     elif activation == 'gelu':
-        x6 = tfa.activations.gelu(x5)
+        # x6 = tfa.activations.gelu(x5)
+        x6 = tf.nn.gelu(x5)
     elif activation == 'leaky':
         x6 = tf.keras.layers.LeakyReLU(alpha = 0.3)(x5)
     else:
@@ -283,7 +287,8 @@ def transformer_block(inp,
     if activation == 'mish':
         x7 = mish(x7)
     elif activation == 'gelu':
-        x7 = tfa.activations.gelu(x7)
+        # x7 = tfa.activations.gelu(x7)
+        x7 = tf.nn.gelu(x7)
     elif activation == 'leaky':
         x7 = tf.keras.layers.LeakyReLU(alpha = 0.3)(x7)
     else:
@@ -293,8 +298,8 @@ def transformer_block(inp,
 
     if normalization == 'batch':
         x8 = tf.keras.layers.BatchNormalization()(x8)
-    elif normalization == 'group':
-        x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
+    # elif normalization == 'group':
+    #     x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
     elif normalization == 'layer':
         x8 = tf.keras.layers.LayerNormalization(epsilon=0.001)(x8)
 

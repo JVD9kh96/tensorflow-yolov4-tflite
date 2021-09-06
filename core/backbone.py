@@ -6,7 +6,7 @@ import core.common as common
 from tensorflow.keras import layers
 import numpy as np
 from tensorflow import keras
-import tensorflow_addons as tfa
+# import tensorflow_addons as tfa
 
 
 def mlp(x, hidden_units, dropout_rate, activation = 'gelu'):
@@ -342,8 +342,8 @@ def VIT_v1(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route1 = encoded_patches
     route1 = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(route1)
     dict_size = getattr(encoded_patches, 'shape')
@@ -357,8 +357,8 @@ def VIT_v1(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*4, projection_dim*2], transformer_layers[1], num_heads = attention_heads[1], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route2 = encoded_patches
     route2 = tf.keras.layers.Reshape((image_size//16, image_size//16, projection_dim*2))(route2)
     encoded_patches = tf.expand_dims(encoded_patches, axis = -1)
@@ -367,8 +367,8 @@ def VIT_v1(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim*4, [projection_dim*8, projection_dim*4], transformer_layers[2], num_heads = attention_heads[2], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     encoded_patches = tf.keras.layers.Reshape((image_size//32, image_size//32, projection_dim*4))(encoded_patches)
     # model = keras.Model(inputs=inputs, outputs=[route1, route2, encoded_patches])
     return route1, route2, encoded_patches
@@ -389,8 +389,8 @@ def VIT_v2(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route1 = encoded_patches
     route1 = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(route1)
     dict_size = getattr(encoded_patches, 'shape')
@@ -404,8 +404,8 @@ def VIT_v2(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*2, projection_dim*1], transformer_layers[1], num_heads = attention_heads[1], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route2 = encoded_patches
     route2 = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(route2)
     #encoded_patches = tf.expand_dims(encoded_patches, axis = -1)
@@ -414,8 +414,8 @@ def VIT_v2(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim, [projection_dim*2, projection_dim*1], transformer_layers[2], num_heads = attention_heads[2], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     encoded_patches = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(encoded_patches)
     # model = keras.Model(inputs=inputs, outputs=[route1, route2, encoded_patches])
     return route1, route2, encoded_patches
@@ -437,8 +437,8 @@ def VIT_v3(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route1 = encoded_patches
     route1 = tf.keras.layers.Reshape((image_size//8, image_size//8, projection_dim))(route1)
     dict_size = getattr(encoded_patches, 'shape')
@@ -453,8 +453,8 @@ def VIT_v3(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*4, projection_dim*2], transformer_layers[1], num_heads = attention_heads[1], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route2 = encoded_patches
     route2 = tf.keras.layers.Reshape((image_size//16, image_size//16, projection_dim*2))(route2)
     route2_shape = getattr(route2, 'shape')
@@ -464,8 +464,8 @@ def VIT_v3(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim*4, [projection_dim*8, projection_dim*4], transformer_layers[2], num_heads = attention_heads[2], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     encoded_patches = tf.keras.layers.Reshape((image_size//32, image_size//32, projection_dim*4))(encoded_patches)
     # model = keras.Model(inputs=inputs, outputs=[route1, route2, encoded_patches])
     return route1, route2, encoded_patches
@@ -489,8 +489,8 @@ def VIT_v5(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, 8, transformer_units, 2, num_heads = attention_heads[0], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = 8)(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = 8)(encoded_patches)
     encoded_patches = tf.keras.layers.Reshape((image_size//2, image_size//2, encoded_patches.shape[-1]))(encoded_patches)
     patches = Patches(2)(encoded_patches)
     num_patches = (image_size // (patch_size*2)) ** 2
@@ -500,8 +500,8 @@ def VIT_v5(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, 16, transformer_units, 4, num_heads = attention_heads[0], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = 16)(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = 16)(encoded_patches)
     encoded_patches = tf.keras.layers.Reshape((image_size//4, image_size//4, encoded_patches.shape[-1]))(encoded_patches)
     patches = Patches(2)(encoded_patches)
     num_patches = (image_size // (patch_size*4)) ** 2
@@ -510,14 +510,14 @@ def VIT_v5(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, 32, transformer_units, 8, num_heads = attention_heads[0], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = 16)(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = 16)(encoded_patches)
 
     encoded_patches = common.transformer(encoded_patches, projection_dim, transformer_units, transformer_layers[0], num_heads = attention_heads[0], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = 16)(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = 16)(encoded_patches)
     route1 = encoded_patches
     route1 = tf.keras.layers.Reshape((image_size//8, image_size//8, encoded_patches.shape[-1]))(route1)
     dict_size = getattr(encoded_patches, 'shape')
@@ -528,8 +528,8 @@ def VIT_v5(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim*2, [projection_dim*4, projection_dim*2], transformer_layers[1], num_heads = attention_heads[1], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     route2 = encoded_patches
     route2 = tf.keras.layers.Reshape((image_size//16, image_size//16, projection_dim*2))(route2)
     route2_shape = getattr(route2, 'shape')
@@ -539,8 +539,8 @@ def VIT_v5(inputs, image_size = 416,
     encoded_patches = common.transformer(encoded_patches, projection_dim*4, [projection_dim*8, projection_dim*4], transformer_layers[2], num_heads = attention_heads[2], activation = activation, normal = temp_norm)
     if normal <3:
         encoded_patches = layers.BatchNormalization()(encoded_patches)
-    else:
-        encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
+    # else:
+    #     encoded_patches = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
     encoded_patches = tf.keras.layers.Reshape((image_size//32, image_size//32, projection_dim*4))(encoded_patches)
     return route1, route2, encoded_patches
 
