@@ -1129,7 +1129,7 @@ def compute_loss(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH,
     conv_shape  = tf.shape(conv)
     batch_size  = conv_shape[0]
     output_size = conv_shape[1]
-    input_size  = STRIDES[i] * output_size
+    input_size  = STRIDES[i] * tf.cast(output_size, tf.float32)
     conv = tf.reshape(conv, (batch_size, output_size, output_size, 3, 5 + NUM_CLASS))
 
     conv_raw_conf = conv[:, :, :, :, 4:5]
