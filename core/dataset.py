@@ -381,7 +381,7 @@ class Dataset(object):
 #                     print((label[i][yind, xind] * iou_mask).shape) 
 #                     print(tf.boolean_mask(label[i][yind, xind], iou_mask).shape)
 #                     label[i][yind, xind].assign(tf.where(iou_mask, 0))
-                    for ii in range(iou_mask.shape):
+                    for ii in range(iou_mask.shape[0]):
                         if iou_mask[ii]:
                             label[i][yind, xind, ii, :].assign(0)
                             label[i][yind, xind, ii, 0:4].assign(bbox_xywh)
