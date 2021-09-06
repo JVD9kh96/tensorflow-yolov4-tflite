@@ -387,7 +387,7 @@ class Dataset(object):
                     exist_positive = True
 
             if not exist_positive:
-                best_anchor_ind = tf.math.argmax(tf.stack(iou).reshape(-1))
+                best_anchor_ind = tf.math.argmax(tf.stack(iou), axis=-1)
                 best_detect = int(best_anchor_ind / self.anchor_per_scale)
                 best_anchor = int(best_anchor_ind % self.anchor_per_scale)
                 xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[best_detect, 0:2]), tf.int32)
