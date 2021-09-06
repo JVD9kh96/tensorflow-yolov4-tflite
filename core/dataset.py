@@ -392,10 +392,10 @@ class Dataset(object):
                 best_anchor = int(best_anchor_ind % self.anchor_per_scale)
                 xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[best_detect, 0:2]), tf.int32)
 
-                label[best_detect][yind, xind, best_anchor, :].assign(label[best_detect][yind, xind, best_anchor, :].shape*0)
+                label[best_detect][yind, xind, best_anchor, :].assign(tf.ones(label[best_detect][yind, xind, best_anchor, :].shape)*0)
                 label[best_detect][yind, xind, best_anchor, 0:4].assign(bbox_xywh)
-                label[best_detect][yind, xind, best_anchor, 4:5].assign(label[best_detect][yind, xind, best_anchor, 4:5].shape*1.0)
-                label[best_detect][yind, xind, best_anchor, 5:].assign(label[best_detect][yind, xind, best_anchor, 5:].shape*tf.cast(smooth_onehot, tf.float32))
+                label[best_detect][yind, xind, best_anchor, 4:5].assign(tf.ones(label[best_detect][yind, xind, best_anchor, 4:5].shape)*1.0)
+                label[best_detect][yind, xind, best_anchor, 5:].assign(tf.ones(label[best_detect][yind, xind, best_anchor, 5:].shape)*tf.cast(smooth_onehot, tf.float32))
 
                 bbox_ind = int(
                     bbox_count[best_detect] % self.max_bbox_per_scale
