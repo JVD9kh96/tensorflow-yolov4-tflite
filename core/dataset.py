@@ -39,6 +39,7 @@ class Dataset(object):
         self.annotations = self.load_annotations()
         self.num_samples = len(self.annotations)
         self.num_batchs = int(tf.math.ceil(self.num_samples / self.batch_size))
+        print(self.num_batchs)
         self.batch_count = 0
 
     def load_annotations(self):
