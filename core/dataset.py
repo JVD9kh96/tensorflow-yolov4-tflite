@@ -393,7 +393,7 @@ class Dataset(object):
                 xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[best_detect, 0:2]), tf.int32)
 
                 label[best_detect][yind, xind, best_anchor, :].assign(tf.ones(label[best_detect][yind, xind, best_anchor, :].shape)*0)
-                label[best_detect][yind, xind, best_anchor, 0:4].assign(bbox_xywh)
+                label[best_detect][yind, xind, best_anchor, 0:4].assign(tf.cast(bbox_xywh, tf.float32))
                 label[best_detect][yind, xind, best_anchor, 4:5].assign(tf.ones(label[best_detect][yind, xind, best_anchor, 4:5].shape)*1.0)
                 label[best_detect][yind, xind, best_anchor, 5:].assign(tf.ones(label[best_detect][yind, xind, best_anchor, 5:].shape)*tf.cast(smooth_onehot, tf.float32))
 
