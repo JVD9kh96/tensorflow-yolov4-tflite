@@ -388,6 +388,9 @@ class Dataset(object):
 
             if not exist_positive:
                 print(iou)
+                print(tf.constant(iou))
+                print(tf.constant(iou).reshape(-1))
+                print(tf.math.argmax(tf.constant(iou).reshape(-1)))
                 best_anchor_ind = tf.math.argmax(tf.constant(iou).reshape(-1))
                 best_detect = int(best_anchor_ind / self.anchor_per_scale)
                 best_anchor = int(best_anchor_ind % self.anchor_per_scale)
