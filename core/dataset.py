@@ -383,7 +383,7 @@ class Dataset(object):
 #                     label[i][yind, xind].assign(tf.where(iou_mask, 0))
                     for ii in range(iou_mask.shape[0]):
                         if iou_mask[ii]:
-                            label[i][yind, xind, ii, :].assign(0)
+                            label[i][yind, xind, ii, :].assign(tf.ones(label[i][yind, xind, ii, :].shape)*0)
                             label[i][yind, xind, ii, 0:4].assign(bbox_xywh)
                             label[i][yind, xind, ii, 4:5].assign(1.0)
                             label[i][yind, xind, ii, 5:].assign(smooth_onehot)
