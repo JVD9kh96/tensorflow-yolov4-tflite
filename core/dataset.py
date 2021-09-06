@@ -324,7 +324,7 @@ class Dataset(object):
             for i in range(3)
         ]
         
-        bboxes_xywh = [tf.zeros((self.max_bbox_per_scale, 4)) for _ in range(3)]
+        bboxes_xywh = [tf.Variable(tf.zeros((self.max_bbox_per_scale, 4))) for _ in range(3)]
         bbox_count = tf.zeros((3,))
 
         for i in range(bboxes.shape[0]):
