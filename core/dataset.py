@@ -66,6 +66,49 @@ def random_horizontal_flip(image, bboxes):
         bbox = bboxes
     return flipped, bbox
 
+def random_crop(image, bboxes):
+    if tf.random.uniform([], 0, 1) < 0.5:
+        h, w, _ = tf.shape(image)
+        h = tf.cast(h, tf.float32)
+        w = tf.cast(w, tf.float32)  
+        max_bbox = tf.concat(
+            [
+                tf.reduce_min(bboxes[:, 0:2], axis=0),
+                tf.reduce_min(bboxes[:, 2:4], axis=0),
+            ],
+            axis=-1,
+        )
+
+        max_l_trans = max_bbox[0]
+        max_u_trans = max_bbox[1]
+        max_r_trans = w - max_bbox[2]
+        max_d_trans = h - max_bbox[3]
+
+        crop_xmin = tf.math.maximum(
+            0, tf.cast(max_bbox[0] - tf.random.uniform([], 0.0, max_l_trans), tf.int32)
+        )
+        crop_ymin = tf.math.maximum(
+            0, tf.cast(max_bbox[1] - tf.random.uniform([], 0.0, max_u_trans), tf.int32)
+        )
+        crop_xmax = tf.math.maximum(
+            tf.cast(w, tf.int32), tf.cast(max_bbox[2] + tf.random.uniform([], 0.0, max_r_trans), tf.int32)
+        )
+        crop_ymax = tf.math.maximum(
+            tf.cast(h, tf.int32), tf.cast(max_bbox[3] + tf.random.uniform([], 0.0, max_d_trans), tf.int32)
+        )
+        cropped_image = image[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
+        xmin = bboxes[:, 0:1] - tf.cast(crop_xmin, tf.float32)
+        xmax = bboxes[:, 2:3] - tf.cast(crop_xmin, tf.float32)
+        ymin = bboxes[:, 1:2] - tf.cast(crop_ymin, tf.float32)
+        ymax = bboxes[:, 3:4] - tf.cast(crop_ymin, tf.float32)
+        classes = bboxes[:, 4:5]
+        bbox = tf.concat([xmin, ymin, xmax, ymax, classes], axis=1)
+    else:
+        cropped_image = image
+        bbox = bboxes  
+    return cropped_image, bbox
+
+
 class Dataset(object):
     """implement Dataset here"""
 
