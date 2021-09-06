@@ -388,16 +388,14 @@ class Dataset(object):
 
             if not exist_positive:
                 best_anchor_ind = tf.math.argmax(tf.reshape(tf.stack(iou), -1), axis=-1)
-                print(best_anchor_ind)
-                print(self.anchor_per_scale)
                 best_detect = int(best_anchor_ind / self.anchor_per_scale)
                 best_anchor = int(best_anchor_ind % self.anchor_per_scale)
                 xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[best_detect, 0:2]), tf.int32)
 
-                label[best_detect][yind, xind, best_anchor, :] = 0
-                label[best_detect][yind, xind, best_anchor, 0:4] = bbox_xywh
-                label[best_detect][yind, xind, best_anchor, 4:5] = 1.0
-                label[best_detect][yind, xind, best_anchor, 5:] = smooth_onehot
+                label[best_detect][yind, xind, best_anchor, :].assign(0)
+                label[best_detect][yind, xind, best_anchor, 0:4].assign(bbox_xywh)
+                label[best_detect][yind, xind, best_anchor, 4:5].assign(1.0)
+                label[best_detect][yind, xind, best_anchor, 5:].assign(smooth_onehot)
 
                 bbox_ind = int(
                     bbox_count[best_detect] % self.max_bbox_per_scale
