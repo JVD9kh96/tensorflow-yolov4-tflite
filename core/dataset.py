@@ -372,18 +372,21 @@ class Dataset(object):
 
                 if tf.math.reduce_any(iou_mask):
                     xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[i, 0:2]), tf.int32)
-                    print(yind)
-                    print(xind)
-                    print(iou_mask)
-                    print(label[i][yind, xind])
-                    print(label[i].shape)
-                    print(label[i][yind, xind] * iou_mask)
-                    print((label[i][yind, xind] * iou_mask).shape)
-                    print(tf.boolean_mask(label[i][yind, xind], iou_mask).shape)
-                    label[i][yind, xind, iou_mask, :].assign(0)
-                    label[i][yind, xind, iou_mask, 0:4].assign(bbox_xywh)
-                    label[i][yind, xind, iou_mask, 4:5].assign(1.0)
-                    label[i][yind, xind, iou_mask, 5:].assign(smooth_onehot)
+#                     print(yind)
+#                     print(xind)
+#                     print(iou_mask)
+#                     print(label[i][yind, xind])
+#                     print(label[i].shape)
+#                     print(label[i][yind, xind] * iou_mask)
+#                     print((label[i][yind, xind] * iou_mask).shape) 
+#                     print(tf.boolean_mask(label[i][yind, xind], iou_mask).shape)
+#                     label[i][yind, xind].assign(tf.where(iou_mask, 0))
+                    for ii in range(iou_mask.shape):
+                        if iou_mask[ii]:
+                            label[i][yind, xind, ii, :].assign(0)
+                            label[i][yind, xind, ii, 0:4].assign(bbox_xywh)
+                            label[i][yind, xind, ii, 4:5].assign(1.0)
+                            label[i][yind, xind, ii, 5:].assign(smooth_onehot)
 
                     bbox_ind = int(bbox_count[i] % self.max_bbox_per_scale)
                     bboxes_xywh[i][bbox_ind, :4] = bbox_xywh
