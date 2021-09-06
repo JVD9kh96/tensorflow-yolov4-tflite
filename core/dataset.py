@@ -9,6 +9,62 @@ import tensorflow as tf
 import core.utils as utils
 from core.config import cfg
 
+def image_preprocess(image, target_size, gt_boxes=None):
+    ih, iw    = target_size
+    ih = tf.cast(ih, tf.float32)
+    iw = tf.cast(iw, tf.float32)
+    h,  w, _  = tf.shape(image)
+    h = tf.cast(h, tf.float32)
+    w = tf.cast(w, tf.float32)
+    scale = min(iw/w, ih/h)
+    nw, nh  = tf.cast(scale * w, tf.float32), tf.cast(scale * h, tf.float32)
+    image_resized = tf.image.resize(image, (tf.cast(nw, tf.int32), tf.cast(nh, tf.int32)))
+    image_paded = np.full(shape=[tf.cast(ih, tf.int32), tf.cast(iw, tf.int32), 3], fill_value=128.0)
+    dw, dh = tf.cast((iw - nw) / tf.cast(2, tf.float32), tf.int32), tf.cast((ih-nh) / tf.cast(2, tf.float32), tf.int32)
+    if dw>0:
+        padder = tf.fill([tf.cast(ih, tf.int32), tf.cast(dw, tf.int32), 3], 128.0)
+        image_padded = tf.concat([padder, image_resized, padder], axis = 1)
+    elif dh>0:
+        padder = tf.fill([tf.cast(ih, tf.int32), tf.cast(dw, tf.int32), 3], 128.0)
+        image_padded = tf.concat([padder, image_resized, padder], axis = 0)
+    else:
+        image_padded = image_resized
+
+    if tf.shape(image_padded)[0] != tf.cast(ih, tf.int32) or tf.shape(image_padded)[0] != tf.cast(iw, tf.int32):
+        image_resized2 = tf.image.resize(image_padded, (tf.cast(ih, tf.int32), tf.cast(dw, tf.int32)))
+    else:
+        image_resized2 = image_padded
+
+    scaled_image = image_resized2 / tf.cast(255.0, tf.float32)
+
+    if gt_boxes is None:
+        return scaled_image
+    else:
+        xmin = tf.cast(gt_boxes[:, 0:1], tf.float32) * tf.cast(scale, tf.float32) + tf.cast(dw, tf.float32)
+        xmax = tf.cast(gt_boxes[:, 2:3], tf.float32) * tf.cast(scale, tf.float32) + tf.cast(dw, tf.float32)
+        ymin = tf.cast(gt_boxes[:, 1:2], tf.float32) * tf.cast(scale, tf.float32) + tf.cast(dh, tf.float32)
+        ymax = tf.cast(gt_boxes[:, 3:4], tf.float32) * tf.cast(scale, tf.float32) + tf.cast(dh, tf.float32)
+        classes = tf.cast(gt_boxes[:, 4:5], tf.float32)
+        bbox = tf.concat([xmin, ymin, xmax, ymax, classes], axis = 1)
+        return scaled_image, bbox
+
+def random_horizontal_flip(image, bboxes):
+    if tf.random.uniform([], 0, 1) < 0.5:
+        _, w, _ = tf.shape(image)
+        w = tf.cast(w, tf.float32)
+        flipped = tf.image.flip_left_right(image)
+        xmin = bboxes[:, 0:1]
+        xmax = bboxes[:, 2:3]
+        ymin = bboxes[:, 1:2]
+        ymax = bboxes[:, 3:4]
+        classes = bboxes[:, 4:5]
+        xmin2 = w - xmax
+        xmax2 = w - xmin
+        bbox = tf.concat([xmin2, ymin, xmax2, ymax, classes], axis = 1)
+    else:
+        flipped = image
+        bbox = bboxes
+    return flipped, bbox
 
 class Dataset(object):
     """implement Dataset here"""
