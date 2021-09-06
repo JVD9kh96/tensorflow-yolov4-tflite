@@ -166,13 +166,13 @@ class Dataset(object):
                         lbboxes,
                     ) = self.preprocess_true_boxes(bboxes)
 
-                    batch_image[num, :, :, :] = image
-                    batch_label_sbbox[num, :, :, :, :] = label_sbbox
-                    batch_label_mbbox[num, :, :, :, :] = label_mbbox
-                    batch_label_lbbox[num, :, :, :, :] = label_lbbox
-                    batch_sbboxes[num, :, :] = sbboxes
-                    batch_mbboxes[num, :, :] = mbboxes
-                    batch_lbboxes[num, :, :] = lbboxes
+                    batch_image[num, :, :, :].assign(image)
+                    batch_label_sbbox[num, :, :, :, :].assign(label_sbbox)
+                    batch_label_mbbox[num, :, :, :, :].assign(label_mbbox)
+                    batch_label_lbbox[num, :, :, :, :].assign(label_lbbox)
+                    batch_sbboxes[num, :, :].assign(sbboxes)
+                    batch_mbboxes[num, :, :].assign(mbboxes)
+                    batch_lbboxes[num, :, :].assign(lbboxes)
                     num += 1
                 self.batch_count += 1
                 batch_smaller_target = batch_label_sbbox, batch_sbboxes
