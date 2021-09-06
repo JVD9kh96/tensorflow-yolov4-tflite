@@ -373,10 +373,10 @@ class Dataset(object):
                 if tf.math.reduce_any(iou_mask):
                     xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[i, 0:2]), tf.int32)
 
-                    label[i][yind, xind, iou_mask, :] = 0
-                    label[i][yind, xind, iou_mask, 0:4] = bbox_xywh
-                    label[i][yind, xind, iou_mask, 4:5] = 1.0
-                    label[i][yind, xind, iou_mask, 5:] = smooth_onehot
+                    label[i][yind, xind, iou_mask, :].assign(0)
+                    label[i][yind, xind, iou_mask, 0:4].assign(bbox_xywh)
+                    label[i][yind, xind, iou_mask, 4:5].assign(1.0)
+                    label[i][yind, xind, iou_mask, 5:].assign(smooth_onehot)
 
                     bbox_ind = int(bbox_count[i] % self.max_bbox_per_scale)
                     bboxes_xywh[i][bbox_ind, :4] = bbox_xywh
