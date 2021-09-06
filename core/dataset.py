@@ -345,13 +345,13 @@ class Dataset(object):
             
             smooth_onehot = onehot * (1 - deta) + deta * uniform_distribution
 
-            bbox_xywh = tf.concat(
+            bbox_xywh = tf.Variable(tf.concat(
                 [
                     (bbox_coor[2:] + bbox_coor[:2]) * 0.5,
                     bbox_coor[2:] - bbox_coor[:2],
                 ],
                 axis=-1,
-            )
+            ))
             bbox_xywh_scaled = (
                 1.0 * bbox_xywh[tf.newaxis, :] / self.strides[:, tf.newaxis]
             )
@@ -372,15 +372,6 @@ class Dataset(object):
 
                 if tf.math.reduce_any(iou_mask):
                     xind, yind = tf.cast(tf.math.floor(bbox_xywh_scaled[i, 0:2]), tf.int32)
-#                     print(yind)
-#                     print(xind)
-#                     print(iou_mask)
-#                     print(label[i][yind, xind])
-#                     print(label[i].shape)
-#                     print(label[i][yind, xind] * iou_mask)
-#                     print((label[i][yind, xind] * iou_mask).shape) 
-#                     print(tf.boolean_mask(label[i][yind, xind], iou_mask).shape)
-#                     label[i][yind, xind].assign(tf.where(iou_mask, 0))
                     for ii in range(iou_mask.shape[0]):
                         if iou_mask[ii]:
                             label[i][yind, xind, ii, :].assign(tf.ones(label[i][yind, xind, ii, :].shape)*0)
