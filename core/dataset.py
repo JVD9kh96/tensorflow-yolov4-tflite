@@ -389,7 +389,7 @@ class Dataset(object):
                             label[i][yind, xind, ii, 5:].assign(tf.ones(label[i][yind, xind, ii, 5:].shape)*tf.cast(smooth_onehot, tf.float32))
 
                     bbox_ind = int(bbox_count[i] % self.max_bbox_per_scale)
-                    bboxes_xywh[i][bbox_ind, :4] = bbox_xywh
+                    bboxes_xywh[i][bbox_ind, :4].assign(tf.ones(bboxes_xywh[i][bbox_ind, :4].shape)*bbox_xywh)
                     bbox_count[i] += 1
 
                     exist_positive = True
