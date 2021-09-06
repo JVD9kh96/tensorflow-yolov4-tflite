@@ -384,9 +384,9 @@ class Dataset(object):
                     for ii in range(iou_mask.shape[0]):
                         if iou_mask[ii]:
                             label[i][yind, xind, ii, :].assign(tf.ones(label[i][yind, xind, ii, :].shape)*0)
-                            label[i][yind, xind, ii, 0:4].assign(bbox_xywh)
-                            label[i][yind, xind, ii, 4:5].assign(1.0)
-                            label[i][yind, xind, ii, 5:].assign(smooth_onehot)
+                            label[i][yind, xind, ii, 0:4].assign(tf.cast(bbox_xywh, tf.float32))
+                            label[i][yind, xind, ii, 4:5].assign(tf.ones(label[i][yind, xind, ii, 4:5].shape)*1.0)
+                            label[i][yind, xind, ii, 5:].assign(tf.ones(label[i][yind, xind, ii, 5:].shape)*tf.cast(smooth_onehot, tf.float32))
 
                     bbox_ind = int(bbox_count[i] % self.max_bbox_per_scale)
                     bboxes_xywh[i][bbox_ind, :4] = bbox_xywh
