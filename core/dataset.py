@@ -401,7 +401,7 @@ class Dataset(object):
                     bbox_count[best_detect] % self.max_bbox_per_scale
                 )
                 bboxes_xywh[best_detect][bbox_ind, :4].assign(tf.cast(bbox_xywh, tf.float32))
-                bbox_count[best_detect] += 1
+                bbox_count[best_detect].assign(bbox_count[best_detect]+1)
         label_sbbox, label_mbbox, label_lbbox = label
         sbboxes, mbboxes, lbboxes = bboxes_xywh
         return label_sbbox, label_mbbox, label_lbbox, sbboxes, mbboxes, lbboxes
