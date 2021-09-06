@@ -325,7 +325,7 @@ class Dataset(object):
         ]
         
         bboxes_xywh = [tf.Variable(tf.zeros((self.max_bbox_per_scale, 4))) for _ in range(3)]
-        bbox_count = tf.zeros((3,))
+        bbox_count = tf.Variable(tf.zeros((3,)))
 
         for i in range(bboxes.shape[0]):
             bbox = bboxes[i]            
@@ -381,7 +381,7 @@ class Dataset(object):
 
                     bbox_ind = int(bbox_count[i] % self.max_bbox_per_scale)
                     bboxes_xywh[i][bbox_ind, :4].assign(tf.cast(bbox_xywh, tf.float32))
-                    bbox_count[i] += 1
+                    bbox_count[i].assign(bbox_count[i]+1)
 
                     exist_positive = True
 
