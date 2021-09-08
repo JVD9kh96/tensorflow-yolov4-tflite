@@ -114,27 +114,27 @@ class Dataset(object):
 
     def __init__(self, is_training: bool = True, dataset_type: str = "converted_coco"):
         self.tiny = False
-        self.strides = np.array(cfg.YOLO.STRIDES)
-        self.anchors = np.array(cfg.YOLO.ANCHORS).reshape((3, 3, 2))
-        XYSCALE = cfg.YOLO.XYSCALE
+        self.strides = np.array(cfg['YOLO']['STRIDES])
+        self.anchors = np.array(cfg['YOLO']['ANCHORS']).reshape((3, 3, 2))
+        XYSCALE = cfg['YOLO']['XYSCALE']
         self.dataset_type = dataset_type
 
         self.annot_path = (
-            cfg.TRAIN.ANNOT_PATH if is_training else cfg.TEST.ANNOT_PATH
+            cfg['TRAIN']['ANNOT_PATH'] if is_training else cfg['TEST']['ANNOT_PATH']
         )
         self.input_sizes = (
-            cfg.TRAIN.INPUT_SIZE if is_training else cfg.TEST.INPUT_SIZE
+            cfg['TRAIN']['INPUT_SIZE'] if is_training else cfg['TEST']['INPUT_SIZE']
         )
         self.batch_size = (
-            cfg.TRAIN.BATCH_SIZE if is_training else cfg.TEST.BATCH_SIZE
+            cfg['TRAIN']['BATCH_SIZE'] if is_training else cfg['TEST']['BATCH_SIZE']
         )
-        self.data_aug = cfg.TRAIN.DATA_AUG if is_training else cfg.TEST.DATA_AUG
+        self.data_aug = cfg['TRAIN']['DATA_AUG'] if is_training else cfg['TEST']['DATA_AUG']
 
-        self.train_input_sizes = cfg.TRAIN.INPUT_SIZE
-        self.classes = utils.read_class_names(cfg.YOLO.CLASSES)
+        self.train_input_sizes = cfg['TRAIN']['INPUT_SIZE']
+        self.classes = utils.read_class_names(cfg['YOLO']['CLASSES'])
         NUM_CLASS = len(self.classes)
         self.num_classes = len(self.classes)
-        self.anchor_per_scale = cfg.YOLO.ANCHOR_PER_SCALE
+        self.anchor_per_scale = cfg['YOLO']['ANCHOR_PER_SCALE']
         self.max_bbox_per_scale = 150
 
         self.annotations = self.load_annotations()
