@@ -114,7 +114,7 @@ class Dataset(object):
 
     def __init__(self, is_training: bool = True, dataset_type: str = "converted_coco"):
         self.tiny = False
-        self.strides = np.array(cfg['YOLO']['STRIDES])
+        self.strides = np.array(cfg['YOLO']['STRIDES'])
         self.anchors = np.array(cfg['YOLO']['ANCHORS']).reshape((3, 3, 2))
         XYSCALE = cfg['YOLO']['XYSCALE']
         self.dataset_type = dataset_type
