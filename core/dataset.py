@@ -387,7 +387,7 @@ class Dataset(object):
             [self.train_input_size, self.train_input_size],
             np.copy(bboxes),
         )
-        return image, bboxes, image_path, annotation
+        return image, bboxes, image_path, line[1:]
 
 
     def preprocess_true_boxes(self, bboxes):
