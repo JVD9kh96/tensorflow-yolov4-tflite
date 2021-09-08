@@ -246,7 +246,7 @@ class Dataset(object):
                     if index >= self.num_samples:
                         index -= self.num_samples
                     annotation = self.annotations[index]
-                    image, bboxes, img_path = self.parse_annotation(annotation)
+                    image, bboxes, img_path, annot = self.parse_annotation(annotation)
                     (
                         label_sbbox,
                         label_mbbox,
@@ -275,7 +275,8 @@ class Dataset(object):
                         batch_smaller_target,
                         batch_medium_target,
                         batch_larger_target,
-                    ), img_path,
+                    ), img_path, annot,
+                    
                 )
             else:
                 self.batch_count = 0
@@ -386,7 +387,7 @@ class Dataset(object):
             [self.train_input_size, self.train_input_size],
             np.copy(bboxes),
         )
-        return image, bboxes, image_path
+        return image, bboxes, image_path, annotation
 
 
     def preprocess_true_boxes(self, bboxes):
