@@ -18,7 +18,7 @@ cfg =   {'YOLO':{
                 'DATA_AUG'            : True,
                 'LR_INIT'             : 1.3e-3,
                 'LR_END'              : 1e-6,
-                'WARMUP_EPOCHS'       : 2,
+                'WARMUP_EPOCHS'       : 5,
                 'FISRT_STAGE_EPOCHS'  : 0,
                 'SECOND_STAGE_EPOCHS ': 150
         },
