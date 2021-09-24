@@ -1156,12 +1156,12 @@ def compute_loss(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH,
     conf_focal = tf.pow(respond_bbox - pred_conf, 2)
 
     conf_loss = conf_focal * (
-            respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=respond_bbox, logits=conv_raw_conf)
+            respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits_v2(labels=respond_bbox, logits=conv_raw_conf)
             +
-            respond_bgd * tf.nn.sigmoid_cross_entropy_with_logits(labels=respond_bbox, logits=conv_raw_conf)
+            respond_bgd * tf.nn.sigmoid_cross_entropy_with_logits_v2(labels=respond_bbox, logits=conv_raw_conf)
     )
 
-    prob_loss = respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_prob, logits=conv_raw_prob)
+    prob_loss = respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits_v2(labels=label_prob, logits=conv_raw_prob)
 
     giou_loss = (tf.reduce_sum(giou_loss, axis=[1,2,3,4]))
     conf_loss = (tf.reduce_sum(conf_loss, axis=[1,2,3,4]))
