@@ -13,7 +13,7 @@ cfg =   {'YOLO':{
                 },
         'TRAIN':{
                 'ANNOT_PATH'          : "data/dataset/yymnist_train.txt",
-                'BATCH_SIZE'          : 1,
+                'BATCH_SIZE'          : 40,
                 'INPUT_SIZE'          : 416,
                 'DATA_AUG'            : True,
                 'LR_INIT'             : 1.3e-3,
