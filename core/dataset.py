@@ -128,7 +128,7 @@ class Dataset(object):
         self.batch_size = (
             cfg['TRAIN']['BATCH_SIZE'] if is_training else cfg['TEST']['BATCH_SIZE']
         )
-        self.data_aug = cfg['TRAIN']['DATA_AUG'] if is_training else cfg['TEST']['DATA_AUG']
+        self.data_aug = cfg['TEST']['DATA_AUG'] if is_training else cfg['TEST']['DATA_AUG']
 
         self.train_input_sizes = cfg['TRAIN']['INPUT_SIZE']
         self.classes = utils.read_class_names(cfg['YOLO']['CLASSES'])
