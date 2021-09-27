@@ -8,7 +8,7 @@ cfg =   {'YOLO':{
                 'STRIDES'             : [8, 16, 32],
                 #'STRIDES'             : [4, 8, 16],
                 'STRIDES_TINY'        : [16, 32],
-                'XYSCALE'             : [1.2, 1.1, 1.05],
+                'XYSCALE'             : [1, 1, 1],
                 'XYSCALE_TINY'        : [1.05, 1.05],
                 'ANCHOR_PER_SCALE'    : 3,
                 'IOU_LOSS_THRESH'     : 0.5,
