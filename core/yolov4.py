@@ -977,21 +977,31 @@ def decode(conv_output, output_size, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE=[1,
         return decode_tf(conv_output, output_size, NUM_CLASS, STRIDES, ANCHORS, i=i, XYSCALE=XYSCALE)
 
 def decode_train(conv_output, output_size, NUM_CLASS, STRIDES, ANCHORS, i=0, XYSCALE=[1, 1, 1]):
-    conv_output = tf.reshape(conv_output,
-                             (tf.shape(conv_output)[0], output_size, output_size, 3, 5 + NUM_CLASS))
+    """
+    return tensor of shape [batch_size, output_size, output_size, anchor_per_scale, 5 + num_classes]
+            contains (x, y, w, h, score, probability)
+    """
+    
+    conv_shape       = tf.shape(conv_output)
+    batch_size       = conv_shape[0]
+    output_size      = conv_shape[1]
 
-    conv_raw_dxdy, conv_raw_dwdh, conv_raw_conf, conv_raw_prob = tf.split(conv_output, (2, 2, 1, NUM_CLASS),
-                                                                          axis=-1)
+    conv_output = tf.reshape(conv_output, (batch_size, output_size, output_size, 3, 5 + NUM_CLASS))
 
-    xy_grid = tf.meshgrid(tf.range(output_size), tf.range(output_size))
-    xy_grid = tf.expand_dims(tf.stack(xy_grid, axis=-1), axis=2)  # [gx, gy, 1, 2]
-    xy_grid = tf.tile(tf.expand_dims(xy_grid, axis=0), [tf.shape(conv_output)[0], 1, 1, 3, 1])
+    conv_raw_dxdy = conv_output[:, :, :, :, 0:2]
+    conv_raw_dwdh = conv_output[:, :, :, :, 2:4]
+    conv_raw_conf = conv_output[:, :, :, :, 4:5]
+    conv_raw_prob = conv_output[:, :, :, :, 5: ]
 
+    y = tf.tile(tf.range(output_size, dtype=tf.int32)[:, tf.newaxis], [1, output_size])
+    x = tf.tile(tf.range(output_size, dtype=tf.int32)[tf.newaxis, :], [output_size, 1])
+
+    xy_grid = tf.concat([x[:, :, tf.newaxis], y[:, :, tf.newaxis]], axis=-1)
+    xy_grid = tf.tile(xy_grid[tf.newaxis, :, :, tf.newaxis, :], [batch_size, 1, 1, 3, 1])
     xy_grid = tf.cast(xy_grid, tf.float32)
 
-    pred_xy = ((tf.sigmoid(conv_raw_dxdy) * XYSCALE[i]) - 0.5 * (XYSCALE[i] - 1) + xy_grid) * \
-              STRIDES[i]
-    pred_wh = (tf.exp(conv_raw_dwdh) * ANCHORS[i])
+    pred_xy = (tf.sigmoid(conv_raw_dxdy) + xy_grid) * STRIDES[i]
+    pred_wh = (tf.exp(conv_raw_dwdh) * ANCHORS[i]) 
     pred_xywh = tf.concat([pred_xy, pred_wh], axis=-1)
 
     pred_conf = tf.sigmoid(conv_raw_conf)
