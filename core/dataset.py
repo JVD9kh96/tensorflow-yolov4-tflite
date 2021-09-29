@@ -9,6 +9,15 @@ import tensorflow as tf
 import core.utils as utils
 from core.config import cfg
 
+def basic_augmentation(image, hue_max=0.5, sat_min=0.1, sat_max=7, br_max=0.5, cont_min=0.1, cont_max=7):
+  hue = tf.image.random_hue(image, hue_max)
+  saturation = tf.image.random_saturation(hue, sat_min, sat_max)
+  brightness = tf.image.random_brightness(saturation, br_max)
+  contrast = tf.image.random_contrast(brightness, cont_min, cont_max)
+  augmentated_image = contrast
+
+  return augmentated_image
+
 def image_preprocess(image, target_size, gt_boxes=None):
     ih, iw    = target_size
     ih = tf.cast(ih, tf.float32)
