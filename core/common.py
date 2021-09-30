@@ -52,7 +52,7 @@ class DropBlock2D(tf.keras.layers.Layer):
         if keep_prob is not None:
             self.keep_prob = keep_prob
         w, h = tf.cast(self.w, tf.float32), tf.cast(self.h, tf.float32)
-        self.gamma = (1.0 - tf.cast(self.keep_prob, tf.float32)) * (w * h) / (tf.cast(self.block_size, tf.float32) ** 2) / \
+        self.gamma = (1.0 - tf.cast(self.keep_prob, tf.float32)) * (w * h) / (tf.cast(self.block_size, tf.float32) ** 2.0) / \
                      ((w - tf.cast(self.block_size, tf.float32) + 1.0) * (h - tf.cast(self.block_size, tf.float32) + 1.0))
 
     def _create_mask(self, input_shape):
