@@ -24,8 +24,8 @@ class DropBlock2D(tf.keras.layers.Layer):
         assert len(input_shape) == 4
         _, self.h, self.w, self.channel = input_shape.as_list()
         # pad the mask
-        p1 = (self.block_size - 1) // 2
-        p0 = (self.block_size - 1) - p1
+        p1 = tf.cast((self.block_size - 1.0) / 2, tf.int32)
+        p0 = tf.cast((self.block_size - 1.0), tf.int32) - p1
         self.padding = [[0, 0], [p0, p1], [p0, p1], [0, 0]]
         self.set_keep_prob()
         super(DropBlock2D, self).build(input_shape)
@@ -52,8 +52,8 @@ class DropBlock2D(tf.keras.layers.Layer):
         if keep_prob is not None:
             self.keep_prob = keep_prob
         w, h = tf.cast(self.w, tf.float32), tf.cast(self.h, tf.float32)
-        self.gamma = (1. - self.keep_prob) * (w * h) / (self.block_size ** 2) / \
-                     ((w - self.block_size + 1) * (h - self.block_size + 1))
+        self.gamma = (1.0 - tf.cast(self.keep_prob, tf.float32)) * (w * h) / (tf.cast(self.block_size, tf.float32) ** 2) / \
+                     ((w - tf.cast(self.block_size, tf.float32) + 1.0) * (h - tf.cast(self.block_size, tf.float32) + 1.0))
 
     def _create_mask(self, input_shape):
         sampling_mask_shape = tf.stack([input_shape[0],
@@ -62,8 +62,8 @@ class DropBlock2D(tf.keras.layers.Layer):
                                        self.channel])
         mask = _bernoulli(sampling_mask_shape, self.gamma)
         mask = tf.pad(mask, self.padding)
-        mask = tf.nn.max_pool(mask, [1, self.block_size, self.block_size, 1], [1, 1, 1, 1], 'SAME')
-        mask = 1 - mask
+        mask = tf.cast(tf.nn.max_pool(mask, [1, self.block_size, self.block_size, 1], [1, 1, 1, 1], 'SAME'), tf.float32)
+        mask = 1.0 - mask
         return mask
 
 class BatchNormalization(tf.keras.layers.BatchNormalization):
