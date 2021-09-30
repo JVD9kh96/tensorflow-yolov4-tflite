@@ -41,7 +41,7 @@ class DropBlock2D(tf.keras.layers.Layer):
 
         if training is None:
             training = K.learning_phase()
-            training = tf.cast(training, tf.bool)
+        training = tf.cast(training, tf.bool)
         output = tf.cond(tf.logical_or(tf.logical_not(training), tf.equal(self.keep_prob, 1.0)),
                          true_fn=lambda: inputs,
                          false_fn=drop)
