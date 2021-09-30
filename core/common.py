@@ -13,7 +13,7 @@ def _bernoulli(shape, mean):
 class DropBlock2D(tf.keras.layers.Layer):
     def __init__(self, keep_prob, block_size, scale=True, **kwargs):
         super(DropBlock2D, self).__init__(**kwargs)
-        self.keep_prob = float(keep_prob) if isinstance(keep_prob, int) else keep_prob
+        self.keep_prob = tf.float32(keep_prob) if isinstance(keep_prob, int) else keep_prob
         self.block_size = tf.cast(block_size, tf.int32)
         self.scale = tf.constant(scale, dtype=tf.bool) if isinstance(scale, bool) else scale
 
@@ -22,7 +22,9 @@ class DropBlock2D(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         assert len(input_shape) == 4
-        _, self.h, self.w, self.channel = input_shape.as_list()
+        self.h = input_shape[1]
+        self.w = input_shape[2]
+        self.channel = input_shape[3]
         # pad the mask
         p1 = tf.cast((tf.cast(self.block_size, tf.float32) - 1.0) / 2.0, tf.int32)
         p0 = tf.cast((tf.cast(self.block_size, tf.float32) - 1.0), tf.int32) - p1
@@ -51,7 +53,8 @@ class DropBlock2D(tf.keras.layers.Layer):
         """This method only supports Eager Execution"""
         if keep_prob is not None:
             self.keep_prob = keep_prob
-        w, h = tf.cast(self.w, tf.float32), tf.cast(self.h, tf.float32)
+        w = tf.cast(self.w, tf.float32)
+        h = tf.cast(self.h, tf.float32)
         self.gamma = (1.0 - tf.cast(self.keep_prob, tf.float32)) * (w * h) / (tf.cast(self.block_size, tf.float32) ** 2.0) / \
                      ((w - tf.cast(self.block_size, tf.float32) + 1.0) * (h - tf.cast(self.block_size, tf.float32) + 1.0))
 
