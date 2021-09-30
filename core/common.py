@@ -24,7 +24,7 @@ class DropBlock2D(tf.keras.layers.Layer):
         assert len(input_shape) == 4
         _, self.h, self.w, self.channel = input_shape.as_list()
         # pad the mask
-        p1 = tf.cast((self.block_size - 1.0) / 2, tf.int32)
+        p1 = tf.cast((self.block_size - 1.0) / 2.0, tf.int32)
         p0 = tf.cast((self.block_size - 1.0), tf.int32) - p1
         self.padding = [[0, 0], [p0, p1], [p0, p1], [0, 0]]
         self.set_keep_prob()
