@@ -6,13 +6,6 @@ from tensorflow.keras import layers
 # import tensorflow_addons as tfa
 from tensorflow.keras import regularizers
 
-# import tensorflow_addons as tfa
-def ws_reg(kernel):
-    kernel_mean = tf.math.reduce_mean(kernel, axis=[0, 1, 2], keepdims=True, name='kernel_mean')
-    kernel = kernel - kernel_mean
-    kernel_std = tf.keras.backend.std(kernel, axis=[0, 1, 2], keepdims=True)
-    kernel = kernel / (kernel_std + 1e-5)
-    return kernel
 
 class BatchNormalization(tf.keras.layers.BatchNormalization):
     """
@@ -37,7 +30,7 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
         padding = 'same'
 
     conv = tf.keras.layers.Conv2D(filters=filters_shape[-1], kernel_size = filters_shape[0], strides=strides, padding=padding,
-                                  use_bias=not bn, kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                  use_bias=not bn, kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                   bias_initializer=tf.constant_initializer(0.))(input_layer)
 
@@ -157,7 +150,7 @@ def kai_attention(key,
                                  strides = (1, 1),
                                  padding = 'same',
                                  use_bias = False,
-                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
     
     value = tf.keras.layers.Conv2D(filters = heads//2,
@@ -165,7 +158,7 @@ def kai_attention(key,
                                  strides = (1, 1),
                                  padding = 'same',
                                  use_bias = False,
-                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
     
     query = tf.keras.layers.Conv2D(filters = heads//2,
@@ -173,7 +166,7 @@ def kai_attention(key,
                                  strides = (1, 1),
                                  padding = 'same',
                                  use_bias = False,
-                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
     shape = getattr(value, 'shape')
     dk = tf.cast(shape[1]*shape[2], tf.float32)
@@ -199,7 +192,7 @@ def kai_attention(key,
 
     attention = tf.einsum('aijb,ajkb->aikb', qk, value)
     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
-                                        kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                        kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                         use_bias = False,
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
@@ -224,7 +217,7 @@ def transformer_block(inp,
     inp = tf.keras.layers.Conv2D(filters = out_filt,
                                  kernel_size = kernel_size,
                                  strides = (1, 1),
-                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                  use_bias = False,
                                  padding='same')(inp)
@@ -264,7 +257,7 @@ def transformer_block(inp,
                                 strides=(1, 1),
                                 padding = 'same',
                                 use_bias = False,
-                                kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(x4)
     if activation == 'mish':
         x6 = mish(x5)
@@ -280,7 +273,7 @@ def transformer_block(inp,
                                 strides=(1, 1),
                                 padding = 'same',
                                 use_bias = False,
-                                kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                 bias_regularizer=regularizers.l2(1e-4),
                                 activity_regularizer=regularizers.l2(1e-5))(x6)
