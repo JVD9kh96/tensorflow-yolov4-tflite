@@ -95,7 +95,7 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
 
     if bn and norm==0: 
         conv = BatchNormalization()(conv)
-        conv_shape = tf.shape(conv)
+        conv_shape = getattr(conv, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         conv = DropBlock2D(keep_prob=0.9, block_size=block_size)(conv)
     # elif bn and norm==1:
@@ -293,7 +293,7 @@ def transformer_block(inp,
 
     if normalization == 'batch':
         x1 = tf.keras.layers.BatchNormalization()(inp)
-        conv_shape = tf.shape(x1)
+        conv_shape = getattr(x1, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         x1 = DropBlock2D(keep_prob=0.9, block_size=block_size)(x1)
     # elif normalization == 'group':
@@ -312,7 +312,7 @@ def transformer_block(inp,
     x3 = tf.keras.layers.Add()([x2, inp])
     if normalization == 'batch':
         x4 = tf.keras.layers.BatchNormalization()(x3)
-        conv_shape = tf.shape(x4)
+        conv_shape = getattr(x4, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         x4 = DropBlock2D(keep_prob=0.9, block_size=block_size)(x4)
     # elif normalization == 'group':
@@ -359,7 +359,7 @@ def transformer_block(inp,
 
     if normalization == 'batch':
         x8 = tf.keras.layers.BatchNormalization()(x8)
-        conv_shape = tf.shape(x8)
+        conv_shape = getattr(x8, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         x8 = DropBlock2D(keep_prob=0.9, block_size=block_size)(x8) 
     # elif normalization == 'group':
