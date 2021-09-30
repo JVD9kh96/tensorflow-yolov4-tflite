@@ -42,7 +42,7 @@ class DropBlock2D(tf.keras.layers.Layer):
             return output
         
         training = tf.cast(training, tf.float32)
-        output = tf.cond(tf.equal(1.0-training, 1.0), tf.equal(self.keep_prob, 1.0)),
+        output = tf.cond(tf.logical_or(tf.equal(1.0-training, 1.0), tf.equal(self.keep_prob, 1.0)),
                          true_fn=lambda: inputs,
                          false_fn=drop)
         return output
