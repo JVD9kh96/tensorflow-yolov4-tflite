@@ -14,7 +14,7 @@ class DropBlock2D(tf.keras.layers.Layer):
     def __init__(self, keep_prob, block_size, scale=True, **kwargs):
         super(DropBlock2D, self).__init__(**kwargs)
         self.keep_prob = float(keep_prob) if isinstance(keep_prob, int) else keep_prob
-        self.block_size = int(block_size)
+        self.block_size = tf.cast(block_size, tf.int32)
         self.scale = tf.constant(scale, dtype=tf.bool) if isinstance(scale, bool) else scale
 
     def compute_output_shape(self, input_shape):
