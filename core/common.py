@@ -7,65 +7,87 @@ from tensorflow.keras import layers
 from tensorflow.keras import regularizers
 from tensorflow.python.keras import backend as K
 
-def _bernoulli(shape, mean):
-    return tf.nn.relu(tf.sign(mean - tf.random.uniform(shape, minval=0, maxval=1, dtype=tf.float32)))
+class Dropblock(object):
+  """DropBlock: a regularization method for convolutional neural networks.
+    DropBlock is a form of structured dropout, where units in a contiguous
+    region of a feature map are dropped together. DropBlock works better than
+    dropout on convolutional layers due to the fact that activation units in
+    convolutional layers are spatially correlated.
+    See https://arxiv.org/pdf/1810.12890.pdf for details.
+  """
 
-class DropBlock2D(tf.keras.layers.Layer):
-    def __init__(self, keep_prob, block_size, scale=True, **kwargs):
-        super(DropBlock2D, self).__init__(**kwargs)
-        self.keep_prob = tf.float32(keep_prob) if isinstance(keep_prob, int) else keep_prob
-        self.block_size = tf.cast(block_size, tf.int32)
-        self.scale = tf.constant(scale, dtype=tf.bool) if isinstance(scale, bool) else scale
+  def __init__(self,
+               dropblock_keep_prob=None,
+               dropblock_size=None,
+               data_format='channels_last'):
+    self._dropblock_keep_prob = dropblock_keep_prob
+    self._dropblock_size = dropblock_size
+    self._data_format = data_format
 
-    def compute_output_shape(self, input_shape):
-        return input_shape
+  def __call__(self, net, is_training=False):
+    """Builds Dropblock layer.
+    Args:
+      net: `Tensor` input tensor.
+      is_training: `bool` if True, the model is in training mode.
+    Returns:
+      A version of input tensor with DropBlock applied.
+    """
+    if (not is_training or self._dropblock_keep_prob is None or
+        self._dropblock_keep_prob == 1.0):
+      return net
 
-    def build(self, input_shape):
-        assert len(input_shape) == 4
-        self.h = input_shape[1]
-        self.w = input_shape[2]
-        self.channel = input_shape[3]
-        # pad the mask
-        p1 = tf.cast((tf.cast(self.block_size, tf.float32) - 1.0) / 2.0, tf.int32)
-        p0 = tf.cast((tf.cast(self.block_size, tf.float32) - 1.0), tf.int32) - p1
-        self.padding = [[0, 0], [p0, p1], [p0, p1], [0, 0]]
-        self.set_keep_prob()
-        super(DropBlock2D, self).build(input_shape)
+    logging.info('Applying DropBlock: dropblock_size %d,'
+                 'net.shape %s', self._dropblock_size, net.shape)
 
-    def call(self, inputs, training=False):
-        def drop():
-            mask = self._create_mask(tf.shape(inputs))
-            output = inputs * mask
-            output = tf.cond(self.scale,
-                             true_fn=lambda: output * tf.cast(tf.size(mask), tf.float32) / tf.reduce_sum(mask),
-                             false_fn=lambda: output)
-            return output
-        
-        training = tf.cast(training, tf.float32)
-        output = tf.cond(tf.logical_or(tf.equal(1.0-training, 1.0), tf.equal(self.keep_prob, 1.0)),
-                         true_fn=lambda: inputs,
-                         false_fn=drop)
-        return output
+    if self._data_format == 'channels_last':
+      _, height, width, _ = net.get_shape().as_list()
+    else:
+      _, _, height, width = net.get_shape().as_list()
 
-    def set_keep_prob(self, keep_prob=None):
-        """This method only supports Eager Execution"""
-        if keep_prob is not None:
-            self.keep_prob = keep_prob
-        w = tf.cast(self.w, tf.float32)
-        h = tf.cast(self.h, tf.float32)
-        self.gamma = (1.0 - tf.cast(self.keep_prob, tf.float32)) * (w * h) / (tf.cast(self.block_size, tf.float32) ** 2.0) / \
-                     ((w - tf.cast(self.block_size, tf.float32) + 1.0) * (h - tf.cast(self.block_size, tf.float32) + 1.0))
+    total_size = width * height
+    dropblock_size = min(self._dropblock_size, min(width, height))
+    # Seed_drop_rate is the gamma parameter of DropBlcok.
+    seed_drop_rate = (
+        1.0 - self._dropblock_keep_prob) * total_size / dropblock_size**2 / (
+            (width - self._dropblock_size + 1) *
+            (height - self._dropblock_size + 1))
 
-    def _create_mask(self, input_shape):
-        sampling_mask_shape = tf.stack([input_shape[0],
-                                       self.h - self.block_size + 1,
-                                       self.w - self.block_size + 1,
-                                       self.channel])
-        mask = _bernoulli(sampling_mask_shape, self.gamma)
-        mask = tf.pad(mask, self.padding)
-        mask = tf.cast(tf.nn.max_pool(mask, [1, self.block_size, self.block_size, 1], [1, 1, 1, 1], 'SAME'), tf.float32)
-        mask = 1.0 - mask
-        return mask
+    # Forces the block to be inside the feature map.
+    w_i, h_i = tf.meshgrid(tf.range(width), tf.range(height))
+    valid_block = tf.logical_and(
+        tf.logical_and(w_i >= int(dropblock_size // 2),
+                       w_i < width - (dropblock_size - 1) // 2),
+        tf.logical_and(h_i >= int(dropblock_size // 2),
+                       h_i < width - (dropblock_size - 1) // 2))
+
+    if self._data_format == 'channels_last':
+      valid_block = tf.reshape(valid_block, [1, height, width, 1])
+    else:
+      valid_block = tf.reshape(valid_block, [1, 1, height, width])
+
+    randnoise = tf.random_uniform(net.shape, dtype=tf.float32)
+    valid_block = tf.cast(valid_block, dtype=tf.float32)
+    seed_keep_rate = tf.cast(1 - seed_drop_rate, dtype=tf.float32)
+    block_pattern = (1 - valid_block + seed_keep_rate + randnoise) >= 1
+    block_pattern = tf.cast(block_pattern, dtype=tf.float32)
+
+    if self._data_format == 'channels_last':
+      ksize = [1, self._dropblock_size, self._dropblock_size, 1]
+    else:
+      ksize = [1, 1, self._dropblock_size, self._dropblock_size]
+    block_pattern = -tf.nn.max_pool(
+        -block_pattern,
+        ksize=ksize,
+        strides=[1, 1, 1, 1],
+        padding='SAME',
+        data_format='NHWC' if self._data_format == 'channels_last' else 'NCHW')
+
+    percent_ones = tf.cast(tf.reduce_sum(block_pattern), tf.float32) / tf.cast(
+        tf.size(block_pattern), tf.float32)
+
+    net = net / tf.cast(percent_ones, net.dtype) * tf.cast(
+        block_pattern, net.dtype)
+    return net
 
 class BatchNormalization(tf.keras.layers.BatchNormalization):
     """
@@ -98,7 +120,7 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
         conv = BatchNormalization()(conv)
         conv_shape = getattr(conv, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
-        conv = DropBlock2D(keep_prob=0.9, block_size=block_size)(conv)
+        conv = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(conv)
     # elif bn and norm==1:
     #     conv = tfa.layers.GroupNormalization(groups = min(filters_shape[-1], 32))(conv)
      
@@ -213,7 +235,7 @@ def kai_attention(key,
                                  strides = (1, 1),
                                  padding = 'same',
                                  use_bias = False,
-                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
     
     value = tf.keras.layers.Conv2D(filters = heads//2,
@@ -221,7 +243,7 @@ def kai_attention(key,
                                  strides = (1, 1),
                                  padding = 'same',
                                  use_bias = False,
-                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
     
     query = tf.keras.layers.Conv2D(filters = heads//2,
@@ -229,7 +251,7 @@ def kai_attention(key,
                                  strides = (1, 1),
                                  padding = 'same',
                                  use_bias = False,
-                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
     shape = getattr(value, 'shape')
     dk = tf.cast(shape[1]*shape[2], tf.float32)
@@ -255,7 +277,7 @@ def kai_attention(key,
 
     attention = tf.einsum('aijb,ajkb->aikb', qk, value)
     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
-                                        kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                        kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                         use_bias = False,
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
@@ -280,7 +302,7 @@ def transformer_block(inp,
     inp = tf.keras.layers.Conv2D(filters = out_filt,
                                  kernel_size = kernel_size,
                                  strides = (1, 1),
-                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.0005, l2=0.0005),
+                                 kernel_regularizer=tf.keras.regularizers.l1_l2(l1=0.00025, l2=0.00025),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                  use_bias = False,
                                  padding='same')(inp)
@@ -296,7 +318,7 @@ def transformer_block(inp,
         x1 = tf.keras.layers.BatchNormalization()(inp)
         conv_shape = getattr(x1, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
-        x1 = DropBlock2D(keep_prob=0.9, block_size=block_size)(x1)
+        x1 = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(x1)
     # elif normalization == 'group':
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
@@ -315,7 +337,7 @@ def transformer_block(inp,
         x4 = tf.keras.layers.BatchNormalization()(x3)
         conv_shape = getattr(x4, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
-        x4 = DropBlock2D(keep_prob=0.9, block_size=block_size)(x4)
+        x4 = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(x4)
     # elif normalization == 'group':
     #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
     elif normalization == 'layer':
@@ -362,7 +384,7 @@ def transformer_block(inp,
         x8 = tf.keras.layers.BatchNormalization()(x8)
         conv_shape = getattr(x8, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
-        x8 = DropBlock2D(keep_prob=0.9, block_size=block_size)(x8) 
+        x8 = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(x8) 
     # elif normalization == 'group':
     #     x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
     elif normalization == 'layer':
