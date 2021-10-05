@@ -121,6 +121,7 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
         conv_shape = getattr(conv, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         conv = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(conv)
+        conv = tf.keras.layers.MaxPooling2D(3, 1, padding = 'same')(conv)
     # elif bn and norm==1:
     #     conv = tfa.layers.GroupNormalization(groups = min(filters_shape[-1], 32))(conv)
      
@@ -306,6 +307,7 @@ def transformer_block(inp,
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                  use_bias = False,
                                  padding='same')(inp)
+    
     if activation == 'mish':
         inp = mish(inp)
     elif activation == 'gelu':
@@ -319,6 +321,7 @@ def transformer_block(inp,
         conv_shape = getattr(x1, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         x1 = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(x1)
+        x1 = tf.keras.layers.MaxPooling2D(3, 1, padding = 'same')(x1)
     # elif normalization == 'group':
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
@@ -326,6 +329,7 @@ def transformer_block(inp,
         conv_shape = getattr(x1, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         x1 = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(x1)
+        x1 = tf.keras.layers.MaxPooling2D(3, 1, padding = 'same')(x1)
         
     x2 = kai_attention(x1,
                        x1,
@@ -341,6 +345,7 @@ def transformer_block(inp,
         conv_shape = getattr(x4, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         x4 = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(x4)
+        x4 = tf.keras.layers.MaxPooling2D(3, 1, padding = 'same')(x4)
     # elif normalization == 'group':
     #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
     elif normalization == 'layer':
@@ -348,6 +353,7 @@ def transformer_block(inp,
         conv_shape = getattr(x4, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         x4 = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(x4)
+        x4 = tf.keras.layers.MaxPooling2D(3, 1, padding = 'same')(x4)
     
     x5 = tf.keras.layers.Conv2D(filters = out_filt//2,
                                 kernel_size=(1, 1),
@@ -391,6 +397,7 @@ def transformer_block(inp,
         conv_shape = getattr(x8, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         x8 = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(x8) 
+        x8 = tf.keras.layers.MaxPooling2D(3, 1, padding = 'same')(x8)
     # elif normalization == 'group':
     #     x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
     elif normalization == 'layer':
@@ -398,6 +405,7 @@ def transformer_block(inp,
         conv_shape = getattr(x8, 'shape')
         block_size = tf.maximum(1, conv_shape[1] // 32)
         x8 = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(x8) 
+        x8 = tf.keras.layers.MaxPooling2D(3, 1, padding = 'same')(x8)
 
     if down_sample:
         x8 = tf.keras.layers.MaxPooling2D(pool_size = (2, 2), strides = (2, 2))(x8)
