@@ -24,7 +24,7 @@ class Dropblock(object):
     self._dropblock_size = dropblock_size
     self._data_format = data_format
 
-  def __call__(self, net, is_training=False):
+  def call(self, net, training=False):
     """Builds Dropblock layer.
     Args:
       net: `Tensor` input tensor.
@@ -32,7 +32,7 @@ class Dropblock(object):
     Returns:
       A version of input tensor with DropBlock applied.
     """
-    if (not is_training or self._dropblock_keep_prob is None or
+    if (not training or self._dropblock_keep_prob is None or
         self._dropblock_keep_prob == 1.0):
       return net
 
