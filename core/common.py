@@ -7,7 +7,7 @@ from tensorflow.keras import layers
 from tensorflow.keras import regularizers
 from tensorflow.python.keras import backend as K
 
-class Dropblock(object):
+class Dropblock(tf.keras.layers.Layer):
   """DropBlock: a regularization method for convolutional neural networks.
     DropBlock is a form of structured dropout, where units in a contiguous
     region of a feature map are dropped together. DropBlock works better than
