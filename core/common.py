@@ -20,6 +20,7 @@ class Dropblock(tf.keras.layers.Layer):
                dropblock_keep_prob=None,
                dropblock_size=None,
                data_format='channels_last'):
+    super(Dropblock, self).__init__()
     self._dropblock_keep_prob = dropblock_keep_prob
     self._dropblock_size = dropblock_size
     self._data_format = data_format
