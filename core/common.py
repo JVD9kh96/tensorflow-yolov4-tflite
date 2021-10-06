@@ -37,8 +37,7 @@ class Dropblock(tf.keras.layers.Layer):
         self._dropblock_keep_prob == 1.0):
       return net
 
-    logging.info('Applying DropBlock: dropblock_size %d,'
-                 'net.shape %s', self._dropblock_size, net.shape)
+  
 
     if self._data_format == 'channels_last':
       _, height, width, _ = net.get_shape().as_list()
