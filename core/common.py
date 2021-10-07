@@ -60,9 +60,9 @@ class Dropblock(tf.keras.layers.Layer):
     w_i, h_i = tf.meshgrid(tf.range(width), tf.range(height))
     valid_block = tf.logical_and(
         tf.logical_and(w_i >= tf.cast(dropblock_size / 2, tf.int32),
-                       w_i < width - (dropblock_size - 1) // 2),
+                       w_i < width - tf.cast((dropblock_size - 1) / 2, tf.int32)),
         tf.logical_and(h_i >= tf.cast(dropblock_size / 2, tf.int32),
-                       h_i < width - (dropblock_size - 1) // 2))
+                       h_i < width - tf.cast((dropblock_size - 1) / 2, tf.int32)))
 
     if self._data_format == 'channels_last':
       valid_block = tf.reshape(valid_block, [1, height, width, 1])
