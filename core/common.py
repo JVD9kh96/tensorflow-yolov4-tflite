@@ -40,12 +40,16 @@ class Dropblock(tf.keras.layers.Layer):
   
 
     if self._data_format == 'channels_last':
-      _, height, width, _ = net.get_shape().as_list()
+      height = tf.shape(net)[1]
+      width = tf.shape(net)[2]
+      #_, height, width, _ = net.get_shape().as_list()
     else:
-      _, _, height, width = net.get_shape().as_list()
+      height = tf.shape(net)[2]
+      width = tf.shape(net)[3]
+      #_, _, height, width = net.get_shape().as_list()
 
     total_size = width * height
-    dropblock_size = min(self._dropblock_size, min(width, height))
+    dropblock_size = tf.math.minimum(self._dropblock_size, tf.math.minimum(width, height))
     # Seed_drop_rate is the gamma parameter of DropBlcok.
     seed_drop_rate = (
         1.0 - self._dropblock_keep_prob) * total_size / dropblock_size**2 / (
