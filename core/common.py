@@ -52,9 +52,9 @@ class Dropblock(tf.keras.layers.Layer):
     dropblock_size = tf.math.minimum(self._dropblock_size, tf.math.minimum(width, height))
     # Seed_drop_rate is the gamma parameter of DropBlcok.
     seed_drop_rate = (
-        1.0 - self._dropblock_keep_prob) * total_size / dropblock_size**2 / (
+        1.0 - self._dropblock_keep_prob) * tf.cast(total_size, tf.float32) / tf.cast(dropblock_size**2 , tf.float32) / tf.cast(
             (width - self._dropblock_size + 1) *
-            (height - self._dropblock_size + 1))
+            (height - self._dropblock_size + 1), tf.float32)
 
     # Forces the block to be inside the feature map.
     w_i, h_i = tf.meshgrid(tf.range(width), tf.range(height))
