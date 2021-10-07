@@ -69,7 +69,7 @@ class Dropblock(tf.keras.layers.Layer):
     else:
       valid_block = tf.reshape(valid_block, [1, 1, height, width])
 
-    randnoise = tf.random.uniform(net.shape, dtype=tf.float32)
+    randnoise = tf.random.uniform(net.shape[1:], dtype=tf.float32)[tf.newaxis, :, :, :]
     valid_block = tf.cast(valid_block, dtype=tf.float32)
     seed_keep_rate = tf.cast(1 - seed_drop_rate, dtype=tf.float32)
     block_pattern = (1 - valid_block + seed_keep_rate + randnoise) >= 1
