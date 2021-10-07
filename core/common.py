@@ -59,9 +59,9 @@ class Dropblock(tf.keras.layers.Layer):
     # Forces the block to be inside the feature map.
     w_i, h_i = tf.meshgrid(tf.range(width), tf.range(height))
     valid_block = tf.logical_and(
-        tf.logical_and(w_i >= int(dropblock_size // 2),
+        tf.logical_and(w_i >= tf.cast(dropblock_size / 2, tf.int32),
                        w_i < width - (dropblock_size - 1) // 2),
-        tf.logical_and(h_i >= int(dropblock_size // 2),
+        tf.logical_and(h_i >= tf.cast(dropblock_size / 2, tf.int32),
                        h_i < width - (dropblock_size - 1) // 2))
 
     if self._data_format == 'channels_last':
