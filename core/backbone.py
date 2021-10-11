@@ -1075,4 +1075,4 @@ def cspdarkerattnet53_sub2(input_data,
 
     input_data = common.convolutional(input_data, (1, 1, 512, 512), activate_type="mish")
     route_2 = input_data
-    return route_1, route_2, input_data
+    return route_2
