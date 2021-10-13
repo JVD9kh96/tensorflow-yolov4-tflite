@@ -988,4 +988,24 @@ def cspdarkerattnet53(input_data,
     input_data = common.convolutional(input_data, (3, 3, 512, 1024))
     input_data = common.convolutional(input_data, (1, 1, 1024, 512))
 
+    route_1 = common.convolutional(route_1, (1, 1, 256, 128))
+    route_1 = common.convolutional(route_1, (3, 3, 128, 256))
+    route_1 = common.convolutional(route_1, (1, 1, 256, 128))
+
+    route_1 = tf.concat([tf.nn.max_pool(route_1, ksize=13, padding='SAME', strides=1), tf.nn.max_pool(route_1, ksize=9, padding='SAME', strides=1)
+                            , tf.nn.max_pool(route_1, ksize=5, padding='SAME', strides=1), route_1], axis=-1)
+    route_1 = common.convolutional(route_1, (1, 1, 512, 128))
+    route_1 = common.convolutional(route_1, (3, 3, 128, 256))
+    route_1 = common.convolutional(route_1, (1, 1, 256, 128))
+    
+    route_2 = common.convolutional(route_2, (1, 1, 512, 256))
+    route_2 = common.convolutional(route_2, (3, 3, 256, 512))
+    route_2 = common.convolutional(route_2, (1, 1, 512, 256))
+
+    route_2 = tf.concat([tf.nn.max_pool(route_2, ksize=13, padding='SAME', strides=1), tf.nn.max_pool(route_2, ksize=9, padding='SAME', strides=1)
+                            , tf.nn.max_pool(route_2, ksize=5, padding='SAME', strides=1), route_2], axis=-1)
+    route_2 = common.convolutional(route_2, (1, 1, 1024, 256))
+    route_2 = common.convolutional(route_2, (3, 3, 256, 512))
+    route_2 = common.convolutional(route_2, (1, 1, 512, 256))
+
     return route_1, route_2, input_data
