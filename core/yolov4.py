@@ -7,7 +7,7 @@ import core.common as common
 import core.backbone as backbone
 
 
-def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4], spp=0, normal=0, axes = [1, 2]):
+def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'gelu', projection_dim = 128,transformer_layers =[6, 6, 6], attention_heads=[4, 4, 4], spp=0, normal=0, axes = [1, 2], include_head=True):
     if is_tiny:
         if model == 'yolov4':
             return YOLOv4_tiny(input_layer, NUM_CLASS)
@@ -39,7 +39,7 @@ def YOLO(input_layer, NUM_CLASS, model='yolov4', is_tiny=False, activation = 'ge
         elif model == 'yolov4_att_v3':
             return YOLOv4_att_v3(input_layer, NUM_CLASS, activation=activation, attention_axes = axes, normal = normal)
         elif model == 'yolov4_att_v4':
-            return YOLOv4_att_v4(input_layer, NUM_CLASS, activation=activation, attention_axes = axes, normal = normal)
+            return YOLOv4_att_v4(input_layer, NUM_CLASS, activation=activation, attention_axes = axes, normal = normal,  include_head=include_head)
 
 
 def YOLOv3(input_layer, NUM_CLASS):
@@ -433,7 +433,9 @@ def YOLOv4_att_v4(input_layer,
                   NUM_CLASS,
                   activation = 'mish',
                   normal = 2,
-                  attention_axes = [1, 2]):
+                  attention_axes = [1, 2],
+                  include_head=True):
+    
     if normal > 2:
         normal = normal - 3
     if normal == 0:
@@ -474,7 +476,10 @@ def YOLOv4_att_v4(input_layer,
 
     route_1 = conv
     conv = common.convolutional(conv, (3, 3, 128, 256))
-    conv_sbbox = common.convolutional(conv, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    if include_head:
+        conv_sbbox = common.convolutional(conv, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    else:
+        conv_sbbox = conv
 
     conv = common.convolutional(route_1, (3, 3, 128, 256), downsample=True)
     conv = tf.concat([conv, route_2], axis=-1)
@@ -487,7 +492,10 @@ def YOLOv4_att_v4(input_layer,
 
     route_2 = conv
     conv = common.convolutional(conv, (3, 3, 256, 512))
-    conv_mbbox = common.convolutional(conv, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    if include_head:
+        conv_mbbox = common.convolutional(conv, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    else:
+        conv_mbbox = conv
 
     conv = common.convolutional(route_2, (3, 3, 256, 512), downsample=True)
     conv = tf.concat([conv, route], axis=-1)
@@ -499,8 +507,10 @@ def YOLOv4_att_v4(input_layer,
     conv = common.convolutional(conv, (1, 1, 1024, 512))
 
     conv = common.convolutional(conv, (3, 3, 512, 1024))
-    conv_lbbox = common.convolutional(conv, (1, 1, 1024, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
-
+    if include_head:
+        conv_lbbox = common.convolutional(conv, (1, 1, 1024, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    else:
+        conv_lbbox = conv
     return [conv_sbbox, conv_mbbox, conv_lbbox]
 
 
