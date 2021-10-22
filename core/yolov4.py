@@ -1067,7 +1067,7 @@ def decode_train(conv_output, output_size, NUM_CLASS, STRIDES, ANCHORS, i=0, XYS
     xy_grid = tf.expand_dims(tf.stack(xy_grid, axis=-1), axis=2)  # [gx, gy, 1, 2]
     xy_grid = tf.tile(tf.expand_dims(xy_grid, axis=0), [tf.shape(conv_output)[0], 1, 1, 3, 1])
 
-    xy_grid = tf.cast(xy_grid, tf.float32)
+    xy_grid = tf.cast(xy_grid, conv_output.dtype)
 
     pred_xy = ((tf.sigmoid(conv_raw_dxdy) * XYSCALE[i]) - 0.5 * (XYSCALE[i] - 1) + xy_grid) * \
               STRIDES[i]
@@ -1209,7 +1209,7 @@ def compute_loss(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH,
     conv_shape  = tf.shape(conv)
     batch_size  = conv_shape[0]
     output_size = conv_shape[1]
-    input_size  = STRIDES[i] * tf.cast(output_size, tf.float32)
+    input_size  = STRIDES[i] * tf.cast(output_size, conv.dtype)
     conv = tf.reshape(conv, (batch_size, output_size, output_size, 3, 5 + NUM_CLASS))
 
     conv_raw_conf = conv[:, :, :, :, 4:5]
