@@ -1223,7 +1223,7 @@ def compute_loss(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH,
     label_prob    = label[:, :, :, :, 5:]
 
     giou = tf.expand_dims(utils.bbox_giou(pred_xywh, label_xywh), axis=-1)
-    input_size = tf.cast(input_size, tf.float32)
+    input_size = tf.cast(input_size, conv.dtype)
 
     bbox_loss_scale = 2.0 - 1.0 * label_xywh[:, :, :, :, 2:3] * label_xywh[:, :, :, :, 3:4] / (input_size ** 2)
     giou_loss = respond_bbox * bbox_loss_scale * (1- giou)
@@ -1231,7 +1231,7 @@ def compute_loss(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH,
     iou = utils.bbox_iou(pred_xywh[:, :, :, :, tf.newaxis, :], bboxes[:, tf.newaxis, tf.newaxis, tf.newaxis, :, :])
     max_iou = tf.expand_dims(tf.reduce_max(iou, axis=-1), axis=-1)
 
-    respond_bgd = (1.0 - respond_bbox) * tf.cast( max_iou < IOU_LOSS_THRESH, tf.float32 )
+    respond_bgd = (1.0 - respond_bbox) * tf.cast( max_iou < IOU_LOSS_THRESH, conv.dtype)
 
     conf_focal = tf.pow(respond_bbox - pred_conf, 2)
 
