@@ -247,8 +247,9 @@ def bbox_giou(bboxes1, bboxes2):
 
     enclose_section = enclose_right_down - enclose_left_up
     enclose_area = enclose_section[..., 0] * enclose_section[..., 1]
-
-    giou = iou - tf.math.divide_no_nan(enclose_area - union_area, enclose_area)
+    
+    
+    giou = iou - tf.cast(tf.math.divide_no_nan(tf.cast(enclose_area - union_area, tf.float32), tf.cast(enclose_area, tf.float32)), iou.dtype)
 
     return giou
 
