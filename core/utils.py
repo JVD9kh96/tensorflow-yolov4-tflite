@@ -197,7 +197,7 @@ def bbox_iou(bboxes1, bboxes2):
 
     union_area = bboxes1_area + bboxes2_area - inter_area
 
-    iou = tf.math.divide_no_nan(inter_area, union_area)
+    iou = tf.cast(tf.math.divide_no_nan(tf.cast(inter_area, tf.float32), tf.cast(union_area, tf.float32)), bboxes1.dtype)
 
     return iou
 
