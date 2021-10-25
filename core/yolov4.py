@@ -522,9 +522,14 @@ def Yolov4_neck(route_1,
                 dtype=tf.float32):
 
     route = conv
+    print(conv.dtype)
     conv = common.convolutional(conv, (1, 1, 512, 256))
+    print(conv.dtype)
     conv = common.upsample(conv, dtype)
+    print(conv.dtype)
+    print(route_2.dtype)
     route_2 = common.convolutional(route_2, (1, 1, 512, 256))
+    print(route_2.dtype)
     conv = tf.concat([route_2, conv], axis=-1)
 
     conv = common.convolutional(conv, (1, 1, 512, 256))
