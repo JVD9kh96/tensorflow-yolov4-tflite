@@ -89,14 +89,10 @@ def route_group(input_layer, groups, group_id):
     return convs[group_id]
 
 def upsample(input_layer, dtype=None):
-    print('dtype:', dtype)
     if dtype is None:
         dtype = input_layer.dtype
-        print('if failed successfully', dtype)
+    return tf.cast(tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear'), dtype)
     
-    output = tf.cast(tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear'), dtype)
-    print('upsample output:', output.dtype)
-    return output
 
 def mlp(x, hidden_units, dropout_rate, activation = 'gelu'):
     for units in hidden_units:
