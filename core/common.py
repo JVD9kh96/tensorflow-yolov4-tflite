@@ -240,9 +240,7 @@ class CConv2D(tf.keras.layers.Layer):
         if self.normalization is not None:
             outputs = self.norm_layer(outputs)
 
-        conv_shape = getattr(outputs, 'shape')
-        block_size = tf.maximum(1, conv_shape[1] // 32)
-        outputs    = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(outputs)
+
         
         if self.activation == 'relu':
             outputs = tf.nn.relu(outputs)
@@ -270,6 +268,9 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
                                   bias_initializer='zero',
                                   activation = activate_type,
                                   normalization = norm)(input_layer)
+    conv_shape = getattr(conv, 'shape')
+    block_size = tf.maximum(1, conv_shape[1] // 32)
+    conv    = Dropblock(dropblock_keep_prob=0.9, dropblock_size=block_size)(conv)
     return conv
 # def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0):
 #     if downsample:
