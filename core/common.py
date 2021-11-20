@@ -249,7 +249,7 @@ def transformer_block(inp,
      
     inp = tf.keras.layers.Conv2D(filters = out_filt // 2,
                                  kernel_size = 1,
-                                 strides = (strides, strides),
+                                 strides = (1, 1),
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                  use_bias = False,
