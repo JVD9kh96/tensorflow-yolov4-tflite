@@ -308,6 +308,27 @@ def kai_attention(key,
         qk = softmax_2d()(qk)
 
     attention = tf.einsum('aijb,ajkb->aikb', qk, value)
+    attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
+                                        kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                        kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                        use_bias = False,
+                                        activity_regularizer=regularizers.l2(1e-5))(attention)
+    if normalization == 'batch':
+        attention = tf.keras.layers.BatchNormalization()(attention)
+    # elif normalization == 'group':
+    #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+    elif normalization == 'layer':
+        attention = tf.keras.layers.LayerNormalization(epsilon=1e-6)(attention)
+        
+    if activation == 'mish':
+        attention = mish(attention)
+    elif activation == 'gelu':
+        # attention = tfa.activations.gelu(attention)
+        attention = tf.nn.gelu(attention)
+    elif activation == 'leaky':
+        attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
+        
+        
     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
