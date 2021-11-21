@@ -193,7 +193,7 @@ def kai_attention(key,
     elif axis == '2d':
         qk = softmax_2d()(qk)
 
-    attention = tf.einsum('aijb,ajkb->aikb', qk, value)
+    attention =  tf.math.multiply(qk , value)
     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
