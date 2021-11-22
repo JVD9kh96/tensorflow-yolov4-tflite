@@ -133,7 +133,8 @@ def kai_attention(key,
                   out_filters=32,
                   axis = 1,
                   activation = 'gelu',
-                  kernel_size = 3):
+                  kernel_size = 3,
+                  normalization = 'batch'):
     """
     heads: number of filters in query, key and value 
     out_filters: number of the output in the output channgel
@@ -174,7 +175,15 @@ def kai_attention(key,
     dtype = getattr(value, 'dtype')
     dk = tf.cast(shape[1]*shape[2], dtype=dtype)
     qk = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
-
+    
+    
+    if normalization == 'batch':
+        qk = tf.keras.layers.BatchNormalization()(qk)
+    # elif normalization == 'group':
+    #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+    elif normalization == 'layer':
+        qk = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk)
+        
 #     if axis == 1:
 #         qk = tf.nn.softmax(qk, axis = 1)
 #     elif axis ==2:
@@ -245,8 +254,9 @@ def transformer_block(inp,
                        heads=out_filt,
                        out_filters=out_filt,
                        axis = attention_axes,
-                       activation = activation
-                       )
+                       activation = activation,
+                       normalization =  normalization)
+    
     x3 = tf.keras.layers.Add()([x2, inp])
     if normalization == 'batch':
         x4 = tf.keras.layers.BatchNormalization()(x3)
