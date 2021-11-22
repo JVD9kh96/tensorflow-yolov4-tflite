@@ -175,25 +175,25 @@ def kai_attention(key,
     dk = tf.cast(shape[1]*shape[2], dtype=dtype)
     qk = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
 
-    if axis == 1:
-        qk = tf.nn.softmax(qk, axis = 1)
-    elif axis ==2:
-        qk = tf.nn.softmax(qk, axis = 2)
-    elif axis == 3:
-        qk = tf.nn.softmax(qk, axis = 3)
-    elif axis == [1, 2]:
-        qk_1 = tf.nn.softmax(qk, axis = 1)
-        qk_2 = tf.nn.softmax(qk, axis = 2)
-        qk = tf.keras.layers.Add()([qk_1, qk_2])
-    elif axis == [1, 2, 3]:
-        qk_1 = tf.nn.softmax(qk, axis = 1)
-        qk_2 = tf.nn.softmax(qk, axis = 2)
-        qk_3 = tf.nn.softmax(qk, axis = 3)
-        qk = tf.keras.layers.Add()([qk_1, qk_2, qk_3])
-    elif axis == '2d':
-        qk = softmax_2d()(qk)
-
-    attention =  tf.math.multiply(qk , value)
+#     if axis == 1:
+#         qk = tf.nn.softmax(qk, axis = 1)
+#     elif axis ==2:
+#         qk = tf.nn.softmax(qk, axis = 2)
+#     elif axis == 3:
+#         qk = tf.nn.softmax(qk, axis = 3)
+#     elif axis == [1, 2]:
+#         qk_1 = tf.nn.softmax(qk, axis = 1)
+#         qk_2 = tf.nn.softmax(qk, axis = 2)
+#         qk = tf.keras.layers.Add()([qk_1, qk_2])
+#     elif axis == [1, 2, 3]:
+#         qk_1 = tf.nn.softmax(qk, axis = 1)
+#         qk_2 = tf.nn.softmax(qk, axis = 2)
+#         qk_3 = tf.nn.softmax(qk, axis = 3)
+#         qk = tf.keras.layers.Add()([qk_1, qk_2, qk_3])
+#     elif axis == '2d':
+#         qk = softmax_2d()(qk)
+    qk        = tf.nn.sigmoid(qk)
+    attention = tf.math.multiply(qk , value)
     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
