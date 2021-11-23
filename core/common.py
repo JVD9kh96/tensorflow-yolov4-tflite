@@ -209,7 +209,21 @@ def kai_attention(key,
                              use_bias = False,
                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
+    if normalization == 'batch':
+        value = tf.keras.layers.BatchNormalization()(value)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        value = tf.keras.layers.LayerNormalization(epsilon=1e-6)(value)
         
+    if activation == 'mish':
+        value = mish(value)
+    elif activation == 'gelu':
+        # key = tfa.activations.gelu(key)
+        value = tf.nn.gelu(value)
+    elif activation == 'leaky':
+        value = tf.keras.layers.LeakyReLU(alpha = 0.3)(value)
+    
     query = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
