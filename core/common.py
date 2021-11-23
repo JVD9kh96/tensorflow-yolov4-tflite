@@ -156,7 +156,29 @@ def kai_attention(key,
                                  use_bias = False,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
-    
+    if normalization == 'batch':
+        key = tf.keras.layers.BatchNormalization()(key)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        key = tf.keras.layers.LayerNormalization(epsilon=1e-6)(key)
+        
+    if activation == 'mish':
+        key = mish(key)
+    elif activation == 'gelu':
+        # key = tfa.activations.gelu(key)
+        key = tf.nn.gelu(key)
+    elif activation == 'leaky':
+        key = tf.keras.layers.LeakyReLU(alpha = 0.3)(key)
+        
+    key = tf.keras.layers.Conv2D(filters = heads,
+                             kernel_size=(out_filters, out_filters),
+                             strides = (1, 1),
+                             padding = 'same',
+                             use_bias = False,
+                             kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                             kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)    
+        
     value = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
@@ -165,6 +187,29 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
     
+    if normalization == 'batch':
+        value = tf.keras.layers.BatchNormalization()(value)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        value = tf.keras.layers.LayerNormalization(epsilon=1e-6)(value)
+        
+    if activation == 'mish':
+        value = mish(value)
+    elif activation == 'gelu':
+        # key = tfa.activations.gelu(key)
+        value = tf.nn.gelu(value)
+    elif activation == 'leaky':
+        value = tf.keras.layers.LeakyReLU(alpha = 0.3)(value)
+        
+    value = tf.keras.layers.Conv2D(filters = heads,
+                             kernel_size=(out_filters, out_filters),
+                             strides = (1, 1),
+                             padding = 'same',
+                             use_bias = False,
+                             kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                             kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
+        
     query = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
@@ -172,6 +217,29 @@ def kai_attention(key,
                                  use_bias = False,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
+    if normalization == 'batch':
+        query = tf.keras.layers.BatchNormalization()(query)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        query = tf.keras.layers.LayerNormalization(epsilon=1e-6)(query)
+        
+    if activation == 'mish':
+        query = mish(query)
+    elif activation == 'gelu':
+        # query = tfa.activations.gelu(query)
+        query = tf.nn.gelu(query)
+    elif activation == 'leaky':
+        query = tf.keras.layers.LeakyReLU(alpha = 0.3)(query)
+        
+    query = tf.keras.layers.Conv2D(filters = heads,
+                             kernel_size=(out_filters, out_filters),
+                             strides = (1, 1),
+                             padding = 'same',
+                             use_bias = False,
+                             kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                             kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
+    
     shape = getattr(value, 'shape')
     dtype = getattr(value, 'dtype')
     dk = tf.cast(shape[1]*shape[2], dtype=dtype)
@@ -204,11 +272,24 @@ def kai_attention(key,
 #         qk = softmax_2d()(qk)
     qk        = tf.nn.sigmoid(qk)
     attention = tf.math.multiply(qk , value)
-    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
+    attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                         use_bias = False,
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
+    if activation == 'mish':
+        attention = mish(attention)
+    elif activation == 'gelu':
+        # attention = tfa.activations.gelu(attention)
+        attention = tf.nn.gelu(attention)
+    elif activation == 'leaky':
+        attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
+        
+    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
+                                    kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                    kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                    use_bias = False,
+                                    activity_regularizer=regularizers.l2(1e-5))(attention)
     if activation == 'mish':
         attention = mish(attention)
     elif activation == 'gelu':
