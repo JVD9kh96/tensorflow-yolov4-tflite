@@ -148,6 +148,7 @@ def kai_attention(key,
           if '2d', the attention will be calculated in 2D (hight and width 
              simultaneously) 
     """
+    shortcut = value 
     key = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
@@ -215,7 +216,7 @@ def kai_attention(key,
         attention = tf.nn.gelu(attention)
     elif activation == 'leaky':
         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
-
+    attention = attention + shortcut
     return attention
 
 def transformer_block(inp,
