@@ -172,7 +172,7 @@ def kai_attention(key,
         key = tf.keras.layers.LeakyReLU(alpha = 0.3)(key)
         
     key = tf.keras.layers.Conv2D(filters = heads,
-                             kernel_size=(out_filters, out_filters),
+                             kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
                              padding = 'same',
                              use_bias = False,
@@ -203,7 +203,7 @@ def kai_attention(key,
         value = tf.keras.layers.LeakyReLU(alpha = 0.3)(value)
         
     value = tf.keras.layers.Conv2D(filters = heads,
-                             kernel_size=(out_filters, out_filters),
+                             kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
                              padding = 'same',
                              use_bias = False,
@@ -247,7 +247,7 @@ def kai_attention(key,
         query = tf.keras.layers.LeakyReLU(alpha = 0.3)(query)
         
     query = tf.keras.layers.Conv2D(filters = heads,
-                             kernel_size=(out_filters, out_filters),
+                             kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
                              padding = 'same',
                              use_bias = False,
