@@ -256,9 +256,9 @@ def kai_attention(key,
     
     shape = getattr(value, 'shape')
     dtype = getattr(value, 'dtype')
-    dk = tf.cast(shape[1]*shape[2], dtype=dtype)
-    qk = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
-    
+    dk    = tf.cast(shape[1]*shape[2], dtype=dtype)
+#     qk    = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
+    qk    = tf.multiplyt(query, key)
     
     if normalization == 'batch':
         qk = tf.keras.layers.BatchNormalization()(qk)
