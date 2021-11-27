@@ -6,6 +6,91 @@ from tensorflow.keras import layers
 # import tensorflow_addons as tfa
 from tensorflow.keras import regularizers
 
+class Dropblock(tf.keras.layers.Layer):
+  """DropBlock: a regularization method for convolutional neural networks.
+    DropBlock is a form of structured dropout, where units in a contiguous
+    region of a feature map are dropped together. DropBlock works better than
+    dropout on convolutional layers due to the fact that activation units in
+    convolutional layers are spatially correlated.
+    See https://arxiv.org/pdf/1810.12890.pdf for details.
+  """
+
+  def __init__(self,
+               dropblock_keep_prob=0.9,
+               dropblock_size=7,
+               data_format='channels_last'):
+    super(Dropblock, self).__init__()
+    self._dropblock_keep_prob = dropblock_keep_prob
+    self._dropblock_size = dropblock_size
+    self._data_format = data_format
+
+  def call(self, net, training=False):
+    """Builds Dropblock layer.
+    Args:
+      net: `Tensor` input tensor.
+      is_training: `bool` if True, the model is in training mode.
+    Returns:
+      A version of input tensor with DropBlock applied.
+    """
+    if (not training or self._dropblock_keep_prob is None or
+        self._dropblock_keep_prob == 1.0):
+      return net
+
+  
+
+    if self._data_format == 'channels_last':
+      height = tf.shape(net)[1]
+      width = tf.shape(net)[2]
+      #_, height, width, _ = net.get_shape().as_list()
+    else:
+      height = tf.shape(net)[2]
+      width = tf.shape(net)[3]
+      #_, _, height, width = net.get_shape().as_list()
+
+    total_size = width * height
+    dropblock_size = tf.math.minimum(self._dropblock_size, tf.math.minimum(width, height))
+    # Seed_drop_rate is the gamma parameter of DropBlcok.
+    seed_drop_rate = (
+        1.0 - self._dropblock_keep_prob) * tf.cast(total_size, tf.float32) / tf.cast(dropblock_size**2 , tf.float32) / tf.cast(
+            (width - self._dropblock_size + 1) *
+            (height - self._dropblock_size + 1), tf.float32)
+
+    # Forces the block to be inside the feature map.
+    w_i, h_i = tf.meshgrid(tf.range(width), tf.range(height))
+    valid_block = tf.logical_and(
+        tf.logical_and(w_i >= tf.cast(dropblock_size / 2, tf.int32),
+                       w_i < width - tf.cast((dropblock_size - 1) / 2, tf.int32)),
+        tf.logical_and(h_i >= tf.cast(dropblock_size / 2, tf.int32),
+                       h_i < width - tf.cast((dropblock_size - 1) / 2, tf.int32)))
+
+    if self._data_format == 'channels_last':
+      valid_block = tf.reshape(valid_block, [1, height, width, 1])
+    else:
+      valid_block = tf.reshape(valid_block, [1, 1, height, width])
+
+    randnoise = tf.random.uniform(tf.shape(net), dtype=tf.float32)
+    valid_block = tf.cast(valid_block, dtype=tf.float32)
+    seed_keep_rate = tf.cast(1 - seed_drop_rate, dtype=tf.float32)
+    block_pattern = (1 - valid_block + seed_keep_rate + randnoise) >= 1
+    block_pattern = tf.cast(block_pattern, dtype=tf.float32)
+
+    if self._data_format == 'channels_last':
+      ksize = [1, self._dropblock_size, self._dropblock_size, 1]
+    else:
+      ksize = [1, 1, self._dropblock_size, self._dropblock_size]
+    block_pattern = -tf.nn.max_pool(
+        -block_pattern,
+        ksize=ksize,
+        strides=[1, 1, 1, 1],
+        padding='SAME',
+        data_format='NHWC' if self._data_format == 'channels_last' else 'NCHW')
+
+    percent_ones = tf.cast(tf.reduce_sum(block_pattern), tf.float32) / tf.cast(
+        tf.size(block_pattern), tf.float32)
+
+    net = net / tf.cast(percent_ones, net.dtype) * tf.cast(
+        block_pattern, net.dtype)
+    return net
 
 class BatchNormalization(tf.keras.layers.BatchNormalization):
     """
@@ -38,7 +123,7 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
         conv = BatchNormalization()(conv)
     # elif bn and norm==1:
     #     conv = tfa.layers.GroupNormalization(groups = min(filters_shape[-1], 32))(conv)
-     
+        conv = Dropblock()(conv)
     if activate == True:
         if activate_type == "leaky":
             conv = tf.nn.leaky_relu(conv, alpha=0.1)
@@ -162,7 +247,7 @@ def kai_attention(key,
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
         key = tf.keras.layers.LayerNormalization(epsilon=1e-6)(key)
-        
+    key = Dropblock()(key)
     if activation == 'mish':
         key = mish(key)
     elif activation == 'gelu':
@@ -178,7 +263,8 @@ def kai_attention(key,
                              use_bias = False,
                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)    
-        
+    key = Dropblock()(key)
+
     value = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
@@ -194,6 +280,7 @@ def kai_attention(key,
     elif normalization == 'layer':
         value = tf.keras.layers.LayerNormalization(epsilon=1e-6)(value)
         
+    value = Dropblock()(value)
     if activation == 'mish':
         value = mish(value)
     elif activation == 'gelu':
@@ -216,6 +303,7 @@ def kai_attention(key,
     elif normalization == 'layer':
         value = tf.keras.layers.LayerNormalization(epsilon=1e-6)(value)
         
+    value = Dropblock()(value)
     if activation == 'mish':
         value = mish(value)
     elif activation == 'gelu':
@@ -237,7 +325,8 @@ def kai_attention(key,
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
         query = tf.keras.layers.LayerNormalization(epsilon=1e-6)(query)
-        
+    
+    query = Dropblock()(query)
     if activation == 'mish':
         query = mish(query)
     elif activation == 'gelu':
@@ -253,7 +342,8 @@ def kai_attention(key,
                              use_bias = False,
                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
-    
+    query = Dropblock()(query)
+
     shape = getattr(value, 'shape')
     dtype = getattr(value, 'dtype')
     dk    = tf.cast(shape[1]*shape[2], dtype=dtype)
@@ -291,6 +381,8 @@ def kai_attention(key,
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                         use_bias = False,
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
+    activation = Dropblock()(activation)
+
     if activation == 'mish':
         attention = mish(attention)
     elif activation == 'gelu':
@@ -304,6 +396,7 @@ def kai_attention(key,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                     use_bias = False,
                                     activity_regularizer=regularizers.l2(1e-5))(attention)
+    activation = Dropblock()(activation)
     if activation == 'mish':
         attention = mish(attention)
     elif activation == 'gelu':
@@ -343,7 +436,8 @@ def transformer_block(inp,
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
         x1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(inp)
-        
+    x1 = Dropblock()(x1)
+
     x2 = kai_attention(x1,
                        x1,
                        x1,
@@ -360,7 +454,8 @@ def transformer_block(inp,
     #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
     elif normalization == 'layer':
         x4 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x3)
-    
+        
+    x4 = Dropblock()(x4)
     x5 = tf.keras.layers.Conv2D(filters = out_filt//2,
                                 kernel_size=(1, 1),
                                 strides=(1, 1),
@@ -368,6 +463,7 @@ def transformer_block(inp,
                                 use_bias = False,
                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(x4)
+    x5 = Dropblock()(x5)
     if activation == 'mish':
         x6 = mish(x5)
     elif activation == 'gelu':
@@ -377,6 +473,7 @@ def transformer_block(inp,
         x6 = tf.keras.layers.LeakyReLU(alpha = 0.3)(x5)
     else:
         x6 = x5
+        
     x7 = tf.keras.layers.Conv2D(filters = out_filt,
                                 kernel_size=kernel_size,
                                 strides=(1, 1),
@@ -386,6 +483,8 @@ def transformer_block(inp,
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                 bias_regularizer=regularizers.l2(1e-4),
                                 activity_regularizer=regularizers.l2(1e-5))(x6)
+    x7 = Dropblock()(x7)
+
     if activation == 'mish':
         x7 = mish(x7)
     elif activation == 'gelu':
@@ -404,7 +503,8 @@ def transformer_block(inp,
     #     x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
     elif normalization == 'layer':
         x8 = tf.keras.layers.LayerNormalization(epsilon=0.001)(x8)
-
+    
+    x8 = Dropblock()(x8)
     if down_sample:
         x8 = tf.keras.layers.MaxPooling2D(pool_size = (2, 2), strides = (2, 2))(x8)
     
