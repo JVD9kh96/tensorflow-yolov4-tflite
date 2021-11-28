@@ -17,7 +17,7 @@ class Dropblock(tf.keras.layers.Layer):
 
   def __init__(self,
                dropblock_keep_prob=0.9,
-               dropblock_size=7,
+               dropblock_size=3,
                data_format='channels_last'):
     super(Dropblock, self).__init__()
     self._dropblock_keep_prob = dropblock_keep_prob
