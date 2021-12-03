@@ -60,14 +60,14 @@ class CConv2D(tf.keras.layers.Layer):
     self.down_sample = down_sample
     self.non_attention = non_attention
     self.normalize = normalize()
-    if self.non_attention:
-        if self.down_sample:
-            self.padding = 'VALID'
-            self.strides = (2, 2)
-            self.zeropad = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))
-        else:
-            self.strides = (1, 1)
-            self.padding = 'SAME'
+#     if self.non_attention:
+#         if self.down_sample:
+#             self.padding = 'VALID'
+#             self.strides = (2, 2)
+#             self.zeropad = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))
+#         else:
+#             self.strides = (1, 1)
+#             self.padding = 'SAME'
     
     if normalization == 'bn':
         self.norm_layer = tf.keras.layers.BatchNormalization()
