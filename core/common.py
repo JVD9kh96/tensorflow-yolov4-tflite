@@ -163,7 +163,7 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
 #         strides = 1
 #         padding = 'same'
 
-    conv = CConv2D(filters=filters_shape[-1] kernel_size = (filters_shape[0], filters_shape[0]), down_sample = downsample, padding=padding,
+    conv = CConv2D(filters=filters_shape[-1], kernel_size = (filters_shape[0], filters_shape[0]), down_sample = downsample, padding=padding,
                                   use_bias=not bn, kernel_regularizer='l2',
                                   kernel_initializer='xavier',
                                   bias_initializer='zero')(input_layer)
