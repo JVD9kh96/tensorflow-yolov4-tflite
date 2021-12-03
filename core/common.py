@@ -359,7 +359,7 @@ def kai_attention(key,
     elif activation == 'leaky':
         value = tf.keras.layers.LeakyReLU(alpha = 0.3)(value)
     
-    query = Conv2D(filters = heads//2,
+    query = CConv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
