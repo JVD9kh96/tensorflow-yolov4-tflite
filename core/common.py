@@ -155,15 +155,16 @@ class CConv2D(tf.keras.layers.Layer):
         return outputs
   
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0):
-#     if downsample:
-#         input_layer = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(input_layer)
-#         padding = 'valid'
-#         strides = 2
-#     else:
-#         strides = 1
-#         padding = 'same'
+    if downsample:
+        input_layer = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(input_layer)
+        padding = 'valid'
+        strides = 2
+    else:
+        strides = 1
+        padding = 'same'
 
-    conv = CConv2D(filters=filters_shape[-1], kernel_size = (filters_shape[0], filters_shape[0]), down_sample = downsample,
+    conv = CConv2D(filters=filters_shape[-1], kernel_size = (filters_shape[0], filters_shape[0]), strides=(strides, strides),
+                                  padding = padding,
                                   use_bias=not bn, kernel_regularizer='l2',
                                   kernel_initializer='xavier',
                                   bias_initializer='zero')(input_layer)
