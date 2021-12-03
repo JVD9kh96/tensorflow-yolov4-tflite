@@ -433,7 +433,7 @@ def kai_attention(key,
     elif activation == 'leaky':
         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
         
-    attention = CConv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
+    attention = CConv2D(filters = out_filters, kernel_size = (kernel_size, kernel_size), strides = (1, 1), padding = 'same',
                                     kernel_regularizer='l2',
                                     kernel_initializer='xavier',
                                     use_bias = False)(attention)
@@ -456,7 +456,7 @@ def transformer_block(inp,
                       normalization = 'batch'):
     
     inp = CConv2D(filters = out_filt,
-                                 kernel_size = kernel_size,
+                                 kernel_size = (kernel_size, kernel_size),
                                  strides = (1, 1),
                                  kernel_regularizer='l2',
                                  kernel_initializer='xavier',
@@ -511,7 +511,7 @@ def transformer_block(inp,
     else:
         x6 = x5
     x7 = CConv2D(filters = out_filt,
-                                kernel_size=kernel_size,
+                                kernel_size=(kernel_size, kernel_size),
                                 strides=(1, 1),
                                 padding = 'same',
                                 use_bias = False,
