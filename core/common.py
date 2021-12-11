@@ -7,7 +7,7 @@ from tensorflow.keras import layers
 from tensorflow.keras import regularizers
 
 
-class BatchNormalization(tf.keras.layers.BatchNormalization):
+class BatchNormalization(tf.keras.layers.experimental.SyncBatchNormalization):
     """
     "Frozen state" and "inference mode" are two separate concepts.
     `layer.trainable = False` is to freeze the layer, so the layer will use
@@ -157,7 +157,7 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
     if normalization == 'batch':
-        key = tf.keras.layers.BatchNormalization()(key)
+        key = tf.keras.layers.experimental.SyncBatchNormalization()(key)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -188,7 +188,7 @@ def kai_attention(key,
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
     
     if normalization == 'batch':
-        value = tf.keras.layers.BatchNormalization()(value)
+        value = tf.keras.layers.experimental.SyncBatchNormalization()(value)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -210,7 +210,7 @@ def kai_attention(key,
                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
     if normalization == 'batch':
-        value = tf.keras.layers.BatchNormalization()(value)
+        value = tf.keras.layers.experimental.SyncBatchNormalization()(value)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -232,7 +232,7 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
     if normalization == 'batch':
-        query = tf.keras.layers.BatchNormalization()(query)
+        query = tf.keras.layers.experimental.SyncBatchNormalization()(query)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -261,7 +261,7 @@ def kai_attention(key,
     qk    = tf.multiply(query, key)
     
     if normalization == 'batch':
-        qk = tf.keras.layers.BatchNormalization()(qk)
+        qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
     # elif normalization == 'group':
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
@@ -338,7 +338,7 @@ def transformer_block(inp,
         inp = tf.keras.layers.LeakyReLU(alpha = 0.3)(inp)
 
     if normalization == 'batch':
-        x1 = tf.keras.layers.BatchNormalization()(inp)
+        x1 = tf.keras.layers.experimental.SyncBatchNormalization()(inp)
     # elif normalization == 'group':
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
@@ -355,7 +355,7 @@ def transformer_block(inp,
     
     x3 = tf.keras.layers.Add()([x2, inp])
     if normalization == 'batch':
-        x4 = tf.keras.layers.BatchNormalization()(x3)
+        x4 = tf.keras.layers.experimental.SyncBatchNormalization()(x3)
     # elif normalization == 'group':
     #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
     elif normalization == 'layer':
@@ -399,7 +399,7 @@ def transformer_block(inp,
     x8 = tf.keras.layers.Add()([x7, x3])
 
     if normalization == 'batch':
-        x8 = tf.keras.layers.BatchNormalization()(x8)
+        x8 = tf.keras.layers.experimental.SyncBatchNormalization()(x8)
     # elif normalization == 'group':
     #     x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
     elif normalization == 'layer':
