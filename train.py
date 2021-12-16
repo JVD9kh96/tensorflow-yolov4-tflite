@@ -18,6 +18,7 @@ from core.utils import freeze_all, unfreeze_all
 
 flags.DEFINE_string('model', 'yolov4', 'yolov4, yolov3')
 flags.DEFINE_string('weights', './scripts/yolov4.weights', 'pretrained weights')
+flags.DEFINE_string('backup', './yolov4_weights', 'path for saving weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_integer('init_epoch', 0, 'initial epoch for training') 
 
@@ -154,9 +155,12 @@ def main(_argv):
                     unfreeze_all(freeze)
         for image_data, target in trainset:
             train_step(image_data, target)
+        
+        model.save_weights(FLAGS.backup)
+        
         for image_data, target in testset:
             test_step(image_data, target)
-        model.save_weights("./checkpoints/yolov4")
+        
 
 if __name__ == '__main__':
     try:
