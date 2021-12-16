@@ -19,6 +19,7 @@ from core.utils import freeze_all, unfreeze_all
 flags.DEFINE_string('model', 'yolov4', 'yolov4, yolov3')
 flags.DEFINE_string('weights', './scripts/yolov4.weights', 'pretrained weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
+flags.DEFINE_integer('init_epoch', 0, 'initial epoch for training') 
 
 def main(_argv):
     trainset = Dataset(FLAGS, is_training=True)
@@ -138,7 +139,7 @@ def main(_argv):
                      "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, giou_loss, conf_loss,
                                                                prob_loss, total_loss))
 
-    for epoch in range(first_stage_epochs + second_stage_epochs):
+    for epoch in range(FLAGS.init_epoch, first_stage_epochs + second_stage_epochs):
         if epoch < first_stage_epochs:
             if not isfreeze:
                 isfreeze = True
