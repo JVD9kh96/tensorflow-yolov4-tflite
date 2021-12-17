@@ -9,7 +9,7 @@ import tensorflow as tf
 import core.utils as utils
 from core.config import cfg
 from core.yolov4 import YOLO
-from core.yolov4 import decode_train as decode
+from core.yolov4 import decode_train 
 import random
 import colorsys
 
