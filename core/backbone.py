@@ -894,9 +894,13 @@ def cspdarkerattnet53(input_data,
                    normalization = 'group'):
 
     
-    input_data = common.convolutional(input_data, (3, 3,  3,  32), activate_type="mish")
-    input_data = common.convolutional(input_data, (3, 3, 32,  64), downsample=True, activate_type="mish")
-
+#     input_data = common.convolutional(input_data, (3, 3,  3,  32), activate_type="mish")
+#     input_data = common.convolutional(input_data, (3, 3, 32,  64), downsample=True, activate_type="mish")
+    input_data = tf.keras.layers.ZeroPadding2D(padding=(3, 3), name='conv1_pad')(input_data)
+    input_data = tf.keras.layers.Conv2D(64, (7, 7), strides=(2, 2), padding='valid', use_bias=False, kernel_initializer='he_normal', kernel_regularizer=tf.keras.regularizers.L2(0.0005))(input_data)
+    input_data = common.BatchNormalization()(input_data)
+    input_data = common.mish(input_data)
+    input_data = tf.keras.layers.MaxPooling2D((3, 3), strides=(1, 1), padding='same')(input_data)
     route = input_data
     route = common.convolutional(route, (1, 1, 64, 64), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
