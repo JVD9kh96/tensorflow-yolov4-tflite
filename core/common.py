@@ -321,9 +321,9 @@ def transformer_block(inp,
                       attention_axes = 1,
                       kernel_size = 3,
                       normalization = 'batch'):
-    
-    inp = tf.keras.layers.Conv2D(filters = out_filt,
-                                 kernel_size = kernel_size,
+    shorcut = inp
+    inp = tf.keras.layers.Conv2D(filters = out_filt//2,
+                                 kernel_size = (1, 1),
                                  strides = (1, 1),
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
@@ -338,11 +338,34 @@ def transformer_block(inp,
         inp = tf.keras.layers.LeakyReLU(alpha = 0.3)(inp)
 
     if normalization == 'batch':
-        x1 = tf.keras.layers.experimental.SyncBatchNormalization()(inp)
+        inp = tf.keras.layers.experimental.SyncBatchNormalization()(inp)
     # elif normalization == 'group':
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
-        x1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(inp)
+        inp = tf.keras.layers.LayerNormalization(epsilon=1e-6)(inp)
+        
+        
+    x1 = tf.keras.layers.Conv2D(filters = out_filt,
+                                 kernel_size = kernel_size,
+                                 strides = (1, 1),
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                 use_bias = False,
+                                 padding='same')(inp)
+    if activation == 'mish':
+        x1 = mish(x1)
+    elif activation == 'gelu':
+        # inp = tfa.activations.gelu(inp)
+        x1 = tf.nn.gelu(x1)
+    elif activation == 'leaky':
+        x1 = tf.keras.layers.LeakyReLU(alpha = 0.3)(x1)
+
+    if normalization == 'batch':
+        x1 = tf.keras.layers.experimental.SyncBatchNormalization()(x1)
+    # elif normalization == 'group':
+    #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+    elif normalization == 'layer':
+        x1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x1)
         
     x2 = kai_attention(x1,
                        x1,
@@ -353,7 +376,7 @@ def transformer_block(inp,
                        activation = activation,
                        normalization =  normalization)
     
-    x3 = tf.keras.layers.Add()([x2, inp])
+    x3 = tf.keras.layers.Add()([x2, shorcut])
     if normalization == 'batch':
         x4 = tf.keras.layers.experimental.SyncBatchNormalization()(x3)
     # elif normalization == 'group':
