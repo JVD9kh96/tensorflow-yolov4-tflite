@@ -149,7 +149,7 @@ def kai_attention(key,
              simultaneously) 
     """
     shortcut = value 
-    key = tf.keras.layers.Conv2D(filters = heads//2,
+    key = tf.keras.layers.Conv2D(filters = heads,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -179,7 +179,7 @@ def kai_attention(key,
 #                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
 #                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)    
         
-    value = tf.keras.layers.Conv2D(filters = heads//2,
+    value = tf.keras.layers.Conv2D(filters = heads,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -224,7 +224,7 @@ def kai_attention(key,
 #     elif activation == 'leaky':
 #         value = tf.keras.layers.LeakyReLU(alpha = 0.3)(value)
     
-    query = tf.keras.layers.Conv2D(filters = heads//2,
+    query = tf.keras.layers.Conv2D(filters = heads,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
