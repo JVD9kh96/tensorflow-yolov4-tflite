@@ -23,25 +23,25 @@ flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_integer('init_epoch', 0, 'initial epoch for training') 
 
 def main(_argv):
-    trainset = Dataset(FLAGS, is_training=True)
-    testset = Dataset(FLAGS, is_training=False)
-    logdir = "./data/log"
-    isfreeze = False
-    steps_per_epoch = len(trainset)
-    first_stage_epochs = cfg.TRAIN.FISRT_STAGE_EPOCHS
-    second_stage_epochs = cfg.TRAIN.SECOND_STAGE_EPOCHS
-    global_steps = tf.Variable(1, trainable=False, dtype=tf.int64)
-    warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
-    total_steps = (first_stage_epochs + second_stage_epochs) * steps_per_epoch
-    # train_steps = (first_stage_epochs + second_stage_epochs) * steps_per_period
+    trainset                             = Dataset(FLAGS, is_training=True)
+    testset                              = Dataset(FLAGS, is_training=False)
+    logdir                               = "./data/log"
+    isfreeze                             = False
+    steps_per_epoch                      = len(trainset)
+    first_stage_epochs                   = cfg.TRAIN.FISRT_STAGE_EPOCHS
+    second_stage_epochs                  = cfg.TRAIN.SECOND_STAGE_EPOCHS
+    warmup_steps                         = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
+    total_steps                          = (first_stage_epochs + second_stage_epochs) * steps_per_epoch
+    current_step                         = int(float(FLAGS.init_epoch) / float(first_stage_epochs + second_stage_epochs) * total_steps) + 1
+    global_steps                         = tf.Variable(current_step, trainable=False, dtype=tf.int64)
 
-    input_layer = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
+    input_layer                          = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
-    IOU_LOSS_THRESH = cfg.YOLO.IOU_LOSS_THRESH
+    IOU_LOSS_THRESH                      = cfg.YOLO.IOU_LOSS_THRESH
 
-    freeze_layers = utils.load_freeze_layer(FLAGS.model, FLAGS.tiny)
+    freeze_layers                        = utils.load_freeze_layer(FLAGS.model, FLAGS.tiny)
 
-    feature_maps = YOLO(input_layer, NUM_CLASS, FLAGS.model, FLAGS.tiny)
+    feature_maps                         = YOLO(input_layer, NUM_CLASS, FLAGS.model, FLAGS.tiny)
     if FLAGS.tiny:
         bbox_tensors = []
         for i, fm in enumerate(feature_maps):
