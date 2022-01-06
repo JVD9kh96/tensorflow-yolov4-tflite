@@ -167,6 +167,8 @@ The training performance is not fully reproduced yet, so I recommended to use Al
 * [x] Update scale xy
 * [ ] ciou
 * [ ] Mosaic data augmentation
+* [ ] Variable image size during training
+* [ ] Distributed training (Multi-GPU and TPU support)
 * [x] Mish activation
 * [x] yolov4 tflite version
 * [x] yolov4 in8 tflite version for mobile
