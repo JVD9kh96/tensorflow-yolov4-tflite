@@ -519,6 +519,8 @@ def Yolov4_neck(route_1,
                 conv ,
                 NUM_CLASS,
                 include_head=True,
+                dropblock=False,
+                dropblock_keep_prob=1,
                 dtype=tf.float32):
 
     route = conv
@@ -542,11 +544,11 @@ def Yolov4_neck(route_1,
     conv = common.convolutional(conv, (1, 1, 256, 128))
     conv = common.convolutional(conv, (3, 3, 128, 256))
     conv = common.convolutional(conv, (1, 1, 256, 128))
-    conv = common.convolutional(conv, (3, 3, 128, 256))
-    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.convolutional(conv, (3, 3, 128, 256), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    conv = common.convolutional(conv, (1, 1, 256, 128), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
 
     route_1 = conv
-    conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.convolutional(conv, (3, 3, 128, 256), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
     if include_head:
         conv_sbbox = common.convolutional(conv, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
     else:
@@ -558,11 +560,11 @@ def Yolov4_neck(route_1,
     conv = common.convolutional(conv, (1, 1, 512, 256))
     conv = common.convolutional(conv, (3, 3, 256, 512))
     conv = common.convolutional(conv, (1, 1, 512, 256))
-    conv = common.convolutional(conv, (3, 3, 256, 512))
-    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.convolutional(conv, (3, 3, 256, 512), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    conv = common.convolutional(conv, (1, 1, 512, 256), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
 
     route_2 = conv
-    conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (3, 3, 256, 512), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
     if include_head:
         conv_mbbox = common.convolutional(conv, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
     else:
@@ -574,10 +576,10 @@ def Yolov4_neck(route_1,
     conv = common.convolutional(conv, (1, 1, 1024, 512))
     conv = common.convolutional(conv, (3, 3, 512, 1024))
     conv = common.convolutional(conv, (1, 1, 1024, 512))
-    conv = common.convolutional(conv, (3, 3, 512, 1024))
-    conv = common.convolutional(conv, (1, 1, 1024, 512))
+    conv = common.convolutional(conv, (3, 3, 512, 1024), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    conv = common.convolutional(conv, (1, 1, 1024, 512), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
 
-    conv = common.convolutional(conv, (3, 3, 512, 1024))
+    conv = common.convolutional(conv, (3, 3, 512, 1024), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
     if include_head:
         conv_lbbox = common.convolutional(conv, (1, 1, 1024, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
     else:
