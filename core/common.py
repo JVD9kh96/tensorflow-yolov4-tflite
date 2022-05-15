@@ -189,7 +189,7 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
     for _ in range(num_layers):
         # Layer normalization 1.
         if normal == 0:
-            x1 = layers.BatchNormalization()(encoded_patches)
+            x1 = tf.keras.layers.experimental.SyncBatchNormalization()(encoded_patches)
         # elif normal == 1:
         #     x1 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
         elif normal == 2:
@@ -202,7 +202,7 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
         x2 = layers.Add()([attention_output, encoded_patches])
         # Layer normalization 2.
         if normal == 0:
-            x3 = layers.BatchNormalization()(x2)
+            x3 = tf.keras.layers.experimental.SyncBatchNormalization()(x2)
         # elif normal == 1:
         #     x3 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(x2)
         elif normal ==2:
