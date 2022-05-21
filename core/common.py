@@ -184,7 +184,7 @@ def mlp(x, hidden_units, dropout_rate, activation = 'gelu'):
         x = layers.Dropout(dropout_rate)(x)
     return x
 
-def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, num_heads = 4, activation = 'gelu', normal = 0):
+def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, num_heads = 4, activation = 'gelu', scale_by_head=False, normal = 0):
     encoded_patches = input_layer
     for _ in range(num_layers):
         # Layer normalization 1.
@@ -195,8 +195,9 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
         elif normal == 2:
             x1 = layers.LayerNormalization(epsilon=1e-6)(encoded_patches)
         # Create a multi-head attention layer.
+        key_dim = projection_dim // num_heads if scale_by_head else projection_dim
         attention_output = layers.MultiHeadAttention(
-            num_heads=num_heads, key_dim=projection_dim, dropout=0.1
+            num_heads=num_heads, key_dim=key_dim, dropout=0.1
         )(x1, x1)
         # Skip connection 1.
         x2 = layers.Add()([attention_output, encoded_patches])
