@@ -106,7 +106,18 @@ class BatchNormalization(tf.keras.layers.experimental.SyncBatchNormalization):
         training = tf.logical_and(training, self.trainable)
         return super().call(x, training)
 
-def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
+      
+      
+def ASPP_v1(input_layer,dilation_rates=[(6,6),(4,4),(2,2)]):
+  scale_1 = convolutional(input_layer,filter_shape=[3,input_layer.shape[-1]],activate_type='mish',dilation_rate=dilation_rates[0])
+  scale_2 = convolutional(input_layer,filter_shape=[3,input_layer.shape[-1]],activate_type='mish',dilation_rate=dilation_rates[1])
+  scale_3 = convolutional(input_layer,filter_shape=[3,input_layer.shape[-1]],activate_type='mish',dilation_rate=dilation_rates[2])
+  
+  output = tf.concat([scale_1,scale_2,scale_3],axis=-1)
+  
+  return output
+  
+def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9, dilation_rate=(1,1)):
     if downsample:
         input_layer = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(input_layer)
         padding = 'valid'
@@ -115,7 +126,7 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
         strides = 1
         padding = 'same'
 
-    conv = tf.keras.layers.Conv2D(filters=filters_shape[-1], kernel_size = filters_shape[0], strides=strides, padding=padding,
+    conv = tf.keras.layers.Conv2D(filters=filters_shape[-1], kernel_size = filters_shape[0], strides=strides, padding=padding, dilation_rate=dilation_rate,
                                   use_bias=not bn, kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                   kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                   bias_initializer=tf.constant_initializer(0.))(input_layer)
