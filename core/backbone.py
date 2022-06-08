@@ -993,7 +993,8 @@ def cspdarkerattnet53(input_data,
 def cspdarkerattnet53_v2(input_data,
                    attention_axes = 1,
                    activation = 'mish',
-                   normalization = 'group'):
+                   normalization = 'group',
+                   PP = 'SPP'):
 
     
     input_data = common.convolutional(input_data, (3, 3,  3,  32), activate_type="mish")
@@ -1083,12 +1084,22 @@ def cspdarkerattnet53_v2(input_data,
     input_data = common.convolutional(input_data, (1, 1, 1024, 512))
     input_data = common.convolutional(input_data, (3, 3, 512, 1024))
     input_data = common.convolutional(input_data, (1, 1, 1024, 512))
-
-    input_data = tf.concat([tf.nn.max_pool(input_data, ksize=13, padding='SAME', strides=1), tf.nn.max_pool(input_data, ksize=9, padding='SAME', strides=1)
+    
+    if PP == 'SPP':
+        
+        input_data = tf.concat([tf.nn.max_pool(input_data, ksize=13, padding='SAME', strides=1), tf.nn.max_pool(input_data, ksize=9, padding='SAME', strides=1)
                             , tf.nn.max_pool(input_data, ksize=5, padding='SAME', strides=1), input_data], axis=-1)
+    elif PP == 'ASPP_v1':
+        input_data = common.ASPP_v1(input_data)
+    elif PP == 'ASPP_v2':
+        input_data = common.ASPP_v2(input_data)
+    elif PP == 'side_conv':
+        print('hichi nashod')
+        
     input_data = common.convolutional(input_data, (1, 1, 2048, 512))
     input_data = common.convolutional(input_data, (3, 3, 512, 1024))
     input_data = common.convolutional(input_data, (1, 1, 1024, 512))
+    
 
     return route_1, route_2, input_data
 
