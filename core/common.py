@@ -135,7 +135,6 @@ def ASPP_v2(input_layer,dilation_rates=[(6,6),(4,4),(2,2)]):
   scale_5 = tf.image.resize(scale_5,(input_layer.shape[1],input_layer.shape[2]))
   
   output = tf.concat([scale_1,scale_2,scale_3,scale_4,scale_5],axis=-1)
-  output = convolutional(output,filter_shape=[1,input_layer.shape[-1]],activate_type='mish')
   
   return output
   
