@@ -116,6 +116,30 @@ def ASPP_v1(input_layer,dilation_rates=[(6,6),(4,4),(2,2)]):
   output = tf.concat([scale_1,scale_2,scale_3],axis=-1)
   
   return output
+
+def ASPP_v2(input_layer,dilation_rates=[(6,6),(4,4),(2,2)]):
+  scale_1 = convolutional(input_layer,filter_shape=[3,input_layer.shape[-1]],activate_type='mish',dilation_rate=dilation_rates[0])
+  scale_1 = convolutional(scale_1,filter_shape=[1,scale_1.shape[-1]//2],activate_type='mish')
+ 
+  scale_2 = convolutional(input_layer,filter_shape=[3,input_layer.shape[-1]],activate_type='mish',dilation_rate=dilation_rates[1])
+  scale_2 = convolutional(scale_2,filter_shape=[1,scale_2.shape[-1]//2],activate_type='mish')
+  
+  scale_3 = convolutional(input_layer,filter_shape=[3,input_layer.shape[-1]],activate_type='mish',dilation_rate=dilation_rates[2])
+  scale_3 = convolutional(scale_3,filter_shape=[1,scale_3.shape[-1]//2],activate_type='mish')
+  
+  scale_4 = convolutional(input_layer,filter_shape=[1,input_layer.shape[-1]//2],activate_type='mish')
+  
+  scale_5 = tf.keras.layers.GlobalAveragePooling2D()(input_layer)
+  scale_5 = scale_5[:,tf.newaxis,tf.newaxis,:]
+  scale_5 = convolutional(scale_5,filter_shape=[1,scale_5.shape[-1]//2],activate_type='mish')
+  scale_5 = tf.image.resize(scale_5,(input_layer.shape[1],input_layer.shape[2]))
+  
+  output = tf.concat([scale_1,scale_2,scale_3,scale_4,scale_5],axis=-1)
+  output = convolutional(output,filter_shape=[1,input_layer.shape[-1]],activate_type='mish')
+  
+  return output
+  
+  
   
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9, dilation_rate=(1,1)):
     if downsample:
