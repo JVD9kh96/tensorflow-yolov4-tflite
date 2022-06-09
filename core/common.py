@@ -132,7 +132,7 @@ def ASPP_v2(input_layer,dilation_rates=[(6,6),(4,4),(2,2)]):
   scale_5 = tf.keras.layers.GlobalAveragePooling2D()(input_layer)
   scale_5 = scale_5[:,tf.newaxis,tf.newaxis,:]
   scale_5 = convolutional(scale_5,filters_shape=[1,scale_5.shape[-1]//2],activate_type='mish')
-  scale_5 = tf.image.resize(scale_5,(input_layer.shape[1],input_layer.shape[2]))
+  scale_5 = tf.image.resize(scale_5,(input_layer.shape[1],input_layer.shape[2]), dtype=input_layer.dtype)
   
   output = tf.concat([scale_1,scale_2,scale_3,scale_4,scale_5],axis=-1)
   
