@@ -132,7 +132,7 @@ def ASPP_v2(input_layer,dilation_rates=[(6,6),(4,4),(2,2)]):
   scale_5 = tf.keras.layers.GlobalAveragePooling2D()(input_layer)
   scale_5 = scale_5[:,tf.newaxis,tf.newaxis,:]
   scale_5 = convolutional(scale_5,filters_shape=[1,scale_5.shape[-1]//2],activate_type='mish')
-  scale_5 = tf.cast(tf.image.resize(scale_5,(input_layer.shape[1],input_layer.shape[2])), dtype=input_layer.dtype)
+  scale_5 = upsample(input_layer, size=(input_layer.shape[1],input_layer.shape[2]), dtype=input_layer.dtype)
   
   output = tf.concat([scale_1,scale_2,scale_3,scale_4,scale_5],axis=-1)
   
@@ -203,10 +203,12 @@ def route_group(input_layer, groups, group_id):
     convs = tf.split(input_layer, num_or_size_splits=groups, axis=-1)
     return convs[group_id]
 
-def upsample(input_layer, dtype=None):
+def upsample(input_layer, size=None, dtype=None):
     if dtype is None:
         dtype = input_layer.dtype
-    return tf.cast(tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear'), dtype)
+    if size is None:
+        size = (input_layer.shape[1] * 2, input_layer.shape[2] * 2)
+    return tf.cast(tf.image.resize(input_layer, size, method='bilinear'), dtype)
 
 def mlp(x, hidden_units, dropout_rate, activation = 'gelu'):
     for units in hidden_units:
