@@ -203,7 +203,7 @@ def route_group(input_layer, groups, group_id):
     convs = tf.split(input_layer, num_or_size_splits=groups, axis=-1)
     return convs[group_id]
 
-def upsample(input_layer, size=None, dtype=None):
+def upsample(input_layer, dtype=None, size=None):
     if dtype is None:
         dtype = input_layer.dtype
     if size is None:
