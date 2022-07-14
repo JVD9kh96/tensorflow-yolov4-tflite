@@ -96,10 +96,10 @@ def main(_argv):
                 prob_loss += loss_items[2]
 
             total_loss = giou_loss + conf_loss + prob_loss
-            #try:
-             #   tf.debugging.check_numerics(total_loss, 'checking for nan')
-            #except Exception as e:
-            #    assert "Checking loss : Tensor had Inf values" in e.message
+            try:
+                tf.debugging.check_numerics(total_loss, 'checking for nan')
+            except Exception as e:
+                assert "Checking loss : Tensor had Inf values" in e.message
                 
             gradients = tape.gradient(total_loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
