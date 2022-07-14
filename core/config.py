@@ -31,9 +31,9 @@ __C.TRAIN.BATCH_SIZE          = 3
 # __C.TRAIN.INPUT_SIZE            = [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
 __C.TRAIN.INPUT_SIZE          = 704
 __C.TRAIN.DATA_AUG            = True
-__C.TRAIN.LR_INIT             = 1e-3
-__C.TRAIN.LR_END              = 1e-6
-__C.TRAIN.WARMUP_EPOCHS       = 3
+__C.TRAIN.LR_INIT             = 1e-4
+__C.TRAIN.LR_END              = 1e-10
+__C.TRAIN.WARMUP_EPOCHS       = 5
 __C.TRAIN.FISRT_STAGE_EPOCHS    = 7
 __C.TRAIN.SECOND_STAGE_EPOCHS   = 10
 
