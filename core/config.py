@@ -26,7 +26,7 @@ __C.YOLO.IOU_LOSS_THRESH      = 0.5
 # Train options
 __C.TRAIN                     = edict()
 
-__C.TRAIN.ANNOT_PATH          = "../input/data-yolo-train-one-class/Annotations_Train.txt"
+__C.TRAIN.ANNOT_PATH          = "../input/datayolotrainoneclass/Annotations_Train.txt"
 __C.TRAIN.BATCH_SIZE          = 4
 # __C.TRAIN.INPUT_SIZE            = [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
 __C.TRAIN.INPUT_SIZE          = 640
@@ -42,7 +42,7 @@ __C.TRAIN.SECOND_STAGE_EPOCHS   = 18
 # TEST options
 __C.TEST                      = edict()
 
-__C.TEST.ANNOT_PATH           = "../input/data-yolo-train-one-class/Annotations_Test.txt"
+__C.TEST.ANNOT_PATH           = "../input/datayolotrainoneclass/Annotations_Test.txt"
 __C.TEST.BATCH_SIZE           = 4
 __C.TEST.INPUT_SIZE           = 640
 __C.TEST.DATA_AUG             = False
