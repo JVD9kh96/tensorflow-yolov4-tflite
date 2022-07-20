@@ -162,8 +162,8 @@ def main(_argv):
         
         model.save_weights(FLAGS.backup)
         
-        for image_data, target in testset:
-            test_step(image_data, target)
+        #for image_data, target in testset:
+         #   test_step(image_data, target)
         
 
 if __name__ == '__main__':
