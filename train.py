@@ -13,7 +13,7 @@ from core.config import cfg
 import numpy as np
 from core import utils
 from core.utils import freeze_all, unfreeze_all
-
+import time
 
 
 flags.DEFINE_string('model', 'yolov4', 'yolov4, yolov3')
@@ -21,8 +21,11 @@ flags.DEFINE_string('weights', None, 'pretrained weights')
 flags.DEFINE_string('backup', './yolov4_weights', 'path for saving weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_integer('init_epoch', 0, 'initial epoch for training') 
+flags.DEFINE_integer('time_limit',-1,'limiting time')
+flags.DEFINE_boolean('eval_on_test',True,'evaluation on test')
 
 def main(_argv):
+    tic                                  = time.time()
     trainset                             = Dataset(FLAGS, is_training=True)
     testset                              = Dataset(FLAGS, is_training=False)
     logdir                               = "./data/log"
@@ -78,7 +81,13 @@ def main(_argv):
 
     optimizer = tf.keras.optimizers.Adam()
     if os.path.exists(logdir): shutil.rmtree(logdir)
-    writer = tf.summary.create_file_writer(logdir)
+    train_logdir = os.path.join(logdir,'train')
+    test_logdir  = os.path.join(logdir,'test')
+    os.makedirs(logdir,exist_ok = True)
+    os.makedirs(train_logdir,exist_ok = True)
+    os.makedirs(test_logdir,exist_ok = True)
+    train_writer = tf.summary.create_file_writer(train_logdir)
+    test_writer  = tf.summary.create_file_writer(test_logdir)
 
     # define training step function
     # @tf.function
@@ -118,13 +127,13 @@ def main(_argv):
             optimizer.lr.assign(lr.numpy())
 
             # writing summary data
-            with writer.as_default():
+            with train_writer.as_default():
                 tf.summary.scalar("lr", optimizer.lr, step=global_steps)
                 tf.summary.scalar("loss/total_loss", total_loss, step=global_steps)
                 tf.summary.scalar("loss/giou_loss", giou_loss, step=global_steps)
                 tf.summary.scalar("loss/conf_loss", conf_loss, step=global_steps)
                 tf.summary.scalar("loss/prob_loss", prob_loss, step=global_steps)
-            writer.flush()
+            train_writer.flush()
     def test_step(image_data, target):
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
@@ -143,7 +152,15 @@ def main(_argv):
             tf.print("=> TEST STEP %4d   giou_loss: %4.2f   conf_loss: %4.2f   "
                      "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, giou_loss, conf_loss,
                                                                prob_loss, total_loss))
-
+            # writing summary data
+            with test_writer.as_default():
+                tf.summary.scalar("loss/total_loss", total_loss, step=global_steps)
+                tf.summary.scalar("loss/giou_loss", giou_loss, step=global_steps)
+                tf.summary.scalar("loss/conf_loss", conf_loss, step=global_steps)
+                tf.summary.scalar("loss/prob_loss", prob_loss, step=global_steps)
+            test_writer.flush()
+         
+    terminate = False
     for epoch in range(FLAGS.init_epoch, first_stage_epochs + second_stage_epochs):
         if epoch < first_stage_epochs:
             if not isfreeze:
@@ -158,12 +175,18 @@ def main(_argv):
                     freeze = model.get_layer(name)
                     unfreeze_all(freeze)
         for image_data, target in trainset:
+            if FLAGS.time_limit > 0 and (time.time() - tic) > FLAGS.time_limit:
+                terminate = True
+                break
             train_step(image_data, target)
         
         model.save_weights(FLAGS.backup)
-        
-        #for image_data, target in testset:
-         #   test_step(image_data, target)
+        if terminate:
+            print('train was ended due to the time limitation')
+            break
+        if FLAGS.eval_on_test:
+            for image_data, target in testset:
+                test_step(image_data, target)
         
 
 if __name__ == '__main__':
