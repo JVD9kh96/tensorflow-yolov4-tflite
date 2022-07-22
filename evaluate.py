@@ -18,7 +18,7 @@ flags.DEFINE_string('weights', './checkpoints/yolov4-416',
 flags.DEFINE_string('model', 'yolov4', 'yolov3 or yolov4')
 flags.DEFINE_boolean('tiny', False, 'yolov3 or yolov3-tiny')
 flags.DEFINE_integer('size', 608, 'resize images to')
-flags.DEFINE_string('annotation_path', "../input/yolowheat5/data3/test.txt", 'annotation path')
+flags.DEFINE_string('annotation_path', "../input/yolowheat5/data4/test.txt", 'annotation path')
 flags.DEFINE_string('write_image_path', "./data/detection/", 'write image path')
 flags.DEFINE_float('iou', 0.5, 'iou threshold')
 flags.DEFINE_float('score', 0.25, 'score threshold')
