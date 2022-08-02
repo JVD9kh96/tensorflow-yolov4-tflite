@@ -13,7 +13,7 @@ from core.config import cfg
 import numpy as np
 from core import utils
 from core.utils import freeze_all, unfreeze_all
-
+import time 
 
 
 flags.DEFINE_string('model', 'yolov4', 'yolov4, yolov3')
@@ -21,9 +21,13 @@ flags.DEFINE_string('weights', None, 'pretrained weights')
 flags.DEFINE_string('backup', './yolov4_weights', 'path for saving weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_integer('init_epoch', 0, 'initial epoch for training') 
-flags.DEFINE_integer('max_to_keep', 3, 'max weights to keep')
+flags.DEFINE_integer('max_to_keep', 3, 'maximum number of checkpoints to keep')
+flags.DEFINE_integer('time_limit', -1, 'time limitation to terminate the training')
+flags.DEFINE_boolean('test', True, 'if true, it would test the model on test data after each epoch')
+
 
 def main(_argv):
+    tic                                  = time.time()
     trainset                             = Dataset(FLAGS, is_training=True)
     testset                              = Dataset(FLAGS, is_training=False)
     logdir                               = "./data/log"
@@ -86,7 +90,13 @@ def main(_argv):
         print('Restoring weights from: %s ... ' % FLAGS.weights)
     
     if os.path.exists(logdir): shutil.rmtree(logdir)
-    writer = tf.summary.create_file_writer(logdir)
+    train_logdir = os.path.join(logdir, 'train')
+    test_logdir  = os.path.join(logdir, 'test')
+    os.makedirs(train_logdir)
+    os.makedirs(test_logdir)
+    
+    train_writer = tf.summary.create_file_writer(train_logdir)
+    test_writer  = tf.summary.create_file_writer(train_logdir)
 
     # define training step function
     # @tf.function
@@ -126,13 +136,13 @@ def main(_argv):
             optimizer.lr.assign(lr.numpy())
 
             # writing summary data
-            with writer.as_default():
+            with train_writer.as_default():
                 tf.summary.scalar("lr", optimizer.lr, step=global_steps)
                 tf.summary.scalar("loss/total_loss", total_loss, step=global_steps)
                 tf.summary.scalar("loss/giou_loss", giou_loss, step=global_steps)
                 tf.summary.scalar("loss/conf_loss", conf_loss, step=global_steps)
                 tf.summary.scalar("loss/prob_loss", prob_loss, step=global_steps)
-            writer.flush()
+            train_writer.flush()
     def test_step(image_data, target):
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
@@ -147,11 +157,18 @@ def main(_argv):
                 prob_loss += loss_items[2]
 
             total_loss = giou_loss + conf_loss + prob_loss
-
+            
             tf.print("=> TEST STEP %4d   giou_loss: %4.2f   conf_loss: %4.2f   "
                      "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, giou_loss, conf_loss,
                                                                prob_loss, total_loss))
+            with test_writer.as_default():
+                tf.summary.scalar("loss/total_loss", total_loss, step=global_steps)
+                tf.summary.scalar("loss/giou_loss", giou_loss, step=global_steps)
+                tf.summary.scalar("loss/conf_loss", conf_loss, step=global_steps)
+                tf.summary.scalar("loss/prob_loss", prob_loss, step=global_steps)
+            test_writer.flush()
 
+    time_terminate_flag = False
     for epoch in range(FLAGS.init_epoch, first_stage_epochs + second_stage_epochs):
         if epoch < first_stage_epochs:
             if not isfreeze:
@@ -167,6 +184,9 @@ def main(_argv):
                     unfreeze_all(freeze)
         for image_data, target in trainset:
             train_step(image_data, target)
+            if FLAGS.time_limit>0 and (time.time()-tic)>=FLAGS.time_limit:
+                time_terminate_flag = True
+                break
         
         ckpt.step.assign_add(1)
         save_path = manager.save()
@@ -174,10 +194,19 @@ def main(_argv):
         model.save_weights(FLAGS.backup)
         
         
-        for image_data, target in testset:
-            test_step(image_data, target)
         
-
+        if FLAGS.test and not time_terminate_flag:
+            for image_data, target in testset:
+                test_step(image_data, target)
+                
+                if FLAGS.time_limit>0 and (time.time()-tic)>=FLAGS.time_limit:
+                    time_terminate_flag = True
+                    break
+        
+        if time_terminate_flag:
+            print('The training was terminated due to the time limit set by user')
+            break
+            
 if __name__ == '__main__':
     try:
         app.run(main)
