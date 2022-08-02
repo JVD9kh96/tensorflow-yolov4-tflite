@@ -50,4 +50,10 @@ __C.TEST.DECTECTED_IMAGE_PATH = "./data/detection/"
 __C.TEST.SCORE_THRESHOLD      = 0.25
 __C.TEST.IOU_THRESHOLD        = 0.5
 
+__C.AUG                       = edict()
+__C.AUG.HORIZONTAL            = True
+__C.AUG.VERTICAL              = False
+__C.AUG.CROP                  = True
+__C.AUG.TRANSLATE             = True
+
 
