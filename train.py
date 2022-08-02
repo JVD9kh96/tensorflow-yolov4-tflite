@@ -21,6 +21,7 @@ flags.DEFINE_string('weights', None, 'pretrained weights')
 flags.DEFINE_string('backup', './yolov4_weights', 'path for saving weights')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_integer('init_epoch', 0, 'initial epoch for training') 
+flags.DEFINE_integer('max_to_keep', 3, 'max weights to keep')
 
 def main(_argv):
     trainset                             = Dataset(FLAGS, is_training=True)
@@ -65,18 +66,25 @@ def main(_argv):
 
     model = tf.keras.Model(input_layer, bbox_tensors)
     model.summary()
-
+    
+    
+    optimizer = tf.keras.optimizers.Adam()
+    
+    ckpt    = tf.train.Checkpoint(step=tf.Variable(1), optimizer=optimizer, net=model)
+    manager = tf.train.CheckpointManager(ckpt, os.path.join(FLAGS.backup, 'tf_ckpts'), max_to_keep=FLAGS.max_to_keep)
+    
     if FLAGS.weights == None:
         print("Training from scratch")
     else:
         if FLAGS.weights.split(".")[len(FLAGS.weights.split(".")) - 1] == "weights":
             utils.load_weights(model, FLAGS.weights, FLAGS.model, FLAGS.tiny)
+    
+        elif 'tf_ckpts' in FLAGS.weights:
+            ckpt.restore(manager.latest_checkpoint)
         else:
             model.load_weights(FLAGS.weights)
         print('Restoring weights from: %s ... ' % FLAGS.weights)
-
-
-    optimizer = tf.keras.optimizers.Adam()
+    
     if os.path.exists(logdir): shutil.rmtree(logdir)
     writer = tf.summary.create_file_writer(logdir)
 
@@ -160,7 +168,11 @@ def main(_argv):
         for image_data, target in trainset:
             train_step(image_data, target)
         
+        ckpt.step.assign_add(1)
+        save_path = manager.save()
+        
         model.save_weights(FLAGS.backup)
+        
         
         for image_data, target in testset:
             test_step(image_data, target)
