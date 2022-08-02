@@ -90,6 +90,9 @@ def load_config(FLAGS):
             ANCHORS = get_anchors(cfg.YOLO.ANCHORS, FLAGS.tiny)
         elif FLAGS.model == 'yolov3':
             ANCHORS = get_anchors(cfg.YOLO.ANCHORS_V3, FLAGS.tiny)
+        else:
+            ANCHORS = get_anchors(cfg.YOLO.ANCHORS_V3, FLAGS.tiny)
+            
         XYSCALE = cfg.YOLO.XYSCALE if FLAGS.model == 'yolov4' else [1, 1, 1]
     NUM_CLASS = len(read_class_names(cfg.YOLO.CLASSES))
 
