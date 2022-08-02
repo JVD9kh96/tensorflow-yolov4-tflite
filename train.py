@@ -23,7 +23,7 @@ flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
 flags.DEFINE_integer('init_epoch', 0, 'initial epoch for training') 
 flags.DEFINE_integer('max_to_keep', 3, 'maximum number of checkpoints to keep')
 flags.DEFINE_integer('time_limit', -1, 'time limitation to terminate the training')
-flags.DEFINE_boolean('test', True, 'if true, it would test the model on test data after each epoch')
+flags.DEFINE_boolean('test', 1, 'the frequency of evaluating on test data during the trainig')
 
 
 def main(_argv):
@@ -195,7 +195,7 @@ def main(_argv):
         
         
         
-        if FLAGS.test and not time_terminate_flag:
+        if epoch % FLAGS.test == 0 and not time_terminate_flag:
             for image_data, target in testset:
                 test_step(image_data, target)
                 
