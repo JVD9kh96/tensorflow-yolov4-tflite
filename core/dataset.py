@@ -187,7 +187,15 @@ class Dataset(object):
             bboxes[:, [0, 2]] = w - bboxes[:, [2, 0]]
 
         return image, bboxes
+    
+    def random_vertical_flip(self, image, bboxes):
+        if random.random() < 0.5:
+            h, _, _ = image.shape
+            image = image[::-1, :, :]
+            bboxes[:, [1, 3]] = h - bboxes[:, [1, 3]]
 
+        return image, bboxes
+    
     def random_crop(self, image, bboxes):
         if random.random() < 0.5:
             h, w, _ = image.shape
@@ -270,14 +278,22 @@ class Dataset(object):
             bboxes = bboxes.astype(np.int64)
 
         if self.data_aug:
-            image, bboxes = self.random_horizontal_flip(
-                np.copy(image), np.copy(bboxes)
-            )
-            image, bboxes = self.random_crop(np.copy(image), np.copy(bboxes))
-            image, bboxes = self.random_translate(
-                np.copy(image), np.copy(bboxes)
-            )
+            if cfg.AUG.HORIZONTAL:
+                image, bboxes = self.random_horizontal_flip(
+                    np.copy(image), np.copy(bboxes)
+                )
+            if cfg.AUG.CROP
+                image, bboxes = self.random_crop(np.copy(image), np.copy(bboxes))
+            if cfg.AUG.TRANSLATE:
+                image, bboxes = self.random_translate(
+                    np.copy(image), np.copy(bboxes)
+                )
 
+            if cfg.AUG.VERTICAL:
+                image, bboxes = self.random_vertical_flip(
+                    np.copy(image), np.copy(bboxes)
+                )
+                
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image, bboxes = utils.image_preprocess(
             np.copy(image),
