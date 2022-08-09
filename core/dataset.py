@@ -282,7 +282,7 @@ class Dataset(object):
                 image, bboxes = self.random_horizontal_flip(
                     np.copy(image), np.copy(bboxes)
                 )
-            if cfg.AUG.CROP
+            if cfg.AUG.CROP:
                 image, bboxes = self.random_crop(np.copy(image), np.copy(bboxes))
             if cfg.AUG.TRANSLATE:
                 image, bboxes = self.random_translate(
