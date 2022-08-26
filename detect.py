@@ -265,6 +265,7 @@ def detect(weights = "./Model/ModelWeights",
             
     model.load_weights(weights)
     input_file = open(images_path, 'r') if images_path.endswith('txt') else [images_path]
+    model.summary()
     
     for num, line in enumerate(input_file):
         annotation = line.strip().split()
