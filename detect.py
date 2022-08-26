@@ -272,6 +272,7 @@ def detect(weights = "./Model/ModelWeights",
         image_name = image_path.split('/')[-1]
         print('hey')
         print(image_name)
+        print(image_path)
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
