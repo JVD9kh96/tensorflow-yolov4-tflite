@@ -281,6 +281,7 @@ def detect(weights = "./Model/ModelWeights",
         
         image_size = image.shape[:2]
         image_data = image_preprocess(np.copy(image), [INPUT_SIZE, INPUT_SIZE])
+        print(image.shape)
         image_data = image_data[np.newaxis, ...].astype(np.float32)
         pred_bbox  = model.predict(image_data)
         pred_bbox  = [pred_bbox[1], pred_bbox[3], pred_bbox[5]]
