@@ -279,6 +279,7 @@ def detect(weights = "./Model/ModelWeights",
 
         predict_result_path = os.path.join(predicted_dir_path, image_name.split('.')[0] + '.txt')
         # Predict Process
+        print(image.shape)
         image_size = image.shape[:2]
         image_data = image_preprocess(np.copy(image), [INPUT_SIZE, INPUT_SIZE])
         image_data = image_data[np.newaxis, ...].astype(np.float32)
