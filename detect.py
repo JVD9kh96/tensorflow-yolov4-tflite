@@ -309,7 +309,6 @@ def main(_argv):
     INPUT_SIZE = FLAGS.size
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
     CLASSES = utils.read_class_names(cfg.YOLO.CLASSES)
-    model.summary()
     
 
     detect(weights = FLAGS.weights,
