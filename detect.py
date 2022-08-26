@@ -275,7 +275,7 @@ def detect(weights = "./Model/ModelWeights",
         print(image_path)
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+        print(image.shape)
 
         predict_result_path = os.path.join(predicted_dir_path, image_name.split('.')[0] + '.txt')
         # Predict Process
