@@ -270,6 +270,7 @@ def detect(weights = "./Model/ModelWeights",
         annotation = line.strip().split()
         image_path = annotation[0]
         image_name = image_path.split('/')[-1]
+        print('hey')
         print(image_name)
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
