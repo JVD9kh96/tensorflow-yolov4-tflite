@@ -442,19 +442,41 @@ def transformer_block(inp,
                       dropblock = False,
                       dropblock_keep_prob = 0.9):
     
-    inp = tf.keras.layers.Conv2D(filters = out_filt,
-                                 kernel_size = kernel_size,
+    x = tf.keras.layers.Conv2D(filters = out_filt//2,
+                                 kernel_size = (1, 1),
                                  strides = (1, 1),
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                  use_bias = False,
                                  padding='same')(inp)
     if normalization == 'batch':
-        x = tf.keras.layers.experimental.SyncBatchNormalization()(inp)
+        x = tf.keras.layers.experimental.SyncBatchNormalization()(x)
     # elif normalization == 'group':
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
-        x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(inp)
+        x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
+    
+    if activation == 'mish':
+        x = mish(x)
+    elif activation == 'gelu':
+        # inp = tfa.activations.gelu(inp)
+        x = tf.nn.gelu(x)
+    elif activation == 'leaky':
+        x = tf.keras.layers.LeakyReLU(alpha = 0.3)(x)
+    
+    x = tf.keras.layers.Conv2D(filters = out_filt,
+                                 kernel_size = kernel_size,
+                                 strides = (1, 1),
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                 use_bias = False,
+                                 padding='same')(x)
+    if normalization == 'batch':
+        x = tf.keras.layers.experimental.SyncBatchNormalization()(x)
+    # elif normalization == 'group':
+    #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+    elif normalization == 'layer':
+        x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
     
     if activation == 'mish':
         x = mish(x)
@@ -538,8 +560,8 @@ def transformer_block(inp,
 
 
     if down_sample:
-        x8 = tf.keras.layers.MaxPooling2D(pool_size = (2, 2), strides = (2, 2))(x8)
+        x = tf.keras.layers.MaxPooling2D(pool_size = (2, 2), strides = (2, 2))(x)
     if dropblock:
-        x8 = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(x8)
+        x = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(x)
         
-    return x8
+    return x
