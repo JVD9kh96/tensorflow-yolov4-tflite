@@ -508,7 +508,7 @@ def transformer_block(inp,
                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(x)
     
-   if normalization == 'batch':
+    if normalization == 'batch':
         x = tf.keras.layers.experimental.SyncBatchNormalization()(x)
     # elif normalization == 'group':
     #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
@@ -556,9 +556,7 @@ def transformer_block(inp,
         x = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(x)
         
     x = tf.keras.layers.Add()([x, r])
-
-
-
+    
     if down_sample:
         x = tf.keras.layers.MaxPooling2D(pool_size = (2, 2), strides = (2, 2))(x)
     if dropblock:
