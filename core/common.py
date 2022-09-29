@@ -412,6 +412,7 @@ def kai_attention(key,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                     use_bias = False,
                                     activity_regularizer=regularizers.l2(1e-5))(attention)
+    attention = attention + shortcut
     if normalization == 'batch':
         attention = tf.keras.layers.experimental.SyncBatchNormalization()(attention)
     # elif normalization == 'group':
@@ -426,7 +427,7 @@ def kai_attention(key,
         attention = tf.nn.gelu(attention)
     elif activation == 'leaky':
         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
-    attention = attention + shortcut
+    
     if dropblock:
         attention = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(attention)
     return attention
