@@ -391,6 +391,12 @@ def kai_attention(key,
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                         use_bias = False,
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
+    if normalization == 'batch':
+        attention = tf.keras.layers.experimental.SyncBatchNormalization()(attention)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        attention = tf.keras.layers.LayerNormalization(epsilon=1e-6)(attention)
     if activation == 'mish':
         attention = mish(attention)
     elif activation == 'gelu':
@@ -406,6 +412,13 @@ def kai_attention(key,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                     use_bias = False,
                                     activity_regularizer=regularizers.l2(1e-5))(attention)
+    if normalization == 'batch':
+        attention = tf.keras.layers.experimental.SyncBatchNormalization()(attention)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        attention = tf.keras.layers.LayerNormalization(epsilon=1e-6)(attention)
+        
     if activation == 'mish':
         attention = mish(attention)
     elif activation == 'gelu':
