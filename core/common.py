@@ -500,6 +500,13 @@ def transformer_block(inp,
     x = tf.keras.layers.Add()([x, r])
   
     r  = x
+    
+    if normalization == 'batch':
+        x = tf.keras.layers.experimental.SyncBatchNormalization()(x)
+    # elif normalization == 'group':
+    #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
+    elif normalization == 'layer':
+        x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
     x = tf.keras.layers.Conv2D(filters = out_filt//2,
                                 kernel_size=(1, 1),
                                 strides=(1, 1),
@@ -508,12 +515,7 @@ def transformer_block(inp,
                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(x)
     
-    if normalization == 'batch':
-        x = tf.keras.layers.experimental.SyncBatchNormalization()(x)
-    # elif normalization == 'group':
-    #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
-    elif normalization == 'layer':
-        x = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x)
+    
     
     if activation == 'mish':
         x = mish(x)
@@ -527,6 +529,14 @@ def transformer_block(inp,
     if dropblock:
         x = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(x)
         
+        
+    if normalization == 'batch':
+        x = tf.keras.layers.experimental.SyncBatchNormalization()(x)
+    # elif normalization == 'group':
+    #     x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
+    elif normalization == 'layer':
+        x= tf.keras.layers.LayerNormalization(epsilon=0.001)(x)
+        
     x = tf.keras.layers.Conv2D(filters = out_filt,
                                 kernel_size=kernel_size,
                                 strides=(1, 1),
@@ -538,12 +548,7 @@ def transformer_block(inp,
                                 activity_regularizer=regularizers.l2(1e-5))(x)
     
     
-    if normalization == 'batch':
-        x = tf.keras.layers.experimental.SyncBatchNormalization()(x)
-    # elif normalization == 'group':
-    #     x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
-    elif normalization == 'layer':
-        x= tf.keras.layers.LayerNormalization(epsilon=0.001)(x)
+    
     
     if activation == 'mish':
         x = mish(x)
