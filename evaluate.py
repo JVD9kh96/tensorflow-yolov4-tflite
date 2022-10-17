@@ -257,7 +257,13 @@ def evaluate(weights = "./Model/ModelWeights",
         except:
             continue
             
-    model.load_weights(weights)
+    optimizer = tf.keras.optimizers.Adam()
+    ckpt    = tf.train.Checkpoint(step=tf.Variable(1), optimizer=optimizer, net=model)
+    manager = tf.train.CheckpointManager(ckpt, weights, max_to_keep=3)
+    if 'tf_ckpts' in weights:
+        ckpt.restore(manager.latest_checkpoint)
+    else:
+        model.load_weights(weights)
     
     with open(cfg.TEST.ANNOT_PATH, 'r') as annotation_file:
         for num, line in enumerate(annotation_file):
