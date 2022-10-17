@@ -411,6 +411,11 @@ def kai_attention(key,
     elif activation == 'leaky':
         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
     attention = attention + shortcut
+    
+    if normalization == 'batch':
+        attention = tf.keras.layers.experimental.SyncBatchNormalization()(attention)
+    elif normalization == 'layer':
+        attention = tf.keras.layers.LayerNormalization(epsilon=1e-6)(attention)
     return attention
 
 def transformer_block(inp,
@@ -504,10 +509,6 @@ def transformer_block(inp,
               
     x = tf.keras.layers.Add()([x, r])
     
-    if normalization == 'batch':
-        x = tf.keras.layers.experimental.SyncBatchNormalization()(x)
-    elif normalization == 'layer':
-        x = tf.keras.layers.LayerNormalization(epsilon=0.001)(x)
 
     if down_sample:
         x = tf.keras.layers.MaxPooling2D(pool_size = (2, 2), strides = (2, 2))(x)
