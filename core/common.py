@@ -398,7 +398,7 @@ def kai_attention(key,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                     use_bias = False,
                                     activity_regularizer=regularizers.l2(1e-5))(attention)
-     attention = attention + shortcut
+    attention = attention + shortcut
       
     if normalization == 'batch':
         attention = tf.keras.layers.experimental.SyncBatchNormalization()(attention)
