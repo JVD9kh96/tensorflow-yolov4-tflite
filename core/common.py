@@ -503,6 +503,11 @@ def transformer_block(inp,
         x = x
               
     x = tf.keras.layers.Add()([x, r])
+    
+    if normalization == 'batch':
+        x = tf.keras.layers.experimental.SyncBatchNormalization()(x)
+    elif normalization == 'layer':
+        x = tf.keras.layers.LayerNormalization(epsilon=0.001)(x)
 
     if down_sample:
         x = tf.keras.layers.MaxPooling2D(pool_size = (2, 2), strides = (2, 2))(x)
