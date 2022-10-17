@@ -16,7 +16,10 @@ class Dataset(object):
     def __init__(self, FLAGS, is_training: bool, dataset_type: str = "converted_coco"):
         self.tiny = FLAGS.tiny
         self.strides, self.anchors, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
-        self.dataset_type = dataset_type
+        self.prior_num     = cfg.COND.PRIOR_NUM
+        self.posterior_num = cfg.COND.POSTERIOR_NUM
+        self.idx           = cfg.COND.IDX
+        self.dataset_type  = dataset_type
 
         self.annot_path = (
             cfg.TRAIN.ANNOT_PATH if is_training else cfg.TEST.ANNOT_PATH
@@ -295,6 +298,7 @@ class Dataset(object):
                 )
                 
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # check it later
         image, bboxes = utils.image_preprocess(
             np.copy(image),
             [self.train_input_size, self.train_input_size],
@@ -319,17 +323,38 @@ class Dataset(object):
         bbox_count = np.zeros((3,))
 
         for bbox in bboxes:
-            bbox_coor = bbox[:4]
-            bbox_class_ind = bbox[4]
+            bbox_coor            = bbox[:4]
+            bbox_class_prior_ind = bbox[4]
+            bbox_class_post_ind  = bbox[5]
 
-            onehot = np.zeros(self.num_classes, dtype=np.float)
-            onehot[bbox_class_ind] = 1.0
-            uniform_distribution = np.full(
-                self.num_classes, 1.0 / self.num_classes
+            onehot_prior = np.zeros(self.prior_num, dtype=np.float)
+            onehot_post  = np.zeros(self.posterior_num, dtype=np.float)
+            onehot_prior[bbox_class_prior_ind] = 1.0
+            onehot_post[bbox_class_post_ind]   = 1.0
+
+            uniform_distribution_prior = np.full(
+                self.prior_num, 1.0 / self.prior_num
             )
-            deta = 0.01
-            smooth_onehot = onehot * (1 - deta) + deta * uniform_distribution
 
+            uniform_distribution_post = np.full(
+                self.posterior_num, 1.0 / self.posterior_num
+            )
+
+            deta = 0.01
+            if cfg.COND.SMOOTH_PRIOR:
+                smooth_onehot_prior = onehot_prior * (1 - deta) + deta * uniform_distribution_prior
+            else:
+                smooth_onehot_prior = onehot_prior
+  
+            if cfg.COND.SMOOTH_POST:
+                smooth_onehot_post  = onehot_post * (1 - deta) + deta * uniform_distribution_post
+            else:
+                smooth_onehot_post  = onehot_post
+
+            smooth_onehot = np.concatenate([smooth_onehot_prior,
+                                            smooth_onehot_post],
+                                            axis = -1)
+           
             bbox_xywh = np.concatenate(
                 [
                     (bbox_coor[2:] + bbox_coor[:2]) * 0.5,

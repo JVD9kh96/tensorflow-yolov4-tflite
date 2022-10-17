@@ -56,4 +56,9 @@ __C.AUG.VERTICAL              = False
 __C.AUG.CROP                  = True
 __C.AUG.TRANSLATE             = True
 
-
+__C.COND                      = edict()
+__C.COND.PRIOR_NUM            = 4
+__C.COND.POSTERIOR_NUM        = 43
+__C.COND.IDX                  = {'0': [0, 10], '1': [11, 20], '2': [21, 30], '3': [31, 42]}
+__C.COND.SMOOTH_PRIOR         = True
+__C.COND.SMOOTH_POST          = True
