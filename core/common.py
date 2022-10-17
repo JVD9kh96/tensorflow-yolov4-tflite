@@ -398,6 +398,8 @@ def kai_attention(key,
                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                     use_bias = False,
                                     activity_regularizer=regularizers.l2(1e-5))(attention)
+     attention = attention + shortcut
+      
     if normalization == 'batch':
         attention = tf.keras.layers.experimental.SyncBatchNormalization()(attention)
     elif normalization == 'layer':
@@ -410,12 +412,9 @@ def kai_attention(key,
         attention = tf.nn.gelu(attention)
     elif activation == 'leaky':
         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
-    attention = attention + shortcut
+   
     
-    if normalization == 'batch':
-        attention = tf.keras.layers.experimental.SyncBatchNormalization()(attention)
-    elif normalization == 'layer':
-        attention = tf.keras.layers.LayerNormalization(epsilon=1e-6)(attention)
+
     return attention
 
 def transformer_block(inp,
