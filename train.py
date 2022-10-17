@@ -74,6 +74,12 @@ def main(_argv):
     
     optimizer = tf.keras.optimizers.Adam()
     
+    lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
+                    (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
+                )
+    optimizer.lr.assign(lr.numpy())
+    
+    
     ckpt    = tf.train.Checkpoint(step=tf.Variable(1), optimizer=optimizer, net=model)
     manager = tf.train.CheckpointManager(ckpt, os.path.join(FLAGS.backup, 'tf_ckpts'), max_to_keep=FLAGS.max_to_keep)
     
