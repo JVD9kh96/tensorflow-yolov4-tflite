@@ -623,6 +623,28 @@ def transformer_block(inp,
                       dropblock = False,
                       dropblock_keep_prob = 0.9):
     
+    inp = tf.keras.layers.Conv2D(filters = out_filt//2,
+                                 kernel_size = (1, 1),
+                                 strides = (1, 1),
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                 use_bias = False,
+                                 padding='same')(inp)
+    if activation == 'mish':
+        inp = mish(inp)
+    elif activation == 'gelu':
+        # inp = tfa.activations.gelu(inp)
+        inp = tf.nn.gelu(inp)
+    elif activation == 'leaky':
+        inp = tf.keras.layers.LeakyReLU(alpha = 0.3)(inp)
+
+    if normalization == 'batch':
+        inp = tf.keras.layers.experimental.SyncBatchNormalization()(inp)
+    # elif normalization == 'group':
+    #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+    elif normalization == 'layer':
+        inp = tf.keras.layers.LayerNormalization(epsilon=1e-6)(inp)
+    
     inp = tf.keras.layers.Conv2D(filters = out_filt,
                                  kernel_size = kernel_size,
                                  strides = (1, 1),
