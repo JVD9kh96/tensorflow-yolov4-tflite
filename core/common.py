@@ -8,6 +8,51 @@ from tensorflow.keras import regularizers
 
 from tensorflow.python.keras import backend as K
 
+class shake_shake_branch(tf.keras.layers.Layer):
+    def __init__(self):
+        super(shake_shake_branch, self).__init__()
+        
+    def call(self, x, rand_forward, rand_backward, training=False):
+        if training:
+            x = x * rand_backward + tf.stop_gradient(x * rand_forward -
+                                                 x * rand_backward)
+        else:
+            x = x * (1.0 / 2)
+        return x
+
+class shake_shake_add(tf.keras.layers.Layer):
+    def __init__(self):
+      super(shake_shake_add, self).__init__()
+      self.shake1 = shake_shake_branch()
+      self.shake2 = shake_shake_branch()
+      
+        
+    def call(self, x, x1, x1p, training=False):
+        batch_size = tf.shape(x)[0]
+        dtype      = x.dtype
+        # Generate random numbers for scaling the branches
+        rand_forward = [
+          tf.cast(tf.random.uniform(
+              [batch_size, 1, 1], minval=0, maxval=1, dtype=tf.float32), dtype=dtype)
+          for _ in range(2)
+        ]
+        rand_backward = [
+          tf.cast(tf.random.uniform(
+              [batch_size, 1, 1], minval=0, maxval=1, dtype=tf.float32), dtype=dtype)
+          for _ in range(2)
+        ]
+        # Normalize so that all sum to 1
+        total_forward  = tf.add_n(rand_forward)
+        total_backward = tf.add_n(rand_backward)
+        rand_forward   = [samp / total_forward for samp in rand_forward]
+        rand_backward  = [samp / total_backward for samp in rand_backward]
+        branches        = []
+        
+        b = [self.shake1(x1, rand_forward[0], rand_backward[0], training=training),
+             self.shake2(x1p, rand_forward[1], rand_backward[1], training=training),
+             x]
+        return tf.add_n(b)
+
 class Dropblock(tf.keras.layers.Layer):
   """DropBlock: a regularization method for convolutional neural networks.
     DropBlock is a form of structured dropout, where units in a contiguous
@@ -481,7 +526,7 @@ def transformer_block(inp,
                        normalization =  normalization,
                        dropblock = dropblock)
     
-    x3 = tf.keras.layers.Add()([x2, inp])
+    x3 = shake_shake_add()(inp, x2, x2p)
     if normalization == 'batch':
         x4 = tf.keras.layers.experimental.SyncBatchNormalization()(x3)
     # elif normalization == 'group':
@@ -576,7 +621,7 @@ def transformer_block(inp,
     if dropblock:
         x7p = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(x7p)
     
-    x8 = tf.keras.layers.Add()([x7, x7p, x3])
+    x8 = shake_shake_add()(x3, x7, x7p)
 
     if normalization == 'batch':
         x8 = tf.keras.layers.experimental.SyncBatchNormalization()(x8)
