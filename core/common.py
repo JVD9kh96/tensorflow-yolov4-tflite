@@ -527,7 +527,7 @@ def transformer_block(inp,
 #                        dropblock = dropblock)
     
 #     x3 = shake_shake_add()(inp, x2, x2p)
-    x3 = tf.keras.layers.Add()[inp, x2])
+    x3 = tf.keras.layers.Add()([inp, x2])
     if normalization == 'batch':
         x4 = tf.keras.layers.experimental.SyncBatchNormalization()(x3)
     # elif normalization == 'group':
