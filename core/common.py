@@ -306,7 +306,7 @@ def kai_attention(key,
     elif activation == 'leaky':
         k1 = tf.keras.layers.LeakyReLU(alpha = 0.3)(k1)
     
-    k2 = tf.keras.layers.Conv2D(filters = heads,
+    k2 = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -331,7 +331,7 @@ def kai_attention(key,
     if dropblock:
         k2 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(k2)
     
-    k3 = tf.keras.layers.Conv2D(filters = heads,
+    k3 = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -355,7 +355,7 @@ def kai_attention(key,
     
 #     key = shake_shake_add()(k1, k2, k3)
     
-    k1 = tf.keras.layers.Conv2D(filters = heads,
+    k1 = tf.keras.layers.Conv2D(filters = heads//2,
                              kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
                              padding = 'same',
@@ -389,7 +389,7 @@ def kai_attention(key,
     if dropblock:
         v1 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(v1)
     
-    v2 = tf.keras.layers.Conv2D(filters = heads,
+    v2 = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -415,7 +415,7 @@ def kai_attention(key,
     if dropblock:
         v2 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(v2)
      
-    v3 = tf.keras.layers.Conv2D(filters = heads,
+    v3 = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -443,7 +443,7 @@ def kai_attention(key,
     
 #     value = shake_shake_add()(v1, v2, v3)
     
-    v1 = tf.keras.layers.Conv2D(filters = heads,
+    v1 = tf.keras.layers.Conv2D(filters = heads//2,
                              kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
                              padding = 'same',
@@ -491,7 +491,7 @@ def kai_attention(key,
     if dropblock:
         q1 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(q1)
     
-    q2 = tf.keras.layers.Conv2D(filters = heads,
+    q2 = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -515,7 +515,7 @@ def kai_attention(key,
     if dropblock:
         q2 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(q2)
     
-    q3 = tf.keras.layers.Conv2D(filters = heads,
+    q3 = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -541,7 +541,7 @@ def kai_attention(key,
     
 #     query = shake_shake_add()(q1, q2, q3)
     
-    q1 = tf.keras.layers.Conv2D(filters = heads,
+    q1 = tf.keras.layers.Conv2D(filters = heads//2,
                              kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
                              padding = 'same',
