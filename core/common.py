@@ -353,7 +353,7 @@ def kai_attention(key,
     elif activation == 'leaky':
         k3 = tf.keras.layers.LeakyReLU(alpha = 0.3)(k3)
     
-    key = shake_shake_add()([k1, k2, k3])
+    key = shake_shake_add()(k1, k2, k3)
     
     key = tf.keras.layers.Conv2D(filters = heads,
                              kernel_size=(kernel_size, kernel_size),
@@ -441,7 +441,7 @@ def kai_attention(key,
     if dropblock:
         v3 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(v3)
     
-    value = shake_shake_add()([v1, v2, v3])
+    value = shake_shake_add()(v1, v2, v3)
     
     value = tf.keras.layers.Conv2D(filters = heads,
                              kernel_size=(kernel_size, kernel_size),
@@ -539,7 +539,7 @@ def kai_attention(key,
     if dropblock:
         q3 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(q3)
     
-    query = shake_shake_add()([q1, q2, q3])
+    query = shake_shake_add()(q1, q2, q3)
     
     query = tf.keras.layers.Conv2D(filters = heads,
                              kernel_size=(kernel_size, kernel_size),
