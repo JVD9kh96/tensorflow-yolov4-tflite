@@ -33,12 +33,12 @@ class shake_shake_add(tf.keras.layers.Layer):
         # Generate random numbers for scaling the branches
         rand_forward = [
           tf.cast(tf.random.uniform(
-              [batch_size, 1, 1], minval=0, maxval=1, dtype=tf.float32), dtype=dtype)
+              [batch_size, 1, 1, 1], minval=0, maxval=1, dtype=tf.float32), dtype=dtype)
           for _ in range(2)
         ]
         rand_backward = [
           tf.cast(tf.random.uniform(
-              [batch_size, 1, 1], minval=0, maxval=1, dtype=tf.float32), dtype=dtype)
+              [batch_size, 1, 1, 1], minval=0, maxval=1, dtype=tf.float32), dtype=dtype)
           for _ in range(2)
         ]
         # Normalize so that all sum to 1
