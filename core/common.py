@@ -284,7 +284,7 @@ def kai_attention(key,
              simultaneously) 
     """
     shortcut = value 
-    key = tf.keras.layers.Conv2D(filters = heads//2,
+    k1 = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -292,22 +292,68 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
     if normalization == 'batch':
-        key = tf.keras.layers.experimental.SyncBatchNormalization()(key)
+        k1 = tf.keras.layers.experimental.SyncBatchNormalization()(k1)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
-        key = tf.keras.layers.LayerNormalization(epsilon=1e-6)(key)
+        k1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(k1)
         
     if activation == 'mish':
-        key = mish(key)
+        k1 = mish(k1)
     elif activation == 'gelu':
         # key = tfa.activations.gelu(key)
-        key = tf.nn.gelu(key)
+        k1 = tf.nn.gelu(k1)
     elif activation == 'leaky':
-        key = tf.keras.layers.LeakyReLU(alpha = 0.3)(key)
+        k1 = tf.keras.layers.LeakyReLU(alpha = 0.3)(k1)
+    
+    k2 = tf.keras.layers.Conv2D(filters = heads//2,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same',
+                                 use_bias = False,
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
+    if normalization == 'batch':
+        k2 = tf.keras.layers.experimental.SyncBatchNormalization()(k2)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        k2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(k2)
         
+    if activation == 'mish':
+        k2 = mish(k2)
+    elif activation == 'gelu':
+        # key = tfa.activations.gelu(key)
+        k2 = tf.nn.gelu(k2)
+    elif activation == 'leaky':
+        k2 = tf.keras.layers.LeakyReLU(alpha = 0.3)(k2)
+    
     if dropblock:
-        key = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(key)
+        k2 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(k2)
+    
+    k3 = tf.keras.layers.Conv2D(filters = heads//2,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same',
+                                 use_bias = False,
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
+    if normalization == 'batch':
+        k3 = tf.keras.layers.experimental.SyncBatchNormalization()(k3)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        k3 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(k3)
+        
+    if activation == 'mish':
+        k3 = mish(k3)
+    elif activation == 'gelu':
+        # key = tfa.activations.gelu(key)
+        k3 = tf.nn.gelu(k3)
+    elif activation == 'leaky':
+        k3 = tf.keras.layers.LeakyReLU(alpha = 0.3)(k3)
+    
+    key = shake_shake_add()([k1, k2, k3])
     
     key = tf.keras.layers.Conv2D(filters = heads,
                              kernel_size=(kernel_size, kernel_size),
@@ -317,7 +363,7 @@ def kai_attention(key,
                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)    
         
-    value = tf.keras.layers.Conv2D(filters = heads//2,
+    v1 = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -326,22 +372,76 @@ def kai_attention(key,
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
     
     if normalization == 'batch':
-        value = tf.keras.layers.experimental.SyncBatchNormalization()(value)
+        v1 = tf.keras.layers.experimental.SyncBatchNormalization()(v1)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
-        value = tf.keras.layers.LayerNormalization(epsilon=1e-6)(value)
+        v1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(v1)
         
     if activation == 'mish':
-        value = mish(value)
+        v1 = mish(v1)
     elif activation == 'gelu':
         # key = tfa.activations.gelu(key)
-        value = tf.nn.gelu(value)
+        v1 = tf.nn.gelu(v1)
     elif activation == 'leaky':
-        value = tf.keras.layers.LeakyReLU(alpha = 0.3)(value)
+        v1 = tf.keras.layers.LeakyReLU(alpha = 0.3)(v1)
     
     if dropblock:
-        value = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(value)
+        v1 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(v1)
+    
+    v2 = tf.keras.layers.Conv2D(filters = heads//2,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same',
+                                 use_bias = False,
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
+    
+    if normalization == 'batch':
+        v2 = tf.keras.layers.experimental.SyncBatchNormalization()(v2)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        v2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(v2)
+        
+    if activation == 'mish':
+        v2 = mish(v2)
+    elif activation == 'gelu':
+        # key = tfa.activations.gelu(key)
+        v2 = tf.nn.gelu(v2)
+    elif activation == 'leaky':
+        v2 = tf.keras.layers.LeakyReLU(alpha = 0.3)(v2)
+    
+    if dropblock:
+        v2 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(v2)
+     
+    v3 = tf.keras.layers.Conv2D(filters = heads//2,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same',
+                                 use_bias = False,
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
+    
+    if normalization == 'batch':
+        v3 = tf.keras.layers.experimental.SyncBatchNormalization()(v3)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        v3 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(v3)
+        
+    if activation == 'mish':
+        v3 = mish(v3)
+    elif activation == 'gelu':
+        # key = tfa.activations.gelu(key)
+        v3 = tf.nn.gelu(v3)
+    elif activation == 'leaky':
+        v3 = tf.keras.layers.LeakyReLU(alpha = 0.3)(v3)
+    
+    if dropblock:
+        v3 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(v3)
+    
+    value = shake_shake_add()([v1, v2, v3])
     
     value = tf.keras.layers.Conv2D(filters = heads,
                              kernel_size=(kernel_size, kernel_size),
@@ -367,7 +467,7 @@ def kai_attention(key,
     if dropblock:
         value = DropBlock()(value)
     
-    query = tf.keras.layers.Conv2D(filters = heads//2,
+    q1 = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -375,22 +475,72 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
     if normalization == 'batch':
-        query = tf.keras.layers.experimental.SyncBatchNormalization()(query)
+        q1 = tf.keras.layers.experimental.SyncBatchNormalization()(q1)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
-        query = tf.keras.layers.LayerNormalization(epsilon=1e-6)(query)
+        q1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(q1)
         
     if activation == 'mish':
-        query = mish(query)
+        q1 = mish(q1)
     elif activation == 'gelu':
         # query = tfa.activations.gelu(query)
-        query = tf.nn.gelu(query)
+        q1 = tf.nn.gelu(q1)
     elif activation == 'leaky':
-        query = tf.keras.layers.LeakyReLU(alpha = 0.3)(query)
+        q1 = tf.keras.layers.LeakyReLU(alpha = 0.3)(q1)
     if dropblock:
-        query = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(query)
+        q1 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(q1)
+    
+    q2 = tf.keras.layers.Conv2D(filters = heads//2,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same',
+                                 use_bias = False,
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
+    if normalization == 'batch':
+        q2 = tf.keras.layers.experimental.SyncBatchNormalization()(q2)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        q2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(q2)
         
+    if activation == 'mish':
+        q2 = mish(q2)
+    elif activation == 'gelu':
+        # query = tfa.activations.gelu(query)
+        q2 = tf.nn.gelu(q2)
+    elif activation == 'leaky':
+        q2 = tf.keras.layers.LeakyReLU(alpha = 0.3)(q2)
+    if dropblock:
+        q2 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(q2)
+    
+    q3 = tf.keras.layers.Conv2D(filters = heads//2,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same',
+                                 use_bias = False,
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
+    if normalization == 'batch':
+        q3 = tf.keras.layers.experimental.SyncBatchNormalization()(q3)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        q3 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(q3)
+        
+    if activation == 'mish':
+        q3 = mish(q3)
+    elif activation == 'gelu':
+        # query = tfa.activations.gelu(query)
+        q3 = tf.nn.gelu(q3)
+    elif activation == 'leaky':
+        q3 = tf.keras.layers.LeakyReLU(alpha = 0.3)(q3)
+    if dropblock:
+        q3 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(q3)
+    
+    query = shake_shake_add()([q1, q2, q3])
+    
     query = tf.keras.layers.Conv2D(filters = heads,
                              kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
@@ -575,55 +725,55 @@ def transformer_block(inp,
     if dropblock:
         x7 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(x7)
     
-    if normalization == 'batch':
-        x4p = tf.keras.layers.experimental.SyncBatchNormalization()(x3)
-    # elif normalization == 'group':
-    #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
-    elif normalization == 'layer':
-        x4p = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x3)
+#     if normalization == 'batch':
+#         x4p = tf.keras.layers.experimental.SyncBatchNormalization()(x3)
+#     # elif normalization == 'group':
+#     #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
+#     elif normalization == 'layer':
+#         x4p = tf.keras.layers.LayerNormalization(epsilon=1e-6)(x3)
     
-    x5p = tf.keras.layers.Conv2D(filters = out_filt//2,
-                                kernel_size=(1, 1),
-                                strides=(1, 1),
-                                padding = 'same',
-                                use_bias = False,
-                                kernel_regularizer=tf.keras.regularizers.l2(0.0005),
-                                kernel_initializer=tf.random_normal_initializer(stddev=0.01))(x4p)
-    if activation == 'mish':
-        x6p = mish(x5p)
-    elif activation == 'gelu':
-        # x6 = tfa.activations.gelu(x5)
-        x6p = tf.nn.gelu(x5p)
-    elif activation == 'leaky':
-        x6p = tf.keras.layers.LeakyReLU(alpha = 0.3)(x5p)
-    else:
-        x6p = x5p
-    if dropblock:
-        x6p = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(x6p)
+#     x5p = tf.keras.layers.Conv2D(filters = out_filt//2,
+#                                 kernel_size=(1, 1),
+#                                 strides=(1, 1),
+#                                 padding = 'same',
+#                                 use_bias = False,
+#                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+#                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(x4p)
+#     if activation == 'mish':
+#         x6p = mish(x5p)
+#     elif activation == 'gelu':
+#         # x6 = tfa.activations.gelu(x5)
+#         x6p = tf.nn.gelu(x5p)
+#     elif activation == 'leaky':
+#         x6p = tf.keras.layers.LeakyReLU(alpha = 0.3)(x5p)
+#     else:
+#         x6p = x5p
+#     if dropblock:
+#         x6p = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(x6p)
         
-    x7p = tf.keras.layers.Conv2D(filters = out_filt,
-                                kernel_size=kernel_size,
-                                strides=(1, 1),
-                                padding = 'same',
-                                use_bias = False,
-                                kernel_regularizer=tf.keras.regularizers.l2(0.0005),
-                                kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                bias_regularizer=regularizers.l2(1e-4),
-                                activity_regularizer=regularizers.l2(1e-5))(x6p)
-    if activation == 'mish':
-        x7p = mish(x7p)
-    elif activation == 'gelu':
-        # x7 = tfa.activations.gelu(x7)
-        x7p = tf.nn.gelu(x7p)
-    elif activation == 'leaky':
-        x7p = tf.keras.layers.LeakyReLU(alpha = 0.3)(x7p)
-    else:
-        x7p = x7p
-    if dropblock:
-        x7p = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(x7p)
+#     x7p = tf.keras.layers.Conv2D(filters = out_filt,
+#                                 kernel_size=kernel_size,
+#                                 strides=(1, 1),
+#                                 padding = 'same',
+#                                 use_bias = False,
+#                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+#                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+#                                 bias_regularizer=regularizers.l2(1e-4),
+#                                 activity_regularizer=regularizers.l2(1e-5))(x6p)
+#     if activation == 'mish':
+#         x7p = mish(x7p)
+#     elif activation == 'gelu':
+#         # x7 = tfa.activations.gelu(x7)
+#         x7p = tf.nn.gelu(x7p)
+#     elif activation == 'leaky':
+#         x7p = tf.keras.layers.LeakyReLU(alpha = 0.3)(x7p)
+#     else:
+#         x7p = x7p
+#     if dropblock:
+#         x7p = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(x7p)
     
-    x8 = shake_shake_add()(x3, x7, x7p)
-#     x8 = tf.keras.layers.Add()([x3, x7])
+#     x8 = shake_shake_add()(x3, x7, x7p)
+    x8 = tf.keras.layers.Add()([x3, x7])
 
     if normalization == 'batch':
         x8 = tf.keras.layers.experimental.SyncBatchNormalization()(x8)
