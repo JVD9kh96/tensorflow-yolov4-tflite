@@ -553,30 +553,41 @@ def kai_attention(key,
     dtype = getattr(value, 'dtype')
     dk    = tf.cast(shape[1]*shape[2], dtype=dtype)
 #     qk    = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
-    qk1    = tf.multiply(q1, k1)
-    qk2    = tf.multiply(q2, k2)
-    qk3    = tf.multiply(q3, k3)
+#     qk1    = tf.multiply(q1, k1)
+#     qk2    = tf.multiply(q2, k2)
+#     qk3    = tf.multiply(q3, k3)
+    q = shake_shake_add()(q1, q2, q3)
+    k = shake_shake_add()(k1, k2, k3)
+    v = shake_shake_add()(v1, v2, v3)
+    qk    = tf.multiply(q, k)
     
     if normalization == 'batch':
-        qk1 = tf.keras.layers.experimental.SyncBatchNormalization()(qk1)
+        qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
     # elif normalization == 'group':
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
-        qk1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk1)
+        qk = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk)
+    qk = tf.nn.sigmoid(qk)
+#     if normalization == 'batch':
+#         qk1 = tf.keras.layers.experimental.SyncBatchNormalization()(qk1)
+#     # elif normalization == 'group':
+#     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+#     elif normalization == 'layer':
+#         qk1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk1)
     
-    if normalization == 'batch':
-        qk2 = tf.keras.layers.experimental.SyncBatchNormalization()(qk2)
-    # elif normalization == 'group':
-    #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
-    elif normalization == 'layer':
-        qk2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk2)
+#     if normalization == 'batch':
+#         qk2 = tf.keras.layers.experimental.SyncBatchNormalization()(qk2)
+#     # elif normalization == 'group':
+#     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+#     elif normalization == 'layer':
+#         qk2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk2)
     
-    if normalization == 'batch':
-        qk3 = tf.keras.layers.experimental.SyncBatchNormalization()(qk3)
-    # elif normalization == 'group':
-    #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
-    elif normalization == 'layer':
-        qk3 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk3)  
+#     if normalization == 'batch':
+#         qk3 = tf.keras.layers.experimental.SyncBatchNormalization()(qk3)
+#     # elif normalization == 'group':
+#     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+#     elif normalization == 'layer':
+#         qk3 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk3)  
 #     if axis == 1:
 #         qk = tf.nn.softmax(qk, axis = 1)
 #     elif axis ==2:
@@ -594,15 +605,15 @@ def kai_attention(key,
 #         qk = tf.keras.layers.Add()([qk_1, qk_2, qk_3])
 #     elif axis == '2d':
 #         qk = softmax_2d()(qk)
-    qk1        = tf.nn.sigmoid(qk1)
-    qk2        = tf.nn.sigmoid(qk2)
-    qk3        = tf.nn.sigmoid(qk3)
+#     qk1        = tf.nn.sigmoid(qk1)
+#     qk2        = tf.nn.sigmoid(qk2)
+#     qk3        = tf.nn.sigmoid(qk3)
     
-    a1         = tf.math.multiply(qk1 , v1)
-    a2         = tf.math.multiply(qk2 , v2)
-    a3         = tf.math.multiply(qk3 , v3)
-    attention  = shake_shake_add()(a1, a2, a3)
-    
+#     a1         = tf.math.multiply(qk1 , v1)
+#     a2         = tf.math.multiply(qk2 , v2)
+#     a3         = tf.math.multiply(qk3 , v3)
+#     attention  = shake_shake_add()(a1, a2, a3)
+    attention  = tf.math.multiply(qk , v)
     attention  = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
