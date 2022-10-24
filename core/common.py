@@ -284,7 +284,7 @@ def kai_attention(key,
              simultaneously) 
     """
     shortcut = value 
-    k1 = tf.keras.layers.Conv2D(filters = heads//2,
+    k1 = tf.keras.layers.Conv2D(filters = heads//4,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -393,7 +393,7 @@ def kai_attention(key,
 #                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
 #                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(k1)    
         
-    v1 = tf.keras.layers.Conv2D(filters = heads//2,
+    v1 = tf.keras.layers.Conv2D(filters = heads//4,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -528,7 +528,7 @@ def kai_attention(key,
     if dropblock:
         v1 = DropBlock()(value)
     
-    q1 = tf.keras.layers.Conv2D(filters = heads//2,
+    q1 = tf.keras.layers.Conv2D(filters = heads//4,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
