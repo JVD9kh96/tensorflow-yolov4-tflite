@@ -93,7 +93,7 @@ class Dataset(object):
             
             if self.iteration % self.scale_freq == 0 and self.scale_jit:
                 self.train_input_size = int(((1 + np.random.uniform(-0.2, 0.2)) * cfg.TRAIN.INPUT_SIZE)//32)
-                self.batch_size       = int((cfg.TRAIN.INPUT_SIZE / self.train_input_size) * cfg.TRAIN.BATCH_SIZE)
+                self.batch_size       = max(int((cfg.TRAIN.INPUT_SIZE / self.train_input_size) * cfg.TRAIN.BATCH_SIZE), 1)
                 print("Input resolution changed to {}".format(self.train_input_size)
                 
             elif self.scale_jit:
