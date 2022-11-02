@@ -60,6 +60,6 @@ __C.AUG.TRANSLATE             = True
 # Scale jittering
 __C.SCALE                     = edict()
 __C.SCALE.JITTER              = True
-__C.SCALE.FACTOR              = 0.25
+__C.SCALE.FACTOR              = [-0.25, 0.25]
 __C.SCALE.FREQ                = 10
 
