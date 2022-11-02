@@ -2,7 +2,7 @@
 # coding=utf-8
 
 import tensorflow as tf
-import core.config as cfg
+from core.config import cfg
 
 # import tensorflow_addons as tfa
 class BatchNormalization(tf.keras.layers.BatchNormalization):
