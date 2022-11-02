@@ -102,7 +102,7 @@ def main(_argv):
     os.makedirs(test_logdir)
     
     train_writer = tf.summary.create_file_writer(train_logdir)
-    test_writer  = tf.summary.create_file_writer(train_logdir)
+    test_writer  = tf.summary.create_file_writer(test_logdir)
 
     # define training step function
     # @tf.function
