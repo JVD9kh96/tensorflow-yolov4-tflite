@@ -125,8 +125,11 @@ def main(_argv):
                 tf.debugging.check_numerics(total_loss, 'checking for nan')
             except Exception as e:
                 assert "Checking loss : Tensor had Inf values" in e.message
-                
-            gradients = tape.gradient(total_loss, model.trainable_variables)
+            
+            regularization_loss  = [tf.cast(ls, total_loss.dtype) for ls in model.losses]
+            regularization_loss  = tf.reduce_sum(tf.stack(regularization_loss))
+            
+            gradients = tape.gradient(total_loss + regularization_loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
                      "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
