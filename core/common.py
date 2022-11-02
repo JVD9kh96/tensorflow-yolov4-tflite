@@ -556,9 +556,9 @@ def kai_attention(key,
 #     qk1    = tf.multiply(q1, k1)
 #     qk2    = tf.multiply(q2, k2)
 #     qk3    = tf.multiply(q3, k3)
-    q = shake_shake_add()(q1, q2, q3)
-    k = shake_shake_add()(k1, k2, k3)
-    v = shake_shake_add()(v1, v2, v3)
+    q = q1 + q2 + q3
+    k = k1 + k2 + k3
+    v = v1 + v2 + v3
     qk    = tf.multiply(q, k)
     
     if normalization == 'batch':
