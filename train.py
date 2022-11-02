@@ -40,7 +40,7 @@ def main(_argv):
     current_step                         = int(float(FLAGS.init_epoch) / float(first_stage_epochs + second_stage_epochs) * total_steps) + 1
     global_steps                         = tf.Variable(current_step, trainable=False, dtype=tf.int64)
 
-    input_layer                          = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
+    input_layer                          = tf.keras.layers.Input([None, None, 3])
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
     IOU_LOSS_THRESH                      = cfg.YOLO.IOU_LOSS_THRESH
 
@@ -59,12 +59,13 @@ def main(_argv):
     else:
         bbox_tensors = []
         for i, fm in enumerate(feature_maps):
-            if i == 0:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 8, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
-            elif i == 1:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
-            else:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+#             if i == 0:
+#                 bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 8, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+#             elif i == 1:
+#                 bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+#             else:
+#                 bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+            bbox_tensor = decode_train(fm, tf.shape(fm)[1], NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
             bbox_tensors.append(fm)
             bbox_tensors.append(bbox_tensor)
 
