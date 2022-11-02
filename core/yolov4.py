@@ -435,16 +435,16 @@ def compute_loss_cond(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_TH
     conv = tf.reshape(conv, (batch_size, output_size, output_size, 3, 5 + NUM_CLASS))
 
     conv_raw_conf       = conv[:, :, :, :, 4:5]
-    conv_raw_prior_prob = conv[:, :, :, :, 5:cfg.COND.SMOOTH_PRIOR+5]
-    conv_raw_post_prob  = conv[:, :, :, :, cfg.COND.SMOOTH_PRIOR+5:]
+    conv_raw_prior_prob = conv[:, :, :, :, 5:cfg.COND.PRIOR_NUM+5]
+    conv_raw_post_prob  = conv[:, :, :, :, cfg.COND.POSTERIOR_NUM+5:]
 
     pred_xywh     = pred[:, :, :, :, 0:4]
     pred_conf     = pred[:, :, :, :, 4:5]
 
     label_xywh          = label[:, :, :, :, 0:4]
     respond_bbox        = label[:, :, :, :, 4:5]
-    label_prior_prob    = label[:, :, :, :, 5:cfg.COND.SMOOTH_PRIOR+5]
-    label_post_prob     = label[:, :, :, :, cfg.COND.SMOOTH_PRIOR+5:]
+    label_prior_prob    = label[:, :, :, :, 5:cfg.COND.PRIOR_NUM+5]
+    label_post_prob     = label[:, :, :, :, cfg.COND.POSTERIOR_NUM+5:]
 
     giou = tf.expand_dims(utils.bbox_giou(pred_xywh, label_xywh), axis=-1)
     input_size = tf.cast(input_size, tf.float32)
@@ -467,11 +467,9 @@ def compute_loss_cond(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_TH
 
     prior_prob_loss = respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_prior_prob, logits=conv_raw_prior_prob)
     post_prob_loss  = 0.0
-    
     for key, value in cfg.COND.IDX.items():
-        temp = respond_bbox * label_prior_prob[:,:,:,:,int(key):int(key)+1] * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_post_prob[:,:,:,:,value[0]:value[1],
-                                                                                                                      logits=conv_raw_post_prob[:,:,:,:,value[0]:value[1])
-                                                                                                                                                
+        temp = respond_bbox * label_prior_prob[:,:,:,:,int(key):int(key)+1] * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_post_prob[:,:,:,:,value[0]:value[1]],
+                                                                                                                                    
         post_prob_loss +=  tf.reduce_mean(tf.reduce_sum(temp, axis=[1,2,3,4]))               
                    
         

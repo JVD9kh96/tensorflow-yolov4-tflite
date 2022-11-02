@@ -7,7 +7,7 @@ physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
-from core.yolov4 import YOLO, decode, compute_loss, decode_train
+from core.yolov4 import YOLO, decode, compute_loss, decode_train, compute_loss_cond
 from core.dataset import Dataset
 from core.config import cfg
 import numpy as np
@@ -108,7 +108,7 @@ def main(_argv):
             # optimizing process
             for i in range(len(freeze_layers)):
                 conv, pred = pred_result[i * 2], pred_result[i * 2 + 1]
-                loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
+                loss_items = compute_loss_cond(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
                 giou_loss += loss_items[0]
                 conf_loss += loss_items[1]
                 prior_prob_loss += loss_items[2]
@@ -153,7 +153,7 @@ def main(_argv):
             # optimizing process
             for i in range(len(freeze_layers)):
                 conv, pred = pred_result[i * 2], pred_result[i * 2 + 1]
-                loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
+                loss_items = compute_loss_cond(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
                 giou_loss += loss_items[0]
                 conf_loss += loss_items[1]
                 prior_prob_loss += loss_items[2]
