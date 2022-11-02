@@ -96,14 +96,14 @@ def main(_argv):
     os.makedirs(test_logdir)
     
     train_writer = tf.summary.create_file_writer(train_logdir)
-    test_writer  = tf.summary.create_file_writer(train_logdir)
+    test_writer  = tf.summary.create_file_writer(test_logdir)
 
     # define training step function
     # @tf.function
     def train_step(image_data, target):
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
-            giou_loss = conf_loss = prob_loss = 0
+            giou_loss = conf_loss = prior_prob_loss = post_prob_loss = 0
 
             # optimizing process
             for i in range(len(freeze_layers)):
@@ -111,9 +111,10 @@ def main(_argv):
                 loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
                 giou_loss += loss_items[0]
                 conf_loss += loss_items[1]
-                prob_loss += loss_items[2]
+                prior_prob_loss += loss_items[2]
+                post_prob_loss += loss_items[3]
 
-            total_loss = giou_loss + conf_loss + prob_loss
+            total_loss = giou_loss + conf_loss + prior_prob_loss + post_prob_loss
             try:
                 tf.debugging.check_numerics(total_loss, 'checking for nan')
             except Exception as e:
@@ -122,9 +123,9 @@ def main(_argv):
             gradients = tape.gradient(total_loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
-                     "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
-                                                               giou_loss, conf_loss,
-                                                               prob_loss, total_loss))
+                     "prior_prob_loss: %4.2f  post_prob_loss: %4.2f  total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
+                                                               giou_loss, conf_loss, prior_prob_loss,
+                                                               post_prob_loss, total_loss))
             # update learning rate
             global_steps.assign_add(1)
             if global_steps < warmup_steps:
@@ -141,12 +142,13 @@ def main(_argv):
                 tf.summary.scalar("loss/total_loss", total_loss, step=global_steps)
                 tf.summary.scalar("loss/giou_loss", giou_loss, step=global_steps)
                 tf.summary.scalar("loss/conf_loss", conf_loss, step=global_steps)
-                tf.summary.scalar("loss/prob_loss", prob_loss, step=global_steps)
+                tf.summary.scalar("loss/prior_prob_loss", prior_prob_loss, step=global_steps)
+                tf.summary.scalar("loss/post_prob_loss", post_prob_loss, step=global_steps)
             train_writer.flush()
     def test_step(image_data, target):
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
-            giou_loss = conf_loss = prob_loss = 0
+            giou_loss = conf_loss = prior_prob_loss = post_prob_loss = 0
 
             # optimizing process
             for i in range(len(freeze_layers)):
@@ -154,18 +156,21 @@ def main(_argv):
                 loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
                 giou_loss += loss_items[0]
                 conf_loss += loss_items[1]
-                prob_loss += loss_items[2]
+                prior_prob_loss += loss_items[2]
+                post_prob_loss += loss_items[3]
 
-            total_loss = giou_loss + conf_loss + prob_loss
+            total_loss = giou_loss + conf_loss + prior_prob_loss + post_prob_loss
             
-            tf.print("=> TEST STEP %4d   giou_loss: %4.2f   conf_loss: %4.2f   "
-                     "prob_loss: %4.2f   total_loss: %4.2f" % (global_steps, giou_loss, conf_loss,
-                                                               prob_loss, total_loss))
+            tf.print("=> TEST STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
+                     "prior_prob_loss: %4.2f  post_prob_loss: %4.2f  total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
+                                                               giou_loss, conf_loss, prior_prob_loss,
+                                                               post_prob_loss, total_loss))
             with test_writer.as_default():
                 tf.summary.scalar("loss/total_loss", total_loss, step=global_steps)
                 tf.summary.scalar("loss/giou_loss", giou_loss, step=global_steps)
                 tf.summary.scalar("loss/conf_loss", conf_loss, step=global_steps)
-                tf.summary.scalar("loss/prob_loss", prob_loss, step=global_steps)
+                tf.summary.scalar("loss/prior_prob_loss", prior_prob_loss, step=global_steps)
+                tf.summary.scalar("loss/post_prob_loss", post_prob_loss, step=global_steps)
             test_writer.flush()
 
     time_terminate_flag = False
