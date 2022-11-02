@@ -50,10 +50,15 @@ __C.TEST.DECTECTED_IMAGE_PATH = "./data/detection/"
 __C.TEST.SCORE_THRESHOLD      = 0.25
 __C.TEST.IOU_THRESHOLD        = 0.5
 
+# Augmentation options
 __C.AUG                       = edict()
 __C.AUG.HORIZONTAL            = True
 __C.AUG.VERTICAL              = False
 __C.AUG.CROP                  = True
 __C.AUG.TRANSLATE             = True
 
+# Scale jittering
+__C.SCALE                     = edict()
+__C.SCALE.FACTOR              = 0.25
+__C.SCALE.FREQ                = 10
 
