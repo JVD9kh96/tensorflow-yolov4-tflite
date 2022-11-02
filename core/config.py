@@ -37,7 +37,7 @@ __C.TRAIN.WARMUP_EPOCHS         = 2
 __C.TRAIN.FISRT_STAGE_EPOCHS    = 20
 __C.TRAIN.SECOND_STAGE_EPOCHS   = 30
 __C.TRAIN.OPTIMIZER             = 'Adam' # 'Adam', 'SGD', 'Adagrad', 'Adadelta', 'RMSprop', 'Nadam', 'Adamax'
-
+__C.TRAIN.WEIGHT_DECAY          = 0.0005
 
 
 # TEST options
