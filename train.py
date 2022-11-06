@@ -128,7 +128,7 @@ def main(_argv):
 
                 
                 gradients = tape.gradient(total_loss, [image_data])
-                image_data = image_data + adv_lr(global_steps) * gradients[0]
+                image_data = image_data + adv_lr(global_steps - warmup_steps) * gradients[0]
 
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
@@ -205,7 +205,7 @@ def main(_argv):
         if epoch < first_stage_epochs:
             if not isfreeze:
                 isfreeze = True
-#                 layer_names = [layer.name for layer in model.layers if layer.name not in freeze_layers]
+                layer_names = [layer.name for layer in model.layers if layer.name not in freeze_layers]
                 for name in freeze_layers:
                     freeze = model.get_layer(name)
                     freeze_all(freeze)
