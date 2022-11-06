@@ -205,13 +205,15 @@ def main(_argv):
         if epoch < first_stage_epochs:
             if not isfreeze:
                 isfreeze = True
-                for name in freeze_layers:
+                layer_names = [layer.name for model.layers if layer.name not in freeze_layers]
+                for name in layer_names:
                     freeze = model.get_layer(name)
                     freeze_all(freeze)
         elif epoch >= first_stage_epochs:
             if isfreeze:
                 isfreeze = False
-                for name in freeze_layers:
+                names = [layer.name for layer in model.layers]
+                for name in names:
                     freeze = model.get_layer(name)
                     unfreeze_all(freeze)
         for image_data, target in trainset:
