@@ -205,7 +205,7 @@ def main(_argv):
         if epoch < first_stage_epochs:
             if not isfreeze:
                 isfreeze = True
-                layer_names = [layer.name for model.layers if layer.name not in freeze_layers]
+                layer_names = [layer.name for layer in model.layers if layer.name not in freeze_layers]
                 for name in layer_names:
                     freeze = model.get_layer(name)
                     freeze_all(freeze)
