@@ -64,3 +64,10 @@ __C.SCALE.JITTER              = True
 __C.SCALE.FACTOR              = [-0.25, 0.25]
 __C.SCALE.FREQ                = 10
 
+# Adversarial Attack
+__C.ADV                       = edict()
+__C.ADV.PROB                  = 0.2
+__C.ADV.LR_INIT               = 0.001
+__C.ADV.LR_FINAL              = 1e-6
+__C.ADV.ENABLE                = False
+

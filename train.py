@@ -79,7 +79,7 @@ def main(_argv):
                     (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
                 )
     optimizer.lr.assign(lr.numpy())
-    
+    adv_lr = tf.keras.optimizers.schedules.CosineDecay(cfg.ADV.LR_INIT, total_steps - warmup_steps, cfg.ADV.LR_FINAL)
     
     ckpt    = tf.train.Checkpoint(step=tf.Variable(1), optimizer=optimizer, net=model)
     manager = tf.train.CheckpointManager(ckpt, os.path.join(FLAGS.backup, 'tf_ckpts'), max_to_keep=FLAGS.max_to_keep)
@@ -108,6 +108,28 @@ def main(_argv):
     # define training step function
     # @tf.function
     def train_step(image_data, target):
+        with tf.GradientTape() as tape:
+            image_data  = tf.constant(image_data)
+            rand_num    = tf.random.uniform([], 0, 1, dtype=tf.float32)
+            if rand_num < cfg.ADV.PROB  and global_steps > warmup_steps and cfg.ADV.ENABLE:
+                tape.watch(image_data)
+                pred_result = model(image_data, training=True)
+                giou_loss = conf_loss = prob_loss = 0
+
+                # optimizing process
+                for i in range(len(freeze_layers)):
+                    conv, pred = pred_result[i * 2], pred_result[i * 2 + 1]
+                    loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
+                    giou_loss += loss_items[0]
+                    conf_loss += loss_items[1]
+                    prob_loss += loss_items[2]
+
+                total_loss = giou_loss + conf_loss + prob_loss
+
+                
+                gradients = tape.gradient(total_loss, [image_data])
+                image_data = image_data + adv_lr(global_steps) * gradients[0]
+
         with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
             giou_loss = conf_loss = prob_loss = 0
