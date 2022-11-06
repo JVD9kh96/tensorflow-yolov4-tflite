@@ -75,9 +75,14 @@ def main(_argv):
     
     optimizer = getattr(tf.keras.optimizers, cfg.TRAIN.OPTIMIZER)()
     
-    lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
-                    (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
-                )
+    if global_steps < warmup_steps:
+        lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
+    else:
+        lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
+            (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
+        )
+    
+
     optimizer.lr.assign(lr.numpy())
     adv_lr = tf.keras.optimizers.schedules.CosineDecay(cfg.ADV.LR_INIT, total_steps - warmup_steps, cfg.ADV.LR_FINAL)
     
