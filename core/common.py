@@ -63,5 +63,5 @@ def route_group(input_layer, groups, group_id):
     return convs[group_id]
 
 def upsample(input_layer):
-    return tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear')
+    return tf.image.resize(input_layer, (tf.shape(input_layer[1]) * 2, tf.shape(input_layer[2]) * 2), method='bilinear')
 
