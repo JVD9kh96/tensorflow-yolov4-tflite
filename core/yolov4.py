@@ -469,6 +469,7 @@ def compute_loss_cond(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_TH
     post_prob_loss  = 0.0
     for key, value in cfg.COND.IDX.items():
         temp = respond_bbox * label_prior_prob[:,:,:,:,int(key):int(key)+1] * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_post_prob[:,:,:,:,value[0]:value[1]],
+                                                                                                                      logits= conv_raw_post_prob[:,:,:,:,value[0]:value[1]]) 
                                                                                                                                     
         post_prob_loss +=  tf.reduce_mean(tf.reduce_sum(temp, axis=[1,2,3,4]))               
                    
