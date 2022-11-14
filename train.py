@@ -40,7 +40,7 @@ def main(_argv):
     current_step                         = int(float(FLAGS.init_epoch) / float(first_stage_epochs + second_stage_epochs) * total_steps) + 1
     global_steps                         = tf.Variable(current_step, trainable=False, dtype=tf.int64)
 
-    input_layer                          = tf.keras.layers.Input([cfg.TRAIN.INPUT_SIZE, cfg.TRAIN.INPUT_SIZE, 3])
+    input_layer                          = tf.keras.layers.Input([None, None, 3])
     STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
     IOU_LOSS_THRESH                      = cfg.YOLO.IOU_LOSS_THRESH
 
@@ -59,12 +59,13 @@ def main(_argv):
     else:
         bbox_tensors = []
         for i, fm in enumerate(feature_maps):
-            if i == 0:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 8, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
-            elif i == 1:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
-            else:
-                bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+#             if i == 0:
+#                 bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 8, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+#             elif i == 1:
+#                 bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 16, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+#             else:
+#                 bbox_tensor = decode_train(fm, cfg.TRAIN.INPUT_SIZE // 32, NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
+            bbox_tensor = decode_train(fm, tf.shape(fm)[1], NUM_CLASS, STRIDES, ANCHORS, i, XYSCALE)
             bbox_tensors.append(fm)
             bbox_tensors.append(bbox_tensor)
 
@@ -72,7 +73,19 @@ def main(_argv):
     model.summary()
     
     
-    optimizer = tf.keras.optimizers.Adam()
+    optimizer = getattr(tf.keras.optimizers, cfg.TRAIN.OPTIMIZER)()
+    
+    if global_steps < warmup_steps:
+        lr = global_steps / warmup_steps * cfg.TRAIN.LR_INIT
+    else:
+        lr = cfg.TRAIN.LR_END + 0.5 * (cfg.TRAIN.LR_INIT - cfg.TRAIN.LR_END) * (
+            (1 + tf.cos((global_steps - warmup_steps) / (total_steps - warmup_steps) * np.pi))
+        )
+    
+
+    optimizer.lr.assign(lr.numpy())
+    adv_lr = tf.keras.optimizers.schedules.CosineDecay(cfg.ADV.LR_INIT, total_steps - warmup_steps, cfg.ADV.LR_FINAL)
+    
     
     ckpt    = tf.train.Checkpoint(step=tf.Variable(1), optimizer=optimizer, net=model)
     manager = tf.train.CheckpointManager(ckpt, os.path.join(FLAGS.backup, 'tf_ckpts'), max_to_keep=FLAGS.max_to_keep)
@@ -102,6 +115,29 @@ def main(_argv):
     # @tf.function
     def train_step(image_data, target):
         with tf.GradientTape() as tape:
+            image_data  = tf.constant(image_data)
+            rand_num    = tf.random.uniform([], 0, 1, dtype=tf.float32)
+            if rand_num < cfg.ADV.PROB  and global_steps > warmup_steps and cfg.ADV.ENABLE:
+                tape.watch(image_data)
+                pred_result = model(image_data, training=True)
+                giou_loss = conf_loss = prior_prob_loss = post_prob_loss = 0
+
+                # optimizing process
+                for i in range(len(freeze_layers)):
+                    conv, pred = pred_result[i * 2], pred_result[i * 2 + 1]
+                    loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
+                    giou_loss += loss_items[0]
+                    conf_loss += loss_items[1]
+                    prior_prob_loss += loss_items[2]
+                    post_prob_loss += loss_items[3]
+
+                total_loss = giou_loss + conf_loss + prior_prob_loss + post_prob_loss
+
+                
+                gradients = tape.gradient(total_loss, [image_data])
+                image_data = image_data + adv_lr(global_steps - warmup_steps) * gradients[0]
+                
+        with tf.GradientTape() as tape:
             pred_result = model(image_data, training=True)
             giou_loss = conf_loss = prior_prob_loss = post_prob_loss = 0
 
@@ -123,7 +159,7 @@ def main(_argv):
             gradients = tape.gradient(total_loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             tf.print("=> STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
-                     "prior_prob_loss: %4.2f  post_prob_loss: %4.2f  total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
+                     "prior_prob_loss: %4.4f  post_prob_loss: %4.4f  total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
                                                                giou_loss, conf_loss, prior_prob_loss,
                                                                post_prob_loss, total_loss))
             # update learning rate
@@ -162,7 +198,7 @@ def main(_argv):
             total_loss = giou_loss + conf_loss + prior_prob_loss + post_prob_loss
             
             tf.print("=> TEST STEP %4d/%4d   lr: %.6f   giou_loss: %4.2f   conf_loss: %4.2f   "
-                     "prior_prob_loss: %4.2f  post_prob_loss: %4.2f  total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
+                     "prior_prob_loss: %4.4f  post_prob_loss: %4.4f  total_loss: %4.2f" % (global_steps, total_steps, optimizer.lr.numpy(),
                                                                giou_loss, conf_loss, prior_prob_loss,
                                                                post_prob_loss, total_loss))
             with test_writer.as_default():
@@ -178,13 +214,15 @@ def main(_argv):
         if epoch < first_stage_epochs:
             if not isfreeze:
                 isfreeze = True
+                layer_names = [layer.name for layer in model.layers if layer.name not in freeze_layers]
                 for name in freeze_layers:
                     freeze = model.get_layer(name)
                     freeze_all(freeze)
         elif epoch >= first_stage_epochs:
             if isfreeze:
                 isfreeze = False
-                for name in freeze_layers:
+                names = [layer.name for layer in model.layers]
+                for name in names:
                     freeze = model.get_layer(name)
                     unfreeze_all(freeze)
         for image_data, target in trainset:
