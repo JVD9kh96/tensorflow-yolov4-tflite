@@ -29,14 +29,15 @@ __C.TRAIN                     = edict()
 __C.TRAIN.ANNOT_PATH          = "./data/dataset/val2017.txt"
 __C.TRAIN.BATCH_SIZE          = 2
 # __C.TRAIN.INPUT_SIZE            = [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
-__C.TRAIN.INPUT_SIZE          = 416
-__C.TRAIN.DATA_AUG            = True
-__C.TRAIN.LR_INIT             = 1e-3
-__C.TRAIN.LR_END              = 1e-6
-__C.TRAIN.WARMUP_EPOCHS       = 2
+__C.TRAIN.INPUT_SIZE            = 416
+__C.TRAIN.DATA_AUG              = True
+__C.TRAIN.LR_INIT               = 1e-3
+__C.TRAIN.LR_END                = 1e-6
+__C.TRAIN.WARMUP_EPOCHS         = 2
 __C.TRAIN.FISRT_STAGE_EPOCHS    = 20
 __C.TRAIN.SECOND_STAGE_EPOCHS   = 30
-
+__C.TRAIN.OPTIMIZER             = 'Adam' # 'Adam', 'SGD', 'Adagrad', 'Adadelta', 'RMSprop', 'Nadam', 'Adamax'
+__C.TRAIN.WEIGHT_DECAY          = 0.0005
 
 
 # TEST options
@@ -50,15 +51,31 @@ __C.TEST.DECTECTED_IMAGE_PATH = "./data/detection/"
 __C.TEST.SCORE_THRESHOLD      = 0.25
 __C.TEST.IOU_THRESHOLD        = 0.5
 
+# Augmentation options
 __C.AUG                       = edict()
 __C.AUG.HORIZONTAL            = True
 __C.AUG.VERTICAL              = False
 __C.AUG.CROP                  = True
 __C.AUG.TRANSLATE             = True
 
+# Scale jittering
+__C.SCALE                     = edict()
+__C.SCALE.JITTER              = True
+__C.SCALE.FACTOR              = [-0.25, 0.25]
+__C.SCALE.FREQ                = 10
+
+# Adversarial Attack
+__C.ADV                       = edict()
+__C.ADV.PROB                  = 0.2
+__C.ADV.LR_INIT               = 0.001
+__C.ADV.LR_FINAL              = 1e-6
+__C.ADV.ENABLE                = False
+
+
 __C.COND                      = edict()
 __C.COND.PRIOR_NUM            = 4
 __C.COND.POSTERIOR_NUM        = 43
-__C.COND.IDX                  = {'0': [0, 10], '1': [11, 20], '2': [21, 30], '3': [31, 42]}
+__C.COND.IDX                  = {'0': [0, 12], '1': [12, 20], '2': [20, 35], '3': [35, 43]}
 __C.COND.SMOOTH_PRIOR         = True
 __C.COND.SMOOTH_POST          = True
+
