@@ -78,4 +78,5 @@ __C.COND.POSTERIOR_NUM        = 43
 __C.COND.IDX                  = {'0': [0, 12], '1': [12, 20], '2': [20, 35], '3': [35, 43]}
 __C.COND.SMOOTH_PRIOR         = True
 __C.COND.SMOOTH_POST          = True
-
+__C.COND.INIT_LABEL_WEIGHT    = 1.0
+__C.COND.END_LABEL_WEIGHT     = 0.999
