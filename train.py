@@ -84,7 +84,8 @@ def main(_argv):
     
 
     optimizer.lr.assign(lr.numpy())
-    adv_lr = tf.keras.optimizers.schedules.CosineDecay(cfg.ADV.LR_INIT, total_steps - warmup_steps, cfg.ADV.LR_FINAL)
+    adv_lr         = tf.keras.optimizers.schedules.CosineDecay(cfg.ADV.LR_INIT, total_steps - warmup_steps, cfg.ADV.LR_FINAL)
+    label_weight   = tf.keras.optimizers.schedules.CosineDecay(cfg.COND.INIT_LABEL_WEIGHT , total_steps, cfg.COND.END_LABEL_WEIGHT)
     
     
     ckpt    = tf.train.Checkpoint(step=tf.Variable(1), optimizer=optimizer, net=model)
@@ -125,7 +126,7 @@ def main(_argv):
                 # optimizing process
                 for i in range(len(freeze_layers)):
                     conv, pred = pred_result[i * 2], pred_result[i * 2 + 1]
-                    loss_items = compute_loss(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
+                    loss_items = compute_loss_cond(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i, W=label_weight(global_steps))
                     giou_loss += loss_items[0]
                     conf_loss += loss_items[1]
                     prior_prob_loss += loss_items[2]
@@ -144,7 +145,7 @@ def main(_argv):
             # optimizing process
             for i in range(len(freeze_layers)):
                 conv, pred = pred_result[i * 2], pred_result[i * 2 + 1]
-                loss_items = compute_loss_cond(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i)
+                loss_items = compute_loss_cond(pred, conv, target[i][0], target[i][1], STRIDES=STRIDES, NUM_CLASS=NUM_CLASS, IOU_LOSS_THRESH=IOU_LOSS_THRESH, i=i, W=label_weight(global_steps))
                 giou_loss += loss_items[0]
                 conf_loss += loss_items[1]
                 prior_prob_loss += loss_items[2]
