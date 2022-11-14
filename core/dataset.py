@@ -20,6 +20,7 @@ class Dataset(object):
         self.posterior_num = cfg.COND.POSTERIOR_NUM
         self.idx           = cfg.COND.IDX
         self.dataset_type  = dataset_type
+        self.iteration     = 0
 
         self.annot_path = (
             cfg.TRAIN.ANNOT_PATH if is_training else cfg.TEST.ANNOT_PATH
@@ -30,7 +31,10 @@ class Dataset(object):
         self.batch_size = (
             cfg.TRAIN.BATCH_SIZE if is_training else cfg.TEST.BATCH_SIZE
         )
-        self.data_aug = cfg.TRAIN.DATA_AUG if is_training else cfg.TEST.DATA_AUG
+        self.data_aug     = cfg.TRAIN.DATA_AUG if is_training else cfg.TEST.DATA_AUG
+        self.scale_jit    = cfg.SCALE.JITTER if is_training else False
+        self.scale_factor = cfg.SCALE.FACTOR 
+        self.scale_freq   = cfg.SCALE.FREQ
 
         self.train_input_sizes = cfg.TRAIN.INPUT_SIZE
         self.classes = utils.read_class_names(cfg.YOLO.CLASSES)
@@ -86,7 +90,22 @@ class Dataset(object):
     def __next__(self):
         with tf.device("/cpu:0"):
             # self.train_input_size = random.choice(self.train_input_sizes)
+            self.iteration += 1
             self.train_input_size = cfg.TRAIN.INPUT_SIZE
+            
+            print_flag = True
+            if self.iteration % self.scale_freq == 0 and self.scale_jit:
+                self.train_input_size = int(((1 + np.random.uniform(self.scale_factor[0], self.scale_factor[1])) * cfg.TRAIN.INPUT_SIZE)//32) * 32
+                self.batch_size       = max(int((cfg.TRAIN.INPUT_SIZE / self.train_input_size) * cfg.TRAIN.BATCH_SIZE), 1)
+                print("Input resolution changed to {}".format(self.train_input_size))
+                
+            elif self.scale_jit:
+                self.train_input_size = cfg.TRAIN.INPUT_SIZE
+                self.batch_size       = cfg.TRAIN.BATCH_SIZE
+                if print_flag:
+                    print("Input resolution changed to {}".format(self.train_input_size))
+                    print_flag = False
+                      
             self.train_output_sizes = self.train_input_size // self.strides
 
             batch_image = np.zeros(
