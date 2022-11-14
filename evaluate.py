@@ -22,6 +22,8 @@ flags.DEFINE_string('annotation_path', "./data/dataset/val2017.txt", 'annotation
 flags.DEFINE_string('write_image_path', "./data/detection/", 'write image path')
 flags.DEFINE_float('iou', 0.5, 'iou threshold')
 flags.DEFINE_float('score', 0.25, 'score threshold')
+flags.DEFINE_string('nmsmethod', "nms", 'nms method')
+
 
 # import matplotlib.pyplot as plt
 # %matplotlib inline
@@ -210,7 +212,8 @@ def evaluate(weights = "./Model/ModelWeights",
              STRIDES = None,
              ANCHORS = None,
              NUM_CLASS = None,
-             XYSCALE = None):
+             XYSCALE = None,
+             NMS='nms'):
 
   
     
@@ -293,7 +296,7 @@ def evaluate(weights = "./Model/ModelWeights",
             pred_bbox = [tf.reshape(x, (-1, tf.shape(x)[-1])) for x in pred_bbox]
             pred_bbox = tf.concat(pred_bbox, axis=0)
             bboxes = postprocess_boxes(pred_bbox, image_size, INPUT_SIZE, cfg.TEST.SCORE_THRESHOLD)
-            bboxes = nms(bboxes, cfg.TEST.IOU_THRESHOLD, method='nms')
+            bboxes = nms(bboxes, cfg.TEST.IOU_THRESHOLD, method=NMS)
             
             if cfg.TEST.DECTECTED_IMAGE_PATH is not None:
                 image = draw_bbox(image, bboxes)
@@ -329,7 +332,8 @@ def main(_argv):
              STRIDES = STRIDES,
              ANCHORS = ANCHORS,
              NUM_CLASS = NUM_CLASS,
-             XYSCALE = XYSCALE)
+             XYSCALE = XYSCALE, 
+             NMS = FLAGS.nmsmethod)
 
 if __name__ == '__main__':
     try:
