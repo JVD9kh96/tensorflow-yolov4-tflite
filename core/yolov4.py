@@ -427,7 +427,7 @@ def compute_loss(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH,
 
 
 
-def compute_loss_cond(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH, i=0):
+def compute_loss_cond(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_THRESH, i=0, W=0.0):
     conv_shape  = tf.shape(conv)
     batch_size  = conv_shape[0]
     output_size = conv_shape[1]
@@ -440,6 +440,7 @@ def compute_loss_cond(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_TH
 
     pred_xywh     = pred[:, :, :, :, 0:4]
     pred_conf     = pred[:, :, :, :, 4:5]
+    pred_prior_prob = pred[:, :, :, :, 5:cfg.COND.PRIOR_NUM+5]
 
     label_xywh          = label[:, :, :, :, 0:4]
     respond_bbox        = label[:, :, :, :, 4:5]
@@ -468,8 +469,10 @@ def compute_loss_cond(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_TH
     prior_prob_loss = respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_prior_prob, logits=conv_raw_prior_prob)
     post_prob_loss  = 0.0
     for key, value in cfg.COND.IDX.items():
-        temp = respond_bbox * label_prior_prob[:,:,:,:,int(key):int(key)+1] * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_post_prob[:,:,:,:,value[0]:value[1]],
-                                                                                                                      logits= conv_raw_post_prob[:,:,:,:,value[0]:value[1]]) 
+        temp = W * respond_bbox * label_prior_prob[:,:,:,:,int(key):int(key)+1] * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_post_prob[:,:,:,:,value[0]:value[1]],
+                                                                                                                      logits= conv_raw_post_prob[:,:,:,:,value[0]:value[1]]) + \
+               (1.0-W) * respond_bbox * pred_prior_prob[:,:,:,:,int(key):int(key)+1] * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_post_prob[:,:,:,:,value[0]:value[1]],
+                                                                                                                      logits= conv_raw_post_prob[:,:,:,:,value[0]:value[1]])
                                                                                                                                     
         post_prob_loss +=  tf.reduce_mean(tf.reduce_sum(temp, axis=[1,2,3,4]))               
                    
