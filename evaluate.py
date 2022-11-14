@@ -23,7 +23,6 @@ flags.DEFINE_string('write_image_path', "./data/detection/", 'write image path')
 flags.DEFINE_float('iou', 0.5, 'iou threshold')
 flags.DEFINE_float('score', 0.25, 'score threshold')
 
-
 # import matplotlib.pyplot as plt
 # %matplotlib inline
 
@@ -272,9 +271,9 @@ def evaluate(weights = "./Model/ModelWeights",
                 classes_gt=[]
             else:
                 bboxes_gt, classes_gt_prior, classes_gt_post = bbox_data_gt[:, :4], bbox_data_gt[:, 4], bbox_data_gt[:, 5] + cfg.COND.PRIOR_NUM  
-                classes_gt = np.concatenate([classes_gt_prior,classes_gt_post],axis=0)
-                bboxes_gt = np.concatenate([bboxes_gt,bboxes_gt],axis=0)
-                
+#                 classes_gt = np.concatenate([classes_gt_prior,classes_gt_post],axis=0)
+#                 bboxes_gt  = np.concatenate([bboxes_gt,bboxes_gt],axis=0)
+                classes_gt =  bbox_data_gt[:, 5]
             ground_truth_path = os.path.join(ground_truth_dir_path, str(num) + '.txt')
             num_bbox_gt = len(bboxes_gt)
             with open(ground_truth_path, 'w') as f:
