@@ -296,7 +296,7 @@ def evaluate(weights = "./Model/ModelWeights",
             pred_bbox = [tf.reshape(x, (-1, tf.shape(x)[-1])) for x in pred_bbox]
             pred_bbox = tf.concat(pred_bbox, axis=0)
             #####################################################
-            pred_bbox = tf.concat((pred_bbox[:, 0:5], pred_bbox[:, 5+cfg.COND.PRIOR_NUM]), axis=-1)
+            pred_bbox = tf.concat((pred_bbox[:, 0:5], pred_bbox[:, 5+cfg.COND.PRIOR_NUM:]), axis=-1)
             #####################################################
             bboxes = postprocess_boxes(pred_bbox, image_size, INPUT_SIZE, cfg.TEST.SCORE_THRESHOLD)
             bboxes = nms(bboxes, cfg.TEST.IOU_THRESHOLD, method=NMS)
