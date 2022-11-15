@@ -478,11 +478,11 @@ def compute_loss_cond(pred, conv, label, bboxes, STRIDES, NUM_CLASS, IOU_LOSS_TH
                    
         
     
-
+    post_prob_loss  = tf.reduce_mean(tf.reduce_sum(respond_bbox * tf.nn.sigmoid_cross_entropy_with_logits(labels=label_post_prob, logits=conv_raw_post_prob), axis=[1, 2, 3, 4])) + post_prob_loss
     giou_loss       = tf.reduce_mean(tf.reduce_sum(giou_loss, axis=[1,2,3,4]))
     conf_loss       = tf.reduce_mean(tf.reduce_sum(conf_loss, axis=[1,2,3,4]))
     prior_prob_loss = tf.reduce_mean(tf.reduce_sum(prior_prob_loss, axis=[1,2,3,4]))
     #prob_loss       = prior_prob_loss + post_prob_loss                                                                                                                                            
 
-    return giou_loss, conf_loss, prior_prob_loss, post_prob_loss
+    return giou_loss, conf_loss, prior_prob_loss, post_prob_loss 
 
