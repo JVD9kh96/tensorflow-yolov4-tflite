@@ -106,6 +106,60 @@ class BatchNormalization(tf.keras.layers.experimental.SyncBatchNormalization):
         training = tf.logical_and(training, self.trainable)
         return super().call(x, training)
 
+class conv_prod(tf.keras.layers.Layer):
+    def __init__(self, filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True):
+        super(conv_prod,self).__init__()
+        self.filter_size = filter_size
+        self.strides     = strides
+        self.upsample    = upsample
+        self.preserve_depth = preserve_depth
+    
+    def build(self, input_shape):
+        self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1],kernel_size=(1,1),strides=(1,1),use_bias=False)
+
+    def call(self, feature_map_1, feature_map_2, training=False):
+        kernel = tf.image.extract_patches(images=feature_map_1,
+                           sizes=[1, self.filter_size[0], self.filter_size[1], 1],
+                           strides=[1, self.strides[0], self.strides[1], 1],
+                           rates=[1, 1, 1, 1],
+                           padding='VALID')
+        shape  = tf.shape(feature_map_1)
+        kernel = tf.reshape(kernel, (shape[0],
+                                     self.filter_size[0],
+                                     self.filter_size[1],
+                                     shape[-1],
+                                     (shape[1]//self.filter_size[0]) * (shape[2]//self.filter_size[1])))
+        kernel = tf.transpose(kernel, [1, 2, 0, 3, 4])
+        kernel = tf.reshape(kernel, (self.filter_size[0],
+                                     self.filter_size[1],
+                                     shape[-1] * shape[0],
+                                     (shape[1]//self.filter_size[0]) * (shape[2]//self.filter_size[1])))
+        
+        feature_map_2 = tf.transpose(feature_map_2, [1, 2, 0, 3]) # shape (H, W, MB, channels_img)
+        feature_map_2 = tf.reshape(feature_map_2, [1, shape[1], shape[2], shape[0]*shape[3]])
+        H = W = 16
+        MB = shape[0]
+        channels = 256
+        out_channels = 256
+        out = tf.nn.depthwise_conv2d(feature_map_2,
+                                     kernel,
+                                     strides=[1, self.strides[0], self.strides[1], 1],
+                                     padding='SAME')
+        out = tf.reshape(out, [shape[1]//self.filter_size[0],
+                               shape[2]//self.filter_size[1],
+                               shape[0],
+                               shape[3], 
+                               (shape[1]//self.filter_size[0]) * (shape[2]//self.filter_size[1])]) # careful about the order of depthwise conv out_channels!
+        out = tf.transpose(out, [2, 0, 1, 3, 4])
+        out = tf.reduce_sum(out, axis=3)
+
+        if self.upsample:
+            out = tf.image.resize(out, (shape[1],shape[2]))
+        if self.preserve_depth:
+            out = self.conv(out)
+        return out
+
+
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
     if downsample:
         input_layer = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(input_layer)
@@ -358,7 +412,9 @@ def kai_attention(key,
     dtype = getattr(value, 'dtype')
     dk    = tf.cast(shape[1]*shape[2], dtype=dtype)
 #     qk    = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
-    qk    = tf.multiply(query, key)
+#    qk    = tf.multiply(query, key)
+
+    qk = conv_prod(filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True)(query, key)
     
     if normalization == 'batch':
         qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
@@ -385,7 +441,8 @@ def kai_attention(key,
 #     elif axis == '2d':
 #         qk = softmax_2d()(qk)
     qk        = tf.nn.sigmoid(qk)
-    attention = tf.math.multiply(qk , value)
+#    attention = tf.math.multiply(qk , value)
+    attention = conv_prod(filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True)(qk, value)
     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
