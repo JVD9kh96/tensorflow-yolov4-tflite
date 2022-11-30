@@ -152,6 +152,10 @@ class conv_prod(tf.keras.layers.Layer):
                                (shape[1]//self.filter_size[0]) * (shape[2]//self.filter_size[1])]) # careful about the order of depthwise conv out_channels!
         out = tf.transpose(out, [2, 0, 1, 3, 4])
         out = tf.reduce_sum(out, axis=3)
+        out = tf.reshape(out, (shape[0],
+                               (shape[1] - self.filter_size[0])//self.strides[0] + 1),
+                               (shape[2] - self.filter_size[1])//self.strides[1] + 1),
+                               (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1]))
 
         if self.upsample:
             out = tf.image.resize(out, (shape[1],shape[2]))
@@ -442,7 +446,7 @@ def kai_attention(key,
 #         qk = softmax_2d()(qk)
     qk        = tf.nn.sigmoid(qk)
 #    attention = tf.math.multiply(qk , value)
-    attention = conv_prod(filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True)(qk, value)
+    attention = conv_prod(filter_size=(2,2), strides=(2,2),upsample=True, preserve_depth=True)(qk, value)
     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
