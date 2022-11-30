@@ -119,8 +119,8 @@ class conv_prod(tf.keras.layers.Layer):
         self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1],
                                            kernel_size=(1,1),
                                            strides=(1,1),
-                                           input_shape=(((shape[1] - self.filter_size[0])//(self.strides[0] + 1),
-                                                         (shape[2] - self.filter_size[1])//(self.strides[1] + 1),
+                                           input_shape=(((shape[1] - self.filter_size[0])//(self.strides[0]) + 1,
+                                                         (shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
                                                          (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1]))),
                                            use_bias=False)
 
@@ -131,6 +131,7 @@ class conv_prod(tf.keras.layers.Layer):
                            rates=[1, 1, 1, 1],
                            padding='VALID')
         shape  = tf.shape(feature_map_1)
+        static_shape = feature_map_1.shape 
         kernel = tf.reshape(kernel, (shape[0],
                                      self.filter_size[0],
                                      self.filter_size[1],
@@ -160,16 +161,16 @@ class conv_prod(tf.keras.layers.Layer):
         out = tf.transpose(out, [2, 0, 1, 3, 4])
         out = tf.reduce_sum(out, axis=3)
         out = tf.reshape(out, (shape[0],
-                               (shape[1] - self.filter_size[0])//(self.strides[0] + 1),
-                               (shape[2] - self.filter_size[1])//(self.strides[1] + 1),
-                               (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1])))
+                               (static_shape[1] - self.filter_size[0])//(self.strides[0]) + 1,
+                               (static_shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
+                               (static_shape[1] // self.filter_size[0]) * (static_shape[2] // self.filter_size[1])))
 
         if self.upsample:
-            out = tf.image.resize(out, (shape[1],shape[2]))
+            out = tf.image.resize(out, (static_shape[1],static_shape[2]))
             out = tf.reshape(out, (shape[0],
-                                  shape[1],
-                                  shape[2],
-                                   (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1])))
+                                  static_shape[1],
+                                  static_shape[2],
+                                   (static_shape[1] // self.filter_size[0]) * (static_shape[2] // self.filter_size[1])))
         if self.preserve_depth:
             out = self.conv(out)
         return out
