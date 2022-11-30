@@ -115,7 +115,15 @@ class conv_prod(tf.keras.layers.Layer):
         self.preserve_depth = preserve_depth
     
     def build(self, input_shape):
-        self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1],kernel_size=(1,1),strides=(1,1),use_bias=False)
+        shape = input_shape
+        self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1],
+                                           kernel_size=(1,1),
+                                           strides=(1,1),
+                                           input_shape=((shape[0],
+                                                         (shape[1] - self.filter_size[0])//(self.strides[0] + 1),
+                                                         (shape[2] - self.filter_size[1])//(self.strides[1] + 1),
+                                                         (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1]))),
+                                           use_bias=False)
 
     def call(self, feature_map_1, feature_map_2, training=False):
         kernel = tf.image.extract_patches(images=feature_map_1,
