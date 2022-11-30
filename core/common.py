@@ -166,6 +166,10 @@ class conv_prod(tf.keras.layers.Layer):
 
         if self.upsample:
             out = tf.image.resize(out, (shape[1],shape[2]))
+            out = tf.reshape(out, (shape[0],
+                                  shape[1],
+                                  shape[2],
+                                   (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1])))
         if self.preserve_depth:
             out = self.conv(out)
         return out
