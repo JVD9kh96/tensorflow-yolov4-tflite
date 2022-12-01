@@ -130,7 +130,7 @@ class conv_prod(tf.keras.layers.Layer):
                            strides=[1, self.strides[0], self.strides[1], 1],
                            rates=[1, 1, 1, 1],
                            padding='VALID')
-        shape  = tf.shape(feature_map_1)
+        shape  = tf.shape(feature_map_2)
         static_shape = feature_map_1.shape 
         kernel = tf.reshape(kernel, (shape[0],
                                      self.filter_size[0],
