@@ -146,6 +146,7 @@ class conv_prod(tf.keras.layers.Layer):
         
         feature_map_2 = tf.transpose(feature_map_2, [1, 2, 0, 3]) # shape (H, W, MB, channels_img)
         feature_map_2 = tf.reshape(feature_map_2, [1, shape[1], shape[2], shape[0]*shape[3]])
+        feature_map_2 = tf.cast(feature_map_2, dtype=dtype)
         H = W = 16
         MB = shape[0]
         channels = 256
@@ -154,6 +155,7 @@ class conv_prod(tf.keras.layers.Layer):
                                      kernel,
                                      strides=[1, self.strides[0], self.strides[1], 1],
                                      padding='SAME')
+        out = tf.cast(out, dtype=dtype)
         out = tf.reshape(out, [shape[1]//self.filter_size[0],
                                shape[2]//self.filter_size[1],
                                shape[0],
@@ -172,9 +174,10 @@ class conv_prod(tf.keras.layers.Layer):
                                   static_shape[1],
                                   static_shape[2],
                                    (static_shape[1] // self.filter_size[0]) * (static_shape[2] // self.filter_size[1])))
+            out = tf.cast(out, dtype=dtype)
         if self.preserve_depth:
             out = self.conv(out)
-        return tf.cast(out, dtype=dtype)
+        return out
 
 
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
