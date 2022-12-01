@@ -177,6 +177,7 @@ class conv_prod(tf.keras.layers.Layer):
             out = tf.cast(out, dtype=dtype)
         if self.preserve_depth:
             out = self.conv(out)
+        out = tf.cast(out, dtype=dtype)
         return out
 
 
