@@ -125,6 +125,7 @@ class conv_prod(tf.keras.layers.Layer):
                                            use_bias=False)
 
     def call(self, feature_map_1, feature_map_2, training=False):
+        dtype = feature_map_1.dtype
         kernel = tf.image.extract_patches(images=feature_map_1,
                            sizes=[1, self.filter_size[0], self.filter_size[1], 1],
                            strides=[1, self.strides[0], self.strides[1], 1],
@@ -173,7 +174,7 @@ class conv_prod(tf.keras.layers.Layer):
                                    (static_shape[1] // self.filter_size[0]) * (static_shape[2] // self.filter_size[1])))
         if self.preserve_depth:
             out = self.conv(out)
-        return out
+        return tf.cast(out, dtype=dtype)
 
 
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
