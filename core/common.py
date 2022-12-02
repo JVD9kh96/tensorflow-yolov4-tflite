@@ -164,8 +164,8 @@ class conv_prod(tf.keras.layers.Layer):
         kernel = tf.reshape(kernel, [MB,
                                      self.filter_size[0],
                                      self.filter_size[1],
-                                     shape[-1],
-                                     (shape[1]//self.filter_size[0]) * (shape[2]//self.filter_size[1])])
+                                     kshape[-1],
+                                     (kshape[1]//self.filter_size[0]) * (kshape[2]//self.filter_size[1])])
         kernel = tf.transpose(kernel, [1, 2, 0, 3, 4])
         kernel = tf.reshape(kernel, [self.filter_size[0],
                                      self.filter_size[1],
