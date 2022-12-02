@@ -154,9 +154,10 @@ class conv_prod(tf.keras.layers.Layer):
 #                            padding='VALID')
         kernel = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
         shape  = tf.shape(feature_map_2)
-        MB = shape[0]
+        
         static_shape = feature_map_2.shape.as_list()
         shape  = feature_map_2.shape.as_list()
+        MB     = shape[0]
         kernel = tf.reshape(kernel, [MB,
                                      self.filter_size[0],
                                      self.filter_size[1],
