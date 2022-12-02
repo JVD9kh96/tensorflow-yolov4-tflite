@@ -186,20 +186,20 @@ class conv_prod(tf.keras.layers.Layer):
                                shape[2]//self.filter_size[1],
                                MB,
                                shape[3], 
-                               (shape[1]//self.filter_size[0]) * (shape[2]//self.filter_size[1])]) # careful about the order of depthwise conv out_channels!
+                               (kshape[1]//self.filter_size[0]) * (kshape[2]//self.filter_size[1])]) # careful about the order of depthwise conv out_channels!
         out = tf.transpose(out, [2, 0, 1, 3, 4])
         out = tf.reduce_sum(out, axis=3)
         out = tf.reshape(out, [MB,
                                (static_shape[1] - self.filter_size[0])//(self.strides[0]) + 1,
                                (static_shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
-                               (static_shape[1] // self.filter_size[0]) * (static_shape[2] // self.filter_size[1])])
+                               (kshape[1] // self.filter_size[0]) * (kshape[2] // self.filter_size[1])])
 
         if self.upsample:
             out = tf.image.resize(out, (static_shape[1],static_shape[2]))
             out = tf.reshape(out, [MB,
                                   static_shape[1],
                                   static_shape[2],
-                                   (static_shape[1] // self.filter_size[0]) * (static_shape[2] // self.filter_size[1])])
+                                   (kshape[1] // self.filter_size[0]) * (kshape[2] // self.filter_size[1])])
             out = tf.cast(out, dtype=dtype)
         if self.preserve_depth:
             out = self.conv(out)
