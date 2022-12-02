@@ -93,6 +93,27 @@ class Dropblock(tf.keras.layers.Layer):
         block_pattern, net.dtype)
     return net
 
+  
+class patch_extractor(tf.keras.layers.Layer):
+    def __init__(self, patch_size=(2, 2)):
+        super(patch_extractor, self).__init__()
+        self.patch_size = patch_size
+
+    def call(self, x, training=False):
+        patches = tf.split(x, x.shape[1]//self.patch_size[0], axis=1)
+        patches = [tf.split(patch, x.shape[2]//self.patch_size[1], axis=2)\
+                   for patch in patches]
+        patches = tf.stack(patches)
+        patches = tf.transpose(patches, perm=[2, 0, 1, 3, 4, 5])
+        shape   = tf.shape(x)
+        patches = tf.reshape(patches, (shape[0],
+                                       shape[1]//self.patch_size[0],
+                                       shape[2]//self.patch_size[1],
+                                       (self.patch_size[0]*self.patch_size[1])*shape[3])
+                             )
+                                       
+        return patches
+
 class BatchNormalization(tf.keras.layers.experimental.SyncBatchNormalization):
     """
     "Frozen state" and "inference mode" are two separate concepts.
@@ -126,11 +147,12 @@ class conv_prod(tf.keras.layers.Layer):
 
     def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
-        kernel = tf.image.extract_patches(images=feature_map_1,
-                           sizes=[1, self.filter_size[0], self.filter_size[1], 1],
-                           strides=[1, self.strides[0], self.strides[1], 1],
-                           rates=[1, 1, 1, 1],
-                           padding='VALID')
+#         kernel = tf.image.extract_patches(images=feature_map_1,
+#                            sizes=[1, self.filter_size[0], self.filter_size[1], 1],
+#                            strides=[1, self.strides[0], self.strides[1], 1],
+#                            rates=[1, 1, 1, 1],
+#                            padding='VALID')
+        kernel = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
         shape  = tf.shape(feature_map_2)
         static_shape = feature_map_2.shape 
         kernel = tf.reshape(kernel, (shape[0],
