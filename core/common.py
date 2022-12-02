@@ -154,9 +154,10 @@ class conv_prod(tf.keras.layers.Layer):
 #                            padding='VALID')
         kernel = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
         shape  = tf.shape(feature_map_2)
+        MB = shape[0]
         static_shape = feature_map_2.shape.as_list()
         shape  = feature_map_2.shape.as_list()
-        kernel = tf.reshape(kernel, [shape[0],
+        kernel = tf.reshape(kernel, [MB,
                                      self.filter_size[0],
                                      self.filter_size[1],
                                      shape[-1],
@@ -164,16 +165,14 @@ class conv_prod(tf.keras.layers.Layer):
         kernel = tf.transpose(kernel, [1, 2, 0, 3, 4])
         kernel = tf.reshape(kernel, [self.filter_size[0],
                                      self.filter_size[1],
-                                     shape[-1] * shape[0],
+                                     shape[-1] * MB,
                                      (shape[1]//self.filter_size[0]) * (shape[2]//self.filter_size[1])])
         
         feature_map_2 = tf.transpose(feature_map_2, [1, 2, 0, 3]) # shape (H, W, MB, channels_img)
-        feature_map_2 = tf.reshape(feature_map_2, [1, shape[1], shape[2], shape[0]*shape[3]])
+        feature_map_2 = tf.reshape(feature_map_2, [1, shape[1], shape[2], MB*shape[3]])
         feature_map_2 = tf.cast(feature_map_2, dtype=dtype)
-        H = W = 16
-        MB = shape[0]
-        channels = 256
-        out_channels = 256
+        
+        
         out = tf.nn.depthwise_conv2d(feature_map_2,
                                      kernel,
                                      strides=[1, self.strides[0], self.strides[1], 1],
@@ -181,19 +180,19 @@ class conv_prod(tf.keras.layers.Layer):
         out = tf.cast(out, dtype=dtype)
         out = tf.reshape(out, [shape[1]//self.filter_size[0],
                                shape[2]//self.filter_size[1],
-                               shape[0],
+                               MB,
                                shape[3], 
                                (shape[1]//self.filter_size[0]) * (shape[2]//self.filter_size[1])]) # careful about the order of depthwise conv out_channels!
         out = tf.transpose(out, [2, 0, 1, 3, 4])
         out = tf.reduce_sum(out, axis=3)
-        out = tf.reshape(out, [shape[0],
+        out = tf.reshape(out, [MB,
                                (static_shape[1] - self.filter_size[0])//(self.strides[0]) + 1,
                                (static_shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
                                (static_shape[1] // self.filter_size[0]) * (static_shape[2] // self.filter_size[1])])
 
         if self.upsample:
             out = tf.image.resize(out, (static_shape[1],static_shape[2]))
-            out = tf.reshape(out, [shape[0],
+            out = tf.reshape(out, [MB,
                                   static_shape[1],
                                   static_shape[2],
                                    (static_shape[1] // self.filter_size[0]) * (static_shape[2] // self.filter_size[1])])
