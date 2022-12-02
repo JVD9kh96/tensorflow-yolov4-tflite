@@ -153,10 +153,13 @@ class conv_prod(tf.keras.layers.Layer):
 #                            rates=[1, 1, 1, 1],
 #                            padding='VALID')
         kernel = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
+        kernel = tf.transpose(kernel, perm=[0, 3, 1, 2])
+        
         shape  = tf.shape(feature_map_2)
         
         static_shape = feature_map_2.shape.as_list()
         shape  = feature_map_2.shape.as_list()
+        kshape = feature_map_1.shape.as_list()
         MB     = shape[0]
         kernel = tf.reshape(kernel, [MB,
                                      self.filter_size[0],
@@ -166,8 +169,8 @@ class conv_prod(tf.keras.layers.Layer):
         kernel = tf.transpose(kernel, [1, 2, 0, 3, 4])
         kernel = tf.reshape(kernel, [self.filter_size[0],
                                      self.filter_size[1],
-                                     shape[-1] * MB,
-                                     (shape[1]//self.filter_size[0]) * (shape[2]//self.filter_size[1])])
+                                     kshape[-1] * MB,
+                                     (kshape[1]//self.filter_size[0]) * (kshape[2]//self.filter_size[1])])
         
         feature_map_2 = tf.transpose(feature_map_2, [1, 2, 0, 3]) # shape (H, W, MB, channels_img)
         feature_map_2 = tf.reshape(feature_map_2, [1, shape[1], shape[2], MB*shape[3]])
