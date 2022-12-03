@@ -462,7 +462,7 @@ def kai_attention(key,
 #     qk    = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
 #    qk    = tf.multiply(query, key)
 
-    qk = conv_prod(filter_size=[query.shape[1]//4,query.shape[1]//4], strides=[query.shape[1]//4,query.shape[1]//4],upsample=False, preserve_depth=True)(query, key)
+    qk = conv_prod(filter_size=[query.shape[1]//2,query.shape[1]//2], strides=[query.shape[1]//2,query.shape[1]//2],upsample=False, preserve_depth=True)(query, key)
     
     if normalization == 'batch':
         qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
@@ -490,7 +490,7 @@ def kai_attention(key,
 #         qk = softmax_2d()(qk)
     qk        = tf.nn.sigmoid(qk)
 #    attention = tf.math.multiply(qk , value)
-    attention = conv_prod(filter_size=[qk.shape[1]//4,qk.shape[1]//4], strides=[qk.shape[1]//4,qk.shape[1]//4],upsample=True, preserve_depth=True)(qk, value)
+    attention = conv_prod(filter_size=[qk.shape[1]//2,qk.shape[1]//2], strides=[qk.shape[1]//2,qk.shape[1]//2],upsample=True, preserve_depth=True)(qk, value)
     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
