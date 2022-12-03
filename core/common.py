@@ -147,13 +147,13 @@ class conv_prod(tf.keras.layers.Layer):
 
     def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
-#         kernel = tf.image.extract_patches(images=feature_map_1,
-#                            sizes=[1, self.filter_size[0], self.filter_size[1], 1],
-#                            strides=[1, self.strides[0], self.strides[1], 1],
-#                            rates=[1, 1, 1, 1],
-#                            padding='VALID')
+        kernel = tf.image.extract_patches(images=feature_map_1,
+                           sizes=[1, self.filter_size[0], self.filter_size[1], 1],
+                           strides=[1, self.strides[0], self.strides[1], 1],
+                           rates=[1, 1, 1, 1],
+                           padding='VALID')
 #         kernel = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
-        kernel = feature_map_1
+#         kernel = feature_map_1
         kernel = tf.transpose(kernel, perm=[0, 3, 1, 2])
         
         shape  = tf.shape(feature_map_2)
