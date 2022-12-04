@@ -167,9 +167,9 @@ class conv_prod(tf.keras.layers.Layer):
         kernel = tf.reshape(kernel, [kshape[0], 
                                      self.filter_size[0],
                                      self.filter_size[0], 
-                                     kshape[1]//self.filter_size[0], 
-                                     kshape[2]//self.filter_size[0], 
-                                     kshape[3]])
+                                     kshape[3],
+                                     kshape[1]//self.filter_size[0]*kshape[2]//self.filter_size[1]])
+        
         kernel = tf.reduce_sum(kernel, axis=0, keepdims=True)
         out    = tf.nn.conv2d(feature_map_2, 
                                      kernel,
