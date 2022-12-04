@@ -8,6 +8,26 @@ from tensorflow.keras import regularizers
 
 from tensorflow.python.keras import backend as K
 
+class FeatNorm(tf.keras.layers.Layer):
+  def __init__(self, momentum=0.999):
+    super(FeatNorm, self).__init__()
+    self.momentum = momentum
+    
+  def build(self, input_shape):
+    self.moving_mean = self.add_weight(shape=(*input_shape[1:]),
+                                       initializer='zeros',
+                                       trainable=False)
+  def call(x, training=False):
+    if training:
+      x = tf.reduce_mean(x, axis=0, keepdims=False)
+      #moving_mean = moving_mean * momentum + mean(batch) * (1 - momentum)
+      self.moving_mean = self.moving_mean * self.momentum + x * (1.0 - self.momentum)
+      return x
+    else:
+      return self.moving_mean
+      
+    
+    
 class Dropblock(tf.keras.layers.Layer):
   """DropBlock: a regularization method for convolutional neural networks.
     DropBlock is a form of structured dropout, where units in a contiguous
@@ -170,7 +190,8 @@ class conv_prod(tf.keras.layers.Layer):
                                      kshape[3],
                                      kshape[1]//self.filter_size[0]*kshape[2]//self.filter_size[1]])
         
-        kernel = tf.reduce_mean(kernel, axis=0, keepdims=False)
+#         kernel = tf.reduce_mean(kernel, axis=0, keepdims=False)
+        kernel = FeatNorm()(kernel, training=training)
         out    = tf.nn.conv2d(feature_map_2, 
                                      kernel,
                                      [1, self.filter_size[0], self.filter_size[1], 1],
