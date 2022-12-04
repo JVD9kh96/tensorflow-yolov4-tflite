@@ -153,15 +153,28 @@ class conv_prod(tf.keras.layers.Layer):
 #                            rates=[1, 1, 1, 1],
 #                            padding='SAME')
 #         kernel = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
+        
         kernel = feature_map_1
-        kernel = tf.transpose(kernel, perm=[0, 3, 1, 2])
+        
+        #kernel = tf.transpose(kernel, perm=[0, 3, 1, 2])
         
         shape  = tf.shape(feature_map_2)
         
         static_shape = feature_map_2.shape.as_list()
         shape  = feature_map_2.shape.as_list()
         kshape = feature_map_1.shape.as_list()
-        MB     = shape[0]
+        MB     = shape[0
+        kernel = tf.reshape(kernel, [kshape[0], 
+                                     self.filter_size[0],
+                                     self.filter_size[0], 
+                                     kshape[1]//self.filter_size[0], 
+                                     kshape[2]//self.filter_size[0], 
+                                     kshape[3]])
+        kernel = tf.reduce_sum(kernel, axis=0, keepdims=True)
+        out    = tf.nn.conv2d(feature_map_2, 
+                                     kernel,
+                                     [1, self.filter_size[0], self.filter_size[1], 1],
+                                     'VALID')
 #         kernel = tf.reshape(kernel, [MB,
 #                                      self.filter_size[0],
 #                                      self.filter_size[1],
@@ -195,16 +208,16 @@ class conv_prod(tf.keras.layers.Layer):
 #                                (static_shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
 #                                (kshape[1] // self.filter_size[0]) * (kshape[2] // self.filter_size[1])])
 
-#         if self.upsample:
-#             out = tf.image.resize(out, (static_shape[1],static_shape[2]))
-#             out = tf.reshape(out, [MB,
-#                                   static_shape[1],
-#                                   static_shape[2],
-#                                    (kshape[1] // self.filter_size[0]) * (kshape[2] // self.filter_size[1])])
-#             out = tf.cast(out, dtype=dtype)
-#         if self.preserve_depth:
-#             out = self.conv(out)
-        out = tf.reshape(kernel, kshape)
+        if self.upsample:
+            out = tf.image.resize(out, (static_shape[1],static_shape[2]))
+            out = tf.reshape(out, [MB,
+                                  static_shape[1],
+                                  static_shape[2],
+                                   (kshape[1] // self.filter_size[0]) * (kshape[2] // self.filter_size[1])])
+            out = tf.cast(out, dtype=dtype)
+        if self.preserve_depth:
+            out = self.conv(out)
+#         out = tf.reshape(kernel, kshape)
         out = tf.cast(out, dtype=dtype)
         return out
 
