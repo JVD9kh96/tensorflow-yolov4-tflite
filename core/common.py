@@ -164,7 +164,7 @@ class conv_prod(tf.keras.layers.Layer):
                                                          (shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
                                                          (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1]))),
                                            use_bias=False)
-
+        self.featNorm = FeatNorm()
     def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
 #         kernel = tf.image.extract_patches(images=feature_map_1,
@@ -191,7 +191,7 @@ class conv_prod(tf.keras.layers.Layer):
                                      kshape[1]//self.filter_size[0]*kshape[2]//self.filter_size[1]])
         
 #         kernel = tf.reduce_mean(kernel, axis=0, keepdims=False)
-        kernel = FeatNorm()(kernel, training=training)
+        kernel = self.featNorm(kernel, training=training)
         out    = tf.nn.conv2d(feature_map_2, 
                                      kernel,
                                      [1, self.filter_size[0], self.filter_size[1], 1],
