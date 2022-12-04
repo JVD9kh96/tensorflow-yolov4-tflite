@@ -17,7 +17,7 @@ class FeatNorm(tf.keras.layers.Layer):
     self.moving_mean = self.add_weight(shape=input_shape[1:],
                                        initializer='zeros',
                                        trainable=False)
-  def call(x, training=False):
+  def call(self, x, training=False):
     if training:
       x = tf.reduce_mean(x, axis=0, keepdims=False)
       #moving_mean = moving_mean * momentum + mean(batch) * (1 - momentum)
