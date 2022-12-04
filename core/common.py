@@ -163,7 +163,7 @@ class conv_prod(tf.keras.layers.Layer):
         static_shape = feature_map_2.shape.as_list()
         shape  = feature_map_2.shape.as_list()
         kshape = feature_map_1.shape.as_list()
-        MB     = shape[0
+        MB     = shape[0]
         kernel = tf.reshape(kernel, [kshape[0], 
                                      self.filter_size[0],
                                      self.filter_size[0], 
