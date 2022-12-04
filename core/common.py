@@ -14,7 +14,7 @@ class FeatNorm(tf.keras.layers.Layer):
     self.momentum = momentum
     
   def build(self, input_shape):
-    self.moving_mean = self.add_weight(shape=(*input_shape[1:]),
+    self.moving_mean = self.add_weight(shape=input_shape[1:],
                                        initializer='zeros',
                                        trainable=False)
   def call(x, training=False):
