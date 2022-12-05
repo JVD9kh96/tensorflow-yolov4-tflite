@@ -197,7 +197,8 @@ class conv_prod(tf.keras.layers.Layer):
                                      kshape[1]//self.filter_size[0]*kshape[2]//self.filter_size[1]])
         if training:
             x                = tf.reduce_mean(kernel, axis=0, keepdims=False)
-            self.moving_mean = self.moving_mean * self.momentum + x * (1.0 - self.momentum)
+            #self.moving_mean = self.moving_mean * self.momentum + x * (1.0 - self.momentum)
+            self.moving_mean = x
         kernel = self.moving_mean
 #         kernel = self.featNorm(kernel, training=training)
         out    = tf.nn.conv2d(feature_map_2, 
