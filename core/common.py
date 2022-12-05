@@ -183,7 +183,7 @@ class conv_prod(tf.keras.layers.Layer):
 #                            rates=[1, 1, 1, 1],
 #                            padding='SAME')
         kernel = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
-        
+        kernel = tf.transpose(kernel, perm=[0, 3, 1, 2])
 #         kernel = feature_map_1
         
         #kernel = tf.transpose(kernel, perm=[0, 3, 1, 2])
