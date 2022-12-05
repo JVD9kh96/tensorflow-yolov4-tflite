@@ -16,7 +16,7 @@ class FeatNorm(tf.keras.layers.Layer):
   def build(self, input_shape):
     self.moving_mean = self.add_weight(shape=input_shape[1:],
                                        initializer='zeros',
-                                       aggregation=tf.VariableAggregationV2.MEAN,
+                                       aggregation=tf.VariableAggregation.MEAN,
                                        trainable=True)
 #     self.moving_mean = 
   def call(self, x, training=False):
