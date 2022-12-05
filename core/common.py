@@ -8,7 +8,7 @@ from tensorflow.keras import regularizers
 
 from tensorflow.python.keras import backend as K
 
-class FeatNorm(tf.keras.Model):
+class FeatNorm(tf.keras.layers.Layer):
   def __init__(self, momentum=0.999):
     super(FeatNorm, self).__init__()
     self.momentum = momentum
@@ -16,7 +16,9 @@ class FeatNorm(tf.keras.Model):
   def build(self, input_shape):
     self.moving_mean = self.add_weight(shape=input_shape[1:],
                                        initializer='zeros',
-                                       trainable=False)
+                                       aggregation=2,
+                                       trainable=True)
+#     self.moving_mean = 
   def call(self, x, training=False):
     if training:
       x = tf.reduce_mean(x, axis=0, keepdims=False)
