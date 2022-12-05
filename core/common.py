@@ -169,7 +169,7 @@ class conv_prod(tf.keras.layers.Layer):
                                                   shape[-1], 
                                                   (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1])],
                                        initializer='zeros',
-                                       trainable=False)
+                                       trainable=True)
 #         self.featNorm = FeatNorm()
     def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
