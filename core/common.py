@@ -164,7 +164,7 @@ class conv_prod(tf.keras.layers.Layer):
                                                          (shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
                                                          (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1]))),
                                            use_bias=False)
-        self.moving_mean = self.add_weight(shape=[self.filte_size[0],
+        self.moving_mean = self.add_weight(shape=[self.filter_size[0],
                                                   self.filter_size[0],
                                                   shape[-1], 
                                                   (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1])],
