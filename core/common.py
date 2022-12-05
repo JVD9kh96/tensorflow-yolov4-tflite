@@ -19,6 +19,7 @@ class FeatNorm(tf.keras.layers.Layer):
                                        aggregation=tf.VariableAggregation.MEAN,
                                        trainable=True)
 #     self.moving_mean = 
+  @tf.function
   def call(self, x, training=False):
     if training:
       x = tf.reduce_mean(x, axis=0, keepdims=False)
