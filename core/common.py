@@ -148,13 +148,13 @@ class BatchNormalization(tf.keras.layers.experimental.SyncBatchNormalization):
         return super().call(x, training)
 
 class conv_prod(tf.keras.layers.Layer):
-    def __init__(self, filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True):
+    def __init__(self, filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True, momentum=0.99):
         super(conv_prod,self).__init__()
-        self.filter_size = filter_size
-        self.strides     = strides
-        self.upsample    = upsample
+        self.filter_size    = filter_size
+        self.strides        = strides
+        self.upsample       = upsample
         self.preserve_depth = preserve_depth
-    
+        self.momentum       = momentum
     def build(self, input_shape):
         shape = input_shape
         self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1],
@@ -164,7 +164,13 @@ class conv_prod(tf.keras.layers.Layer):
                                                          (shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
                                                          (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1]))),
                                            use_bias=False)
-        self.featNorm = FeatNorm()
+        self.moving_mean = self.add_weight(shape=[self.filte_size[0],
+                                                  self.filter_size[0],
+                                                  shape[-1], 
+                                                  (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1])],
+                                       initializer='zeros',
+                                       trainable=False)
+#         self.featNorm = FeatNorm()
     def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
 #         kernel = tf.image.extract_patches(images=feature_map_1,
@@ -189,9 +195,11 @@ class conv_prod(tf.keras.layers.Layer):
                                      self.filter_size[0], 
                                      kshape[3],
                                      kshape[1]//self.filter_size[0]*kshape[2]//self.filter_size[1]])
-        
-#         kernel = tf.reduce_mean(kernel, axis=0, keepdims=False)
-        kernel = self.featNorm(kernel, training=training)
+        if training:
+            x                = tf.reduce_mean(kernel, axis=0, keepdims=False)
+            self.moving_mean = self.moving_mean * self.momentum + x * (1.0 - self.momentum)
+        kernel = self.moving_mean
+#         kernel = self.featNorm(kernel, training=training)
         out    = tf.nn.conv2d(feature_map_2, 
                                      kernel,
                                      [1, self.filter_size[0], self.filter_size[1], 1],
