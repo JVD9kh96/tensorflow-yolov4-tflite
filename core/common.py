@@ -8,7 +8,7 @@ from tensorflow.keras import regularizers
 
 from tensorflow.python.keras import backend as K
 
-class FeatNorm(tf.keras.layers.Layer):
+class FeatNorm(tf.keras.Model):
   def __init__(self, momentum=0.999):
     super(FeatNorm, self).__init__()
     self.momentum = momentum
@@ -155,6 +155,7 @@ class conv_prod(tf.keras.layers.Layer):
         self.upsample       = upsample
         self.preserve_depth = preserve_depth
         self.momentum       = momentum
+        self.feat_norm      = FeatNorm()
     def build(self, input_shape):
         shape = input_shape
         self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1],
@@ -195,11 +196,12 @@ class conv_prod(tf.keras.layers.Layer):
                                      self.filter_size[0], 
                                      kshape[3],
                                      kshape[1]//self.filter_size[0]*kshape[2]//self.filter_size[1]])
-        if training:
-            x                = tf.reduce_mean(kernel, axis=0, keepdims=False)
-            #self.moving_mean = self.moving_mean * self.momentum + x * (1.0 - self.momentum)
-            self.moving_mean = x
-        kernel = self.moving_mean
+#         if training:
+#             x                = tf.reduce_mean(kernel, axis=0, keepdims=False)
+#             #self.moving_mean = self.moving_mean * self.momentum + x * (1.0 - self.momentum)
+#             self.moving_mean = x
+#         kernel = self.moving_mean
+        kernel = self.feat_norm(kernel, training=training)
 #         kernel = self.featNorm(kernel, training=training)
         out    = tf.nn.conv2d(feature_map_2, 
                                      kernel,
