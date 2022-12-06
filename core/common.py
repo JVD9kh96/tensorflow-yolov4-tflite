@@ -168,12 +168,12 @@ class conv_prod(tf.keras.layers.Layer):
                                                          (shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
                                                          (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1]))),
                                            use_bias=False)
-        self.moving_mean = self.add_weight(shape=[self.filter_size[0],
-                                                  self.filter_size[0],
-                                                  shape[-1], 
-                                                  (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1])],
-                                       initializer='zeros',
-                                       trainable=True)
+#         self.moving_mean = self.add_weight(shape=[self.filter_size[0],
+#                                                   self.filter_size[0],
+#                                                   shape[-1], 
+#                                                   (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1])],
+#                                        initializer='zeros',
+#                                        trainable=True)
 #         self.featNorm = FeatNorm()
     def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
