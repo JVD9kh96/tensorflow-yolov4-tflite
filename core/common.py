@@ -24,7 +24,7 @@ class FeatNorm(tf.keras.layers.Layer):
     if training:
       x = tf.reduce_mean(x, axis=0, keepdims=False)
       #moving_mean = moving_mean * momentum + mean(batch) * (1 - momentum)
-      self.moving_mean.assign(self.moving_mean * self.momentum + x * (1.0 - self.momentum))
+      self.moving_mean.assign(tf.cast(self.moving_mean * self.momentum + x * (1.0 - self.momentum), dtype=self.moving_mean.dtype))
       return self.moving_mean
     else:
       return self.moving_mean
