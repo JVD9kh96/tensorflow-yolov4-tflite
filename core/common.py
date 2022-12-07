@@ -24,7 +24,7 @@ class FeatNorm(tf.keras.layers.Layer):
     if training:
       x = tf.reduce_mean(x, axis=0, keepdims=False)
       #moving_mean = moving_mean * momentum + mean(batch) * (1 - momentum)
-      self.moving_mean = self.moving_mean * self.momentum + x * (1.0 - self.momentum)
+      self.moving_mean.assign(tf.cast(self.moving_mean * self.momentum + x * (1.0 - self.momentum), dtype=self.moving_mean.dtype))
       return self.moving_mean
     else:
       return self.moving_mean
@@ -158,7 +158,7 @@ class conv_prod(tf.keras.layers.Layer):
         self.upsample       = upsample
         self.preserve_depth = preserve_depth
         self.momentum       = momentum
-        self.feat_norm      = FeatNorm()
+#         self.feat_norm      = FeatNorm()
     def build(self, input_shape):
         shape = input_shape
         self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1],
@@ -174,7 +174,9 @@ class conv_prod(tf.keras.layers.Layer):
 #                                                   (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1])],
 #                                        initializer='zeros',
 #                                        trainable=True)
-#         self.featNorm = FeatNorm()
+        self.featNorm = FeatNorm()
+#         self.featNorm.build()
+    
     def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
 #         kernel = tf.image.extract_patches(images=feature_map_1,
@@ -204,8 +206,8 @@ class conv_prod(tf.keras.layers.Layer):
 #             #self.moving_mean = self.moving_mean * self.momentum + x * (1.0 - self.momentum)
 #             self.moving_mean = x
 #         kernel = self.moving_mean
-        kernel = self.feat_norm(kernel, training=training)
-#         kernel = self.featNorm(kernel, training=training)
+#         kernel = self.feat_norm(kernel, training=training)
+        kernel = self.featNorm(kernel, training=training)
         out    = tf.nn.conv2d(feature_map_2, 
                                      kernel,
                                      [1, self.filter_size[0], self.filter_size[1], 1],
