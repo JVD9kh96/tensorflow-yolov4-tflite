@@ -19,7 +19,7 @@ class FeatNorm(tf.keras.layers.Layer):
                                        aggregation=tf.VariableAggregation.MEAN,
                                        trainable=False)
 #     self.moving_mean = 
-#   @tf.function
+  @tf.function
   def call(self, x, training=False):
     if training:
       x = tf.reduce_mean(x, axis=0, keepdims=False)
@@ -175,7 +175,7 @@ class conv_prod(tf.keras.layers.Layer):
 #                                        initializer='zeros',
 #                                        trainable=True)
         self.featNorm = FeatNorm()
-        self.featNorm.build()
+#         self.featNorm.build()
     
     def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
