@@ -158,7 +158,7 @@ class conv_prod(tf.keras.layers.Layer):
         self.upsample       = upsample
         self.preserve_depth = preserve_depth
         self.momentum       = momentum
-        self.feat_norm      = FeatNorm()
+#         self.feat_norm      = FeatNorm()
     def build(self, input_shape):
         shape = input_shape
         self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1],
