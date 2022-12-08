@@ -151,7 +151,7 @@ class BatchNormalization(tf.keras.layers.experimental.SyncBatchNormalization):
         return super().call(x, training)
 
 class conv_prod(tf.keras.layers.Layer):
-    def __init__(self, filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True, momentum=0.99, standardized=False):
+    def __init__(self, filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True, momentum=0.99, standardized=True):
         super(conv_prod,self).__init__()
         self.filter_size    = filter_size
         self.strides        = strides
