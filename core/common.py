@@ -151,13 +151,14 @@ class BatchNormalization(tf.keras.layers.experimental.SyncBatchNormalization):
         return super().call(x, training)
 
 class conv_prod(tf.keras.layers.Layer):
-    def __init__(self, filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True, momentum=0.99):
+    def __init__(self, filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True, momentum=0.99, standardized=True):
         super(conv_prod,self).__init__()
         self.filter_size    = filter_size
         self.strides        = strides
         self.upsample       = upsample
         self.preserve_depth = preserve_depth
         self.momentum       = momentum
+        self.standardized   = standardized
 #         self.feat_norm      = FeatNorm()
     def build(self, input_shape):
         shape = input_shape
@@ -208,6 +209,8 @@ class conv_prod(tf.keras.layers.Layer):
 #         kernel = self.moving_mean
 #         kernel = self.feat_norm(kernel, training=training)
         kernel = self.featNorm(kernel, training=training)
+        if self.standardized:
+            kernel = (kernel - tf.math.reduce_mean(kernel, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel, axis=-1, keepdims=True)+1e-6)
         out    = tf.nn.conv2d(feature_map_2, 
                                      kernel,
                                      [1, self.filter_size[0], self.filter_size[1], 1],
