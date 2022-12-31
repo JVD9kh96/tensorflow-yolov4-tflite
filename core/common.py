@@ -574,7 +574,7 @@ def kai_attention(key,
         attention = tf.nn.gelu(attention)
     elif activation == 'leaky':
         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
-    attention = attention + shortcut
+#     attention = attention + shortcut
     if dropblock:
         attention = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(attention)
     return attention
@@ -591,7 +591,7 @@ def transformer_block(inp,
     
     short_cut = inp
     conv = convolutional(inp, filters_shape=(1, 1, -1, out_filt), activate_type=activation)
-    x    = conv
+#     x    = conv
     conv = kai_attention(conv,
                        conv,
                        conv,
@@ -601,8 +601,8 @@ def transformer_block(inp,
                        activation = activation,
                        normalization =  normalization,
                        dropblock = dropblock)
-    conv = tf.keras.layers.Add()([x, conv])
-    conv = convolutional(conv       , filters_shape=(3, 3, -1,   out_filt), activate_type=activation)
+#     conv = tf.keras.layers.Add()([x, conv])
+#     conv = convolutional(conv       , filters_shape=(3, 3, -1,   out_filt), activate_type=activation)
 
     residual_output = short_cut + conv
     return residual_output
