@@ -546,12 +546,19 @@ def kai_attention(key,
 #    attention = tf.math.multiply(qk , value)
     attention = conv_prod(filter_size=[qk.shape[1]//16,qk.shape[1]//16], strides=[qk.shape[1]//16,qk.shape[1]//16],upsample=True, preserve_depth=True)(qk, value)
 #     attention = conv_prod(filter_size=[2,2], strides=[2,2],upsample=True, preserve_depth=True)(qk, value)
-  
+    
     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                         use_bias = False,
                                         activity_regularizer=regularizers.l2(1e-5))(attention)
+    if normalization == 'batch':
+        attention = tf.keras.layers.experimental.SyncBatchNormalization()(attention)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        attention = tf.keras.layers.LayerNormalization(epsilon=1e-6)(attention)
+    
     if activation == 'mish':
         attention = mish(attention)
     elif activation == 'gelu':
@@ -569,11 +576,11 @@ def kai_attention(key,
                                     use_bias = False,
                                     activity_regularizer=regularizers.l2(1e-5))(attention)
     if normalization == 'batch':
-        query = tf.keras.layers.experimental.SyncBatchNormalization()(query)
+        attention = tf.keras.layers.experimental.SyncBatchNormalization()(attention)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
-        query = tf.keras.layers.LayerNormalization(epsilon=1e-6)(query)
+        attention = tf.keras.layers.LayerNormalization(epsilon=1e-6)(attention)
     
     if activation == 'mish':
         attention = mish(attention)
