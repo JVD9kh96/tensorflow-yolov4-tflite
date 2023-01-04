@@ -518,13 +518,13 @@ def kai_attention(key,
 
     qk = conv_prod(filter_size=[query.shape[1]//16, query.shape[1]//16], strides=[query.shape[1]//16, query.shape[1]//16], upsample=False, preserve_depth=True)(query, key)
 #     qk = conv_prod(filter_size=[2, 2], strides=[2, 2],upsample=False, preserve_depth=True)(query, key)
-    if normalization == 'batch':
-        qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
-    # elif normalization == 'group':
-    #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
-    elif normalization == 'layer':
-        qk = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk)
-        
+#     if normalization == 'batch':
+#         qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
+#     # elif normalization == 'group':
+#     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
+#     elif normalization == 'layer':
+#         qk = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk)
+    qk = tf.keras.layers.LayerNormalization(axis=[1, 2], epsilon=1e-6)(qk)   
 #     if axis == 1:
 #         qk = tf.nn.softmax(qk, axis = 1)
 #     elif axis ==2:
@@ -544,7 +544,7 @@ def kai_attention(key,
 #         qk = softmax_2d()(qk)
     qk        = tf.nn.sigmoid(qk)
 #    attention = tf.math.multiply(qk , value)
-    attention = conv_prod(filter_size=[qk.shape[1]//16,qk.shape[1]//16], strides=[qk.shape[1]//16,qk.shape[1]//16],upsample=True, preserve_depth=True)(qk, value) + value
+    attention = conv_prod(filter_size=[qk.shape[1]//16,qk.shape[1]//16], strides=[qk.shape[1]//16,qk.shape[1]//16],upsample=True, preserve_depth=True)(qk, value)
 #     attention = conv_prod(filter_size=[2,2], strides=[2,2],upsample=True, preserve_depth=True)(qk, value)
     
     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
