@@ -547,26 +547,36 @@ def kai_attention(key,
     attention = conv_prod(filter_size=[qk.shape[1]//16,qk.shape[1]//16], strides=[qk.shape[1]//16,qk.shape[1]//16],upsample=True, preserve_depth=True)(qk, value)
 #     attention = conv_prod(filter_size=[2,2], strides=[2,2],upsample=True, preserve_depth=True)(qk, value)
   
-    attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
-                                        kernel_regularizer=tf.keras.regularizers.l2(0.0005),
-                                        kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                        use_bias = False,
-                                        activity_regularizer=regularizers.l2(1e-5))(attention)
-    if activation == 'mish':
-        attention = mish(attention)
-    elif activation == 'gelu':
-        # attention = tfa.activations.gelu(attention)
-        attention = tf.nn.gelu(attention)
-    elif activation == 'leaky':
-        attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
+#     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
+#                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+#                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+#                                         use_bias = False,
+#                                         activity_regularizer=regularizers.l2(1e-5))(attention)
+#     if activation == 'mish':
+#         attention = mish(attention)
+#     elif activation == 'gelu':
+#         # attention = tfa.activations.gelu(attention)
+#         attention = tf.nn.gelu(attention)
+#     elif activation == 'leaky':
+#         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
     
-    if dropblock:
-        attention = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(attention)
-    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
-                                    kernel_regularizer=tf.keras.regularizers.l2(0.0005),
-                                    kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                    use_bias = False,
-                                    activity_regularizer=regularizers.l2(1e-5))(attention)
+#     if dropblock:
+#         attention = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(attention)
+#     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
+#                                     kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+#                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+#                                     use_bias = False,
+#                                     activity_regularizer=regularizers.l2(1e-5))(attention)
+    attention = tf.keras.layers.SeparableConv1D( out_filters,
+                                        kernel_size=(3, 3),
+                                        strides=1,
+                                        padding='same',
+                                        dilation_rate=1,
+                                        depthwise_regularizer=tf.keras.regularizers.l2(0.0005),
+                                        pointwise_regularizer=tf.keras.regularizers.l2(0.0005),
+                                        depthwise_initializer=tf.random_normal_initializer(stddev=0.01),
+                                        pointwise_initializer=tf.random_normal_initializer(stddev=0.01),
+                                        depth_multiplier=1)(attention)
     if activation == 'mish':
         attention = mish(attention)
     elif activation == 'gelu':
