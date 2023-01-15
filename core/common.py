@@ -261,6 +261,70 @@ class conv_prod(tf.keras.layers.Layer):
         out = tf.cast(out, dtype=dtype)
         return out
 
+class conv_prod_v2(tf.keras.layers.Layer):
+    def __init__(self, filter_size=(2,2), strides=(2,2),upsample=False, preserve_depth=True, momentum=0.99, standardized=False):
+        super(conv_prod_v2, self).__init__()
+        self.filter_size    = filter_size
+        self.strides        = strides
+        self.upsample       = upsample
+        self.preserve_depth = preserve_depth
+        self.momentum       = momentum
+        self.standardized   = standardized
+#         self.feat_norm      = FeatNorm()
+    def build(self, input_shape):
+        shape = input_shape
+        self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1],
+                                           kernel_size=(1,1),
+                                           strides=(1,1),
+                                           input_shape=(((shape[1] - self.filter_size[0])//(self.strides[0]) + 1,
+                                                         (shape[2] - self.filter_size[1])//(self.strides[1]) + 1,
+                                                         (shape[1] // self.filter_size[0]) * (shape[2] // self.filter_size[1]))),
+                                           use_bias=False)
+
+        self.featNorm = FeatNorm()
+    
+    def call(self, feature_map_1, feature_map_2, training=False):
+        dtype = feature_map_1.dtype
+        kernel = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
+        kernel = tf.transpose(kernel, perm=[0, 3, 1, 2])
+        
+        
+        shape  = tf.shape(feature_map_2)
+        
+        static_shape = feature_map_2.shape.as_list()
+        shape  = feature_map_2.shape.as_list()
+        kshape = feature_map_1.shape.as_list()
+        MB     = shape[0]
+        kernel = tf.reshape(kernel, [kshape[0], 
+                                     self.filter_size[0],
+                                     self.filter_size[0], 
+                                     kshape[3],
+                                     kshape[1]//self.filter_size[0]*kshape[2]//self.filter_size[1]])
+
+        kernel = self.featNorm(kernel, training=training)
+        if self.standardized:
+            kernel = (kernel - tf.math.reduce_mean(kernel, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel, axis=-1, keepdims=True)+1e-6)
+        for i in range(kernel.shape[-1]):
+          
+        out    = tf.nn.conv2d(feature_map_2, 
+                                     kernel,
+                                     [1, self.filter_size[0], self.filter_size[1], 1],
+                                     'VALID')
+
+
+        if self.upsample:
+            out = tf.image.resize(out, (static_shape[1],static_shape[2]))
+            out = tf.reshape(out, [MB,
+                                  static_shape[1],
+                                  static_shape[2],
+                                   (kshape[1] // self.filter_size[0]) * (kshape[2] // self.filter_size[1])])
+            out = tf.cast(out, dtype=dtype)
+        if self.preserve_depth:
+            out = self.conv(out)
+#         out = tf.reshape(kernel, kshape)
+        out = tf.cast(out, dtype=dtype)
+        return out
+
 
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
     if downsample:
@@ -546,6 +610,159 @@ def kai_attention(key,
 #    attention = tf.math.multiply(qk , value)
     attention = conv_prod(filter_size=[qk.shape[1]//16,qk.shape[1]//16], strides=[qk.shape[1]//16,qk.shape[1]//16],upsample=True, preserve_depth=True)(qk, value)
 #     attention = conv_prod(filter_size=[2,2], strides=[2,2],upsample=True, preserve_depth=True)(qk, value)
+  
+    attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
+                                        kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                        kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                        use_bias = False,
+                                        activity_regularizer=regularizers.l2(1e-5))(attention)
+    if activation == 'mish':
+        attention = mish(attention)
+    elif activation == 'gelu':
+        # attention = tfa.activations.gelu(attention)
+        attention = tf.nn.gelu(attention)
+    elif activation == 'leaky':
+        attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
+    
+    if dropblock:
+        attention = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(attention)
+    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
+                                    kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                    kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                    use_bias = False,
+                                    activity_regularizer=regularizers.l2(1e-5))(attention)
+    if activation == 'mish':
+        attention = mish(attention)
+    elif activation == 'gelu':
+        # attention = tfa.activations.gelu(attention)
+        attention = tf.nn.gelu(attention)
+    elif activation == 'leaky':
+        attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
+    attention = attention + shortcut
+    if dropblock:
+        attention = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(attention)
+    return attention
+  
+  
+  
+def kai_attention_v2(key,
+                  value,
+                  query,
+                  heads=32,
+                  out_filters=32,
+                  axis = 1,
+                  activation = 'gelu',
+                  kernel_size = 3,
+                  normalization = 'batch',
+                  dropblock = False, 
+                  dropblock_keep_prob = 0.9):
+    """
+    heads: number of filters in query, key and value 
+    out_filters: number of the output in the output channgel
+    axis: if 1, the attention will be calculated in height of the image, 
+          if 2, the attention will be calculated in the width of the image, 
+          if 3, the attention will be calculated in the depth of the image, 
+          if [1, 2], the attention will be calculated in height and width, then
+             they are summed up
+          if [1, 2, 3], the attention will be calculated in the heigth, width
+             and the depth of the image, then the results will be summed up.
+          if '2d', the attention will be calculated in 2D (hight and width 
+             simultaneously) 
+    """
+    shortcut = value 
+    key = tf.keras.layers.Conv2D(filters = heads,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same',
+                                 use_bias = False,
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
+    if normalization == 'batch':
+        key = tf.keras.layers.experimental.SyncBatchNormalization()(key)
+    elif normalization == 'layer':
+        key = tf.keras.layers.LayerNormalization(epsilon=1e-6)(key)
+        
+    if activation == 'mish':
+        key = mish(key)
+    elif activation == 'gelu':
+        # key = tfa.activations.gelu(key)
+        key = tf.nn.gelu(key)
+    elif activation == 'leaky':
+        key = tf.keras.layers.LeakyReLU(alpha = 0.3)(key)
+        
+    if dropblock:
+        key = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(key)  
+        
+    value = tf.keras.layers.Conv2D(filters = heads,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same',
+                                 use_bias = False,
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
+    
+    if normalization == 'batch':
+        value = tf.keras.layers.experimental.SyncBatchNormalization()(value)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        value = tf.keras.layers.LayerNormalization(epsilon=1e-6)(value)
+        
+    if activation == 'mish':
+        value = mish(value)
+    elif activation == 'gelu':
+        # key = tfa.activations.gelu(key)
+        value = tf.nn.gelu(value)
+    elif activation == 'leaky':
+        value = tf.keras.layers.LeakyReLU(alpha = 0.3)(value)
+    
+    if dropblock:
+        value = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(value)
+    
+    
+    query = tf.keras.layers.Conv2D(filters = heads,
+                                 kernel_size=(1, 1),
+                                 strides = (1, 1),
+                                 padding = 'same',
+                                 use_bias = False,
+                                 kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
+    if normalization == 'batch':
+        query = tf.keras.layers.experimental.SyncBatchNormalization()(query)
+    # elif normalization == 'group':
+    #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
+    elif normalization == 'layer':
+        query = tf.keras.layers.LayerNormalization(epsilon=1e-6)(query)
+        
+    if activation == 'mish':
+        query = mish(query)
+    elif activation == 'gelu':
+        # query = tfa.activations.gelu(query)
+        query = tf.nn.gelu(query)
+    elif activation == 'leaky':
+        query = tf.keras.layers.LeakyReLU(alpha = 0.3)(query)
+    if dropblock:
+        query = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(query)
+        
+
+    
+    shape = getattr(value, 'shape')
+    dtype = getattr(value, 'dtype')
+    dk    = tf.cast(shape[1]*shape[2], dtype=dtype)
+#     qk    = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
+#    qk    = tf.multiply(query, key)
+
+    qk = conv_prod(filter_size=[query.shape[1]//16,query.shape[1]//16], strides=[query.shape[1]//16,query.shape[1]//16],upsample=False, preserve_depth=True)(query, key)
+#     qk = conv_prod(filter_size=[2, 2], strides=[2, 2],upsample=False, preserve_depth=True)(query, key)
+    if normalization == 'batch':
+        qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
+
+    elif normalization == 'layer':
+        qk = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk)
+        
+
+    qk        = tf.nn.sigmoid(qk)
+    attention = conv_prod(filter_size=[qk.shape[1]//16,qk.shape[1]//16], strides=[qk.shape[1]//16,qk.shape[1]//16],upsample=True, preserve_depth=True)(qk, value)
   
     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
