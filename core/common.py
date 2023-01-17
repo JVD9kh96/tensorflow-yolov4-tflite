@@ -570,7 +570,7 @@ def kai_attention(key,
 #     qk    = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
 #    qk    = tf.multiply(query, key)
 
-    qk = conv_prod_v2(filter_size=[query.shape[1]//16,query.shape[1]//16], strides=[query.shape[1]//16,query.shape[1]//16],upsample=False, preserve_depth=True)(query, key)
+    qk = conv_prod_v2(filter_size=[query.shape[1]//16,query.shape[1]//16], strides=[query.shape[1]//16,query.shape[1]//16],upsample=True, preserve_depth=True)(query, key)
 #     qk = conv_prod(filter_size=[2, 2], strides=[2, 2],upsample=False, preserve_depth=True)(query, key)
     if normalization == 'batch':
         qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
