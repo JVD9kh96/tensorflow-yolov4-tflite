@@ -289,13 +289,13 @@ class conv_prod_v2(tf.keras.layers.Layer):
                                      self.filter_size[0],
                                      self.filter_size[0], 
                                      kshape_1[3],
-                                     kshape_1[1]//self.filter_size[0]*kshape_1[2]//self.filter_size[1]])[:, ::4, ::4, :, :]
+                                     kshape_1[1]//self.filter_size[0]*kshape_1[2]//self.filter_size[1]])
         
         kernel_2 = tf.reshape(kernel_2, [kshape_2[0], 
                                      self.filter_size[0],
                                      self.filter_size[0], 
                                      kshape_2[3],
-                                     kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1]])[:, ::4, ::4, :, :]
+                                     kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1]])
         heads = []
         for i in range(kernel_1.shape[-1]):
           temp = tf.reshape(
@@ -741,7 +741,7 @@ def kai_attention_v2(key,
 
     
   
-    attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
+    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                         use_bias = False,
@@ -754,23 +754,23 @@ def kai_attention_v2(key,
     elif activation == 'leaky':
         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
     
-    if dropblock:
-        attention = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(attention)
-    attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
-                                    kernel_regularizer=tf.keras.regularizers.l2(0.0005),
-                                    kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                    use_bias = False,
-                                    activity_regularizer=regularizers.l2(1e-5))(attention)
-    if activation == 'mish':
-        attention = mish(attention)
-    elif activation == 'gelu':
-        # attention = tfa.activations.gelu(attention)
-        attention = tf.nn.gelu(attention)
-    elif activation == 'leaky':
-        attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
+#     if dropblock:
+#         attention = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(attention)
+#     attention = tf.keras.layers.Conv2D(filters = out_filters, kernel_size = kernel_size, strides = (1, 1), padding = 'same',
+#                                     kernel_regularizer=tf.keras.regularizers.l2(0.0005),
+#                                     kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+#                                     use_bias = False,
+#                                     activity_regularizer=regularizers.l2(1e-5))(attention)
+#     if activation == 'mish':
+#         attention = mish(attention)
+#     elif activation == 'gelu':
+#         # attention = tfa.activations.gelu(attention)
+#         attention = tf.nn.gelu(attention)
+#     elif activation == 'leaky':
+#         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
     
-    if dropblock:
-        attention = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(attention)
+#     if dropblock:
+#         attention = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(attention)
     return attention
 
 def transformer_block(inp,
