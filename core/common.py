@@ -262,16 +262,25 @@ class conv_prod(tf.keras.layers.Layer):
         return out
 
 class conv_prod_v2(tf.keras.layers.Layer):
-    def __init__(self, filter_size=(2,2), strides=(2,2), standardized=False, preserve_depth=False, upsample=False):
+    def __init__(self, filter_size=(2,2), strides=(2,2), standardized=False, preserve_depth=False, upsample=False, trainable_sum=False):
         super(conv_prod_v2, self).__init__()
         self.filter_size    = filter_size
         self.strides        = strides
         self.standardized   = standardized
         self.preserve_depth = preserve_depth
         self.upsample       = upsample
+        self.trainable_sum  = trainable_sum
 
     def build(self, input_shape):
       self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1], kernel_size=(1,1), strides=(1, 1), padding='same')
+      
+      self.w    = self.add_weight(shape=(1, 1, 1, 1, 1, input_shape[1]//self.filter_size[0]*input_shape[2]//self.filter_size[1]),
+                               initializer='ones',
+                               trainable=self.trainable_sum)
+      
+      self.b    = self.add_weight(shape=(1, 1, 1, 1, 1, input_shape[1]//self.filter_size[0]*input_shape[2]//self.filter_size[1]),
+                               initializer='zeros',
+                               trainable=self.trainable_sum)
       
     def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
@@ -304,7 +313,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
             kernel_1 = (kernel_1 - tf.math.reduce_mean(kernel_1, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_1, axis=-1, keepdims=True)+1e-6)
             kernel_2 = (kernel_2 - tf.math.reduce_mean(kernel_2, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_2, axis=-1, keepdims=True)+1e-6)
             
-        out = tf.reshape(tf.reduce_sum(kernel_1 * kernel_2, axis=[1, 2]), (kshape_1[0],
+        out = tf.reshape(tf.reduce_sum(kernel_1 * kernel_2 * self.w + self.b, axis=[1, 2, 5]), (kshape_1[0],
                                                                                    kshape_1[1]//self.filter_size[0],
                                                                                    kshape_1[2]//self.filter_size[1],
                                                                                    kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1])) 
