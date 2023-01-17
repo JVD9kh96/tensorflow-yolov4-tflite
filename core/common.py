@@ -262,14 +262,16 @@ class conv_prod(tf.keras.layers.Layer):
         return out
 
 class conv_prod_v2(tf.keras.layers.Layer):
-    def __init__(self, filter_size=(2,2), strides=(2,2), standardized=False):
+    def __init__(self, filter_size=(2,2), strides=(2,2), standardized=False, preserve_depth=False, upsample=False):
         super(conv_prod_v2, self).__init__()
         self.filter_size    = filter_size
         self.strides        = strides
         self.standardized   = standardized
+        self.preserve_depth = preserve_depth
+        self.upsample       = upsample
 
     def build(self, input_shape):
-      self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1]//4, kernel_size=(1,1), strides=(1, 1), padding='same')
+      self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1], kernel_size=(1,1), strides=(1, 1), padding='same')
       
     def call(self, feature_map_1, feature_map_2, feature_map_3, training=False):
         dtype = feature_map_1.dtype
@@ -291,25 +293,27 @@ class conv_prod_v2(tf.keras.layers.Layer):
                                      self.filter_size[0],
                                      self.filter_size[0], 
                                      kshape_1[3],
-                                     kshape_1[1]//self.filter_size[0]*kshape_1[2]//self.filter_size[1]])
+                                     kshape_1[1]//self.filter_size[0]*kshape_1[2]//self.filter_size[1], 1])
         
         kernel_2 = tf.reshape(kernel_2, [kshape_2[0], 
                                      self.filter_size[0],
                                      self.filter_size[0], 
                                      kshape_2[3],
-                                     kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1]])
-        heads = []
-        for i in range(kernel_1.shape[-1]):
-          temp = tf.reshape(
-                            tf.concat([tf.reduce_sum(kernel_1[..., i] * kernel_2[..., i], axis=[1, 2])[:, tf.newaxis, ...] for j in range(kernel_2.shape[-1])], axis=1),
-                            (kernel_1.shape[0], kshape_1[1]//(self.filter_size[0]), kshape_1[2]//(self.filter_size[1]) , kernel_1.shape[3]),
-                            )
-          if self.standardized:
-            temp = (temp - tf.math.reduce_mean(temp, axis=-1, keepdims=True)) / (tf.math.reduce_std(temp, axis=-1, keepdims=True)+1e-6)
-          
-          temp = tf.reduce_sum(temp, axis=[1, 2], keepdims=True)
-          heads.append(self.conv(tf.nn.sigmoid(temp) * feature_map_3))
-        return tf.concat(heads, axis=-1)
+                                     1, kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1]])
+        if self.standardized:
+            kernel_1 = (kernel_1 - tf.math.reduce_mean(kernel_1, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_1, axis=-1, keepdims=True)+1e-6)
+            kernel_2 = (kernel_2 - tf.math.reduce_mean(kernel_2, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_2, axis=-1, keepdims=True)+1e-6)
+            
+        out = tf.reshape(tf.reduce_sum(kernel_1 * kernel_2, axis=[1, 2]), (kshape_1[0],
+                                                                                   kshape_1[1]//self.filter_size[0],
+                                                                                   kshape_1[2]//self.filter_size[1],
+                                                                                   kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1])) 
+        if self.preserve_depth:
+            out = self.conv(out)
+        if self.upsample:
+            out = tf.cast(tf.image.resize(out, (static_shape[1], static_shape[2])), feature_map_1.dtype)
+        
+        return out
 
 
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
@@ -566,7 +570,7 @@ def kai_attention(key,
 #     qk    = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
 #    qk    = tf.multiply(query, key)
 
-    qk = conv_prod(filter_size=[query.shape[1]//16,query.shape[1]//16], strides=[query.shape[1]//16,query.shape[1]//16],upsample=False, preserve_depth=True)(query, key)
+    qk = conv_prod_v2(filter_size=[query.shape[1]//16,query.shape[1]//16], strides=[query.shape[1]//16,query.shape[1]//16],upsample=False, preserve_depth=True)(query, key)
 #     qk = conv_prod(filter_size=[2, 2], strides=[2, 2],upsample=False, preserve_depth=True)(query, key)
     if normalization == 'batch':
         qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
@@ -594,7 +598,7 @@ def kai_attention(key,
 #         qk = softmax_2d()(qk)
     qk        = tf.nn.sigmoid(qk)
 #    attention = tf.math.multiply(qk , value)
-    attention = conv_prod(filter_size=[qk.shape[1]//16,qk.shape[1]//16], strides=[qk.shape[1]//16,qk.shape[1]//16],upsample=True, preserve_depth=True)(qk, value)
+    attention = conv_prod_v2(filter_size=[qk.shape[1]//16,qk.shape[1]//16], strides=[qk.shape[1]//16,qk.shape[1]//16],upsample=True, preserve_depth=True)(qk, value)
 #     attention = conv_prod(filter_size=[2,2], strides=[2,2],upsample=True, preserve_depth=True)(qk, value)
   
     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
@@ -787,20 +791,10 @@ def transformer_block(inp,
     
     short_cut = inp
     conv = convolutional(inp, filters_shape=(1, 1, -1, out_filt), activate_type=activation)
-    x    = conv
-    conv = kai_attention(conv,
-                       conv,
-                       conv,
-                       heads=out_filt,
-                       out_filters=out_filt,
-                       axis = attention_axes,
-                       activation = activation,
-                       normalization =  normalization,
-                       dropblock = dropblock)
-    conv = tf.keras.layers.Add()([x, conv])
+
     
     x    = conv
-    conv = kai_attention_v2(conv,
+    conv = kai_attention(conv,
                        conv,
                        conv,
                        heads=out_filt,
