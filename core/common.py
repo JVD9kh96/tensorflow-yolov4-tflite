@@ -307,7 +307,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
           
           temp = tf.reduce_sum(temp, axis=[1, 2], keepdims=True)
           heads.append(tf.nn.sigmoid(temp) * feature_map_3)
-        return tf.concat(heads, axis=-1)
+        return heads
 
 
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
