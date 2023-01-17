@@ -268,7 +268,9 @@ class conv_prod_v2(tf.keras.layers.Layer):
         self.strides        = strides
         self.standardized   = standardized
 
-    
+    def build(self, input_shape):
+      self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1]//4, kernel_size=(1,1), strides=(1, 1), padding='same')
+      
     def call(self, feature_map_1, feature_map_2, feature_map_3, training=False):
         dtype = feature_map_1.dtype
         kernel_1 = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
@@ -306,8 +308,8 @@ class conv_prod_v2(tf.keras.layers.Layer):
             temp = (temp - tf.math.reduce_mean(temp, axis=-1, keepdims=True)) / (tf.math.reduce_std(temp, axis=-1, keepdims=True)+1e-6)
           
           temp = tf.reduce_sum(temp, axis=[1, 2], keepdims=True)
-          heads.append(tf.nn.sigmoid(temp) * feature_map_3)
-        return heads
+          heads.append(self.conv(tf.nn.sigmoid(temp) * feature_map_3))
+        return tf.concat(heads, axis=-1)
 
 
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
@@ -736,7 +738,7 @@ def kai_attention_v2(key,
 #    qk    = tf.multiply(query, key)
 
     attention = conv_prod_v2(filter_size=[query.shape[1]//2,query.shape[1]//2], strides=[query.shape[1]//2,query.shape[1]//2])(query, key, value)
-    attention = tf.keras.layers.Add()(attention)
+#     attention = tf.keras.layers.Add()(attention)
         
 
     
