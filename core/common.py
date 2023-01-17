@@ -736,7 +736,7 @@ def kai_attention_v2(key,
 #    qk    = tf.multiply(query, key)
 
     attention = conv_prod_v2(filter_size=[query.shape[1]//2,query.shape[1]//2], strides=[query.shape[1]//2,query.shape[1]//2])(query, key, value)
-    attention = tf.math.add(attention)
+    attention = tf.keras.layers.Add()(attention)
         
 
     
