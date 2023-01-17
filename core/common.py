@@ -607,7 +607,7 @@ def kai_attention(key,
 #         qk = softmax_2d()(qk)
     qk        = tf.nn.sigmoid(qk)
 #    attention = tf.math.multiply(qk , value)
-    attention = conv_prod_v2(filter_size=[qk.shape[1]//16,qk.shape[1]//16], strides=[qk.shape[1]//16,qk.shape[1]//16],upsample=True, preserve_depth=True)(qk, value)
+    attention = qk * value
 #     attention = conv_prod(filter_size=[2,2], strides=[2,2],upsample=True, preserve_depth=True)(qk, value)
   
     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
