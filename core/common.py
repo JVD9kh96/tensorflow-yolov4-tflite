@@ -735,7 +735,7 @@ def kai_attention_v2(key,
 #     qk    = tf.einsum('aijb,ajkb->aikb', query, key)/tf.math.sqrt(dk)
 #    qk    = tf.multiply(query, key)
 
-    attention = conv_prod_v2(filter_size=[query.shape[1]//2,query.shape[1]//2], strides=[query.shape[1]//3,query.shape[1]//3])(query, key, value)
+    attention = conv_prod_v2(filter_size=[query.shape[1]//2,query.shape[1]//2], strides=[query.shape[1]//2,query.shape[1]//2])(query, key, value)
 
         
 
