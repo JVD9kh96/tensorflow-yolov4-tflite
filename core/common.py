@@ -316,7 +316,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
         out = tf.reshape(tf.reduce_sum(kernel_1 * kernel_2 * self.w + self.b, axis=[1, 2, 5]), (kshape_1[0],
                                                                                    kshape_1[1]//self.filter_size[0],
                                                                                    kshape_1[2]//self.filter_size[1],
-                                                                                   kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1])) 
+                                                                                   kshape_1[-1])) 
         if self.preserve_depth:
             out = self.conv(out)
         if self.upsample:
