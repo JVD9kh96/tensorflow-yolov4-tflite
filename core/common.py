@@ -273,7 +273,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
     def build(self, input_shape):
       self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1], kernel_size=(1,1), strides=(1, 1), padding='same')
       
-    def call(self, feature_map_1, feature_map_2, feature_map_3, training=False):
+    def call(self, feature_map_1, feature_map_2, training=False):
         dtype = feature_map_1.dtype
         kernel_1 = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
         kernel_1 = tf.transpose(kernel_1, perm=[0, 3, 1, 2])
