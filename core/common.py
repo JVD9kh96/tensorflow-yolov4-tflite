@@ -289,17 +289,17 @@ class conv_prod_v2(tf.keras.layers.Layer):
                                      self.filter_size[0],
                                      self.filter_size[0], 
                                      kshape_1[3],
-                                     kshape_1[1]//self.filter_size[0]*kshape_1[2]//self.filter_size[1]])
+                                     kshape_1[1]//self.filter_size[0]*kshape_1[2]//self.filter_size[1]])[:, ::4, ::4, :, :]
         
         kernel_2 = tf.reshape(kernel_2, [kshape_2[0], 
                                      self.filter_size[0],
                                      self.filter_size[0], 
                                      kshape_2[3],
-                                     kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1]])
+                                     kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1]])[:, ::4, ::4, :, :]
         heads = []
         for i in range(kernel_1.shape[-1]):
           temp = tf.reshape(
-                            tf.concat([tf.reduce_sum(kernel_1[:, ::2, ::2, :, i] * kernel_2[:, ::2, ::2, :, i], axis=[1, 2])[:, tf.newaxis, ...] for j in range(kernel_2.shape[-1])], axis=1),
+                            tf.concat([tf.reduce_sum(kernel_1[..., i] * kernel_2[..., i], axis=[1, 2])[:, tf.newaxis, ...] for j in range(kernel_2.shape[-1])], axis=1),
                             (kernel_1.shape[0], kshape_1[1]//(self.filter_size[0]), kshape_1[2]//(self.filter_size[1]) , kernel_1.shape[3]),
                             )
           if self.standardized:
