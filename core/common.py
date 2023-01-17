@@ -300,7 +300,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
         for i in range(kernel_1.shape[-1]):
           temp = tf.reshape(
                             tf.concat([tf.reduce_sum(kernel_1[..., i] * kernel_2[..., j], axis=[1, 2])[:, tf.newaxis, ...] for j in range(kernel_2.shape[-1])], axis=1),
-                            (kernel_1.shape[0], kernel_1.shape[1]//self.filter_size[0], kernel_1.shape[2]//self.filter_size[1] , kernel_1.shape[3]),
+                            (kernel_1.shape[0], kshape_1[1]//self.filter_size[0], kshape_1[2]//self.filter_size[1] , kernel_1.shape[3]),
                             )
           if self.standardized:
             temp = (temp - tf.math.reduce_mean(temp, axis=-1, keepdims=True)) / (tf.math.reduce_std(temp, axis=-1, keepdims=True)+1e-6)
