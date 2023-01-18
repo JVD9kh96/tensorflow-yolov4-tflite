@@ -581,7 +581,7 @@ def kai_attention(key,
 
 #     qk = conv_prod_v2(filter_size=[query.shape[1]//16,query.shape[1]//16], strides=[query.shape[1]//16,query.shape[1]//16],upsample=True, preserve_depth=True)(query, key)
     filter_size = 16 if query.shape[1] == 256 else 8
-    qk = conv_prod_v2(filter_size=[filter_size, filter_size], strides=[filter_size, filter_size],vupsample=True, preserve_depth=True)(query, key)
+    qk = conv_prod_v2(filter_size=[filter_size, filter_size], strides=[filter_size, filter_size], upsample=True, preserve_depth=True)(query, key)
   
 #     qk = conv_prod(filter_size=[2, 2], strides=[2, 2],upsample=False, preserve_depth=True)(query, key)
     if normalization == 'batch':
