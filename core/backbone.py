@@ -901,12 +901,7 @@ def cspdarkerattnet53(input_data,
     route = common.convolutional(route, (1, 1, 64, 64), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
     for i in range(1):
-        input_data = common.transformer_block(input_data, out_filt = 64,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
+        input_data = common.residual_block(input_data,  64,  32, 64, activate_type="mish")
     x          = input_data
     input_data = kai_attention(input_data,
                        input_data,
@@ -914,9 +909,10 @@ def cspdarkerattnet53(input_data,
                        heads=64,
                        out_filters=64,
                        axis = attention_axes,
-                       activation = activation,
+                       activation = 'mish',
                        normalization =  normalization,
-                       dropblock = dropblock)
+                       dropblock = False)
+    input_data = input_data + x
     
     input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
 
@@ -927,13 +923,19 @@ def cspdarkerattnet53(input_data,
     route = common.convolutional(route, (1, 1, 128, 64), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 128, 64), activate_type="mish")
     for i in range(2):
-        input_data = common.transformer_block(input_data, out_filt = 64,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
-
+        input_data = common.residual_block(input_data,  64,  64, 64, activate_type="mish")
+    x          = input_data
+    input_data = kai_attention(input_data,
+                       input_data,
+                       input_data,
+                       heads=64,
+                       out_filters=64,
+                       axis = attention_axes,
+                       activation = 'mish',
+                       normalization =  normalization,
+                       dropblock = False)
+    input_data = input_data + x
+    
     input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
@@ -943,13 +945,19 @@ def cspdarkerattnet53(input_data,
     route = common.convolutional(route, (1, 1, 256, 128), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 256, 128), activate_type="mish")
     for i in range(8):
-        input_data = common.transformer_block(input_data, out_filt = 128,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
-
+        input_data = common.residual_block(input_data,  128,  128, 128, activate_type="mish")
+    x          = input_data
+    input_data = kai_attention(input_data,
+                       input_data,
+                       input_data,
+                       heads=128,
+                       out_filters=128,
+                       axis = attention_axes,
+                       activation = 'mish',
+                       normalization =  normalization,
+                       dropblock = False)
+    input_data = input_data + x
+    
     input_data = common.convolutional(input_data, (1, 1, 128, 128), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
@@ -960,13 +968,20 @@ def cspdarkerattnet53(input_data,
     route = common.convolutional(route, (1, 1, 512, 256), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 512, 256), activate_type="mish")
     for i in range(8):
-        input_data = common.transformer_block(input_data, out_filt = 256,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
-
+        input_data = common.residual_block(input_data,  256,  256, 256, activate_type="mish")
+    
+    x          = input_data
+    input_data = kai_attention(input_data,
+                       input_data,
+                       input_data,
+                       heads=256,
+                       out_filters=256,
+                       axis = attention_axes,
+                       activation = 'mish',
+                       normalization =  normalization,
+                       dropblock = False)
+    input_data = input_data + x
+    
     input_data = common.convolutional(input_data, (1, 1, 256, 256), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
@@ -977,13 +992,20 @@ def cspdarkerattnet53(input_data,
     route = common.convolutional(route, (1, 1, 1024, 512), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 1024, 512), activate_type="mish")
     for i in range(4):
-        input_data = common.transformer_block(input_data, out_filt = 512,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
-
+        input_data = common.residual_block(input_data,  512,  512, 512, activate_type="mish")
+        
+    x          = input_data
+    input_data = kai_attention(input_data,
+                       input_data,
+                       input_data,
+                       heads=512,
+                       out_filters=512,
+                       axis = attention_axes,
+                       activation = 'mish',
+                       normalization =  normalization,
+                       dropblock = False)
+    input_data = input_data + x
+    
     input_data = common.convolutional(input_data, (1, 1, 512, 512), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
