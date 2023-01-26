@@ -2,6 +2,7 @@
 # coding=utf-8
 
 import tensorflow as tf
+from core.common import kai_attention
 import core.common as common
 from tensorflow.keras import layers
 import numpy as np
