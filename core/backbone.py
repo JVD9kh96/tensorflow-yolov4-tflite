@@ -907,7 +907,17 @@ def cspdarkerattnet53(input_data,
                                           attention_axes = attention_axes,
                                           kernel_size = 3,
                                           normalization = normalization)
-
+    x          = input_data
+    input_data = kai_attention(input_data,
+                       input_data,
+                       input_data,
+                       heads=64,
+                       out_filters=64,
+                       axis = attention_axes,
+                       activation = activation,
+                       normalization =  normalization,
+                       dropblock = dropblock)
+    
     input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
 
     input_data = tf.concat([input_data, route], axis=-1)
