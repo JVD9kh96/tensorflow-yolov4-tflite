@@ -334,7 +334,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
                                self.filter_size[0],
                                kshape_1[1]//self.filter_size[0],
                                kshape_1[2]//self.filter_size[1],
-                               kshape_1[3])
+                               kshape_1[3]))
         out = tf.transpose(out, perm=[0, 1, 3, 2, 4, 5])
         out = tf.reshape(out * self.w + self.b, feature_map_1.shape.as_list())
 #         out = tf.reshape(tf.reduce_sum(kernel_1 * kernel_2 * self.w + self.b, axis=[1, 2, 5]), (kshape_1[0],
