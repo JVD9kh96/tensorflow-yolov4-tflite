@@ -664,7 +664,7 @@ def kai_attention(key,
                                                 kernel_size=(3, 3),
                                                 strides=(1, 1),
                                                 padding='same',
-                                                dilation_rate=(2, 2), 
+                                                dilation_rate=(1, 1), 
                                                 depth_multiplier=2)(attention)
 #     if dropblock:
 #         attention = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(attention)
