@@ -282,7 +282,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
                                initializer='zeros',
                                trainable=self.trainable_sum)
       
-    def call(self, feature_map_1, feature_map_2, training=False):
+    def call(self, feature_map_1, feature_map_2, feature_map_3, training=False):
         dtype = feature_map_1.dtype
         kernel_1 = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_1)
         kernel_1 = tf.transpose(kernel_1, perm=[0, 3, 1, 2])
@@ -290,6 +290,8 @@ class conv_prod_v2(tf.keras.layers.Layer):
         kernel_2 = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_2)
         kernel_2 = tf.transpose(kernel_2, perm=[0, 3, 1, 2])
         
+        kernel_3 = patch_extractor((self.filter_size[0], self.filter_size[1]))(feature_map_3)
+        kernel_3 = tf.transpose(kernel_3, perm=[0, 3, 1, 2])
         
         shape  = tf.shape(feature_map_2)
         
@@ -297,6 +299,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
         shape  = feature_map_2.shape.as_list()
         kshape_1 = feature_map_1.shape.as_list()
         kshape_2 = feature_map_1.shape.as_list()
+        kshape_3 = feature_map_1.shape.as_list()
         MB       = shape[0]
         kernel_1 = tf.reshape(kernel_1, [kshape_1[0], 
                                      self.filter_size[0],
@@ -309,14 +312,35 @@ class conv_prod_v2(tf.keras.layers.Layer):
                                      self.filter_size[0], 
                                      kshape_2[3],
                                      1, kshape_2[1]//self.filter_size[0]*kshape_2[2]//self.filter_size[1]])
+        kernel_2 = tf.transpose(kernel_2, perm=[0, 2, 1, 3, 4, 5])
+        
+        kernel_3 = tf.reshape(kernel_3, [kshape_3[0], 
+                                     self.filter_size[0],
+                                     self.filter_size[0], 
+                                     kshape_3[3],
+                                     1, kshape_3[1]//self.filter_size[0]*kshape_3[2]//self.filter_size[1]])
         if self.standardized:
             kernel_1 = (kernel_1 - tf.math.reduce_mean(kernel_1, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_1, axis=-1, keepdims=True)+1e-6)
             kernel_2 = (kernel_2 - tf.math.reduce_mean(kernel_2, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_2, axis=-1, keepdims=True)+1e-6)
-            
-        out = tf.reshape(tf.reduce_sum(kernel_1 * kernel_2 * self.w + self.b, axis=[1, 2, 5]), (kshape_1[0],
-                                                                                   kshape_1[1]//self.filter_size[0],
-                                                                                   kshape_1[2]//self.filter_size[1],
-                                                                                   kshape_1[-1])) 
+            kernel_3 = (kernel_2 - tf.math.reduce_mean(kernel_3, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_3, axis=-1, keepdims=True)+1e-6)
+        
+        qkT = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', kernel_1, kernel_3), axis=-1, keepdims=True)
+        qkT = (qkT - tf.math.reduce_mean(qkT, axis=-1, keepdims=True)) / (tf.math.reduce_std(qkT, axis=-1, keepdims=True)+1e-6)
+        qkT = tf.nn.softmax(qkT, axis=1)
+        out = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', out, kernel_3), axis=-1, keepdims=True)
+        out = tf.transpose(out, perm=[0, 1, 2, 4, 5, 3])
+        out = tf.reshape(out, (kshape_1[0], 
+                               self.filter_size[0], 
+                               self.filter_size[0],
+                               kshape_1[1]//self.filter_size[0],
+                               kshape_1[2]//self.filter_size[1],
+                               kshape_1[3])
+        out = tf.transpose(out, perm=[0, 1, 3, 2, 4, 5])
+        out = tf.reshape(out * self.w + self.b, feature_map_1.shape.as_list())
+#         out = tf.reshape(tf.reduce_sum(kernel_1 * kernel_2 * self.w + self.b, axis=[1, 2, 5]), (kshape_1[0],
+#                                                                                    kshape_1[1]//self.filter_size[0],
+#                                                                                    kshape_1[2]//self.filter_size[1],
+#                                                                                    kshape_1[-1])) 
         if self.preserve_depth:
             out = self.conv(out)
         if self.upsample:
@@ -458,7 +482,7 @@ def kai_attention(key,
              simultaneously) 
     """
     shortcut = value 
-    key = tf.keras.layers.Conv2D(filters = heads,
+    key = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -491,7 +515,7 @@ def kai_attention(key,
 #                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
 #                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)    
         
-    value = tf.keras.layers.Conv2D(filters = heads,
+    value = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -541,7 +565,7 @@ def kai_attention(key,
 #     if dropblock:
 #         value = DropBlock()(value)
     
-    query = tf.keras.layers.Conv2D(filters = heads,
+    query = tf.keras.layers.Conv2D(filters = heads//2,
                                  kernel_size=(1, 1),
                                  strides = (1, 1),
                                  padding = 'same',
@@ -581,7 +605,7 @@ def kai_attention(key,
 
 #     qk = conv_prod_v2(filter_size=[query.shape[1]//16,query.shape[1]//16], strides=[query.shape[1]//16,query.shape[1]//16],upsample=True, preserve_depth=True)(query, key)
     filter_size = 16 if query.shape[1] == 256 else 8
-    qk = conv_prod_v2(filter_size=[filter_size, filter_size], strides=[filter_size, filter_size], upsample=True, preserve_depth=True)(query, key)
+    qk = conv_prod_v2(filter_size=[filter_size, filter_size], strides=[filter_size, filter_size], upsample=True, preserve_depth=True)(query, key, value)
   
 #     qk = conv_prod(filter_size=[2, 2], strides=[2, 2],upsample=False, preserve_depth=True)(query, key)
     if normalization == 'batch':
@@ -608,9 +632,10 @@ def kai_attention(key,
 #         qk = tf.keras.layers.Add()([qk_1, qk_2, qk_3])
 #     elif axis == '2d':
 #         qk = softmax_2d()(qk)
-    qk        = tf.nn.sigmoid(qk)
+#     qk        = tf.nn.sigmoid(qk)
 #    attention = tf.math.multiply(qk , value)
-    attention = qk * value
+#     attention = qk * value
+    attention = qk
 #     attention = conv_prod(filter_size=[2,2], strides=[2,2],upsample=True, preserve_depth=True)(qk, value)
   
     attention = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
