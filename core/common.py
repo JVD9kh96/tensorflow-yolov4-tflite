@@ -274,13 +274,13 @@ class conv_prod_v2(tf.keras.layers.Layer):
     def build(self, input_shape):
       self.conv = tf.keras.layers.Conv2D(filters=input_shape[-1], kernel_size=(1,1), strides=(1, 1), padding='same')
       
-      self.w    = self.add_weight(shape=(1, 1, 1, 1, 1, input_shape[1]//self.filter_size[0]*input_shape[2]//self.filter_size[1]),
-                               initializer='ones',
-                               trainable=self.trainable_sum)
+#       self.w    = self.add_weight(shape=(1, 1, 1, 1, 1, input_shape[1]//self.filter_size[0]*input_shape[2]//self.filter_size[1]),
+#                                initializer='ones',
+#                                trainable=self.trainable_sum)
       
-      self.b    = self.add_weight(shape=(1, 1, 1, 1, 1, input_shape[1]//self.filter_size[0]*input_shape[2]//self.filter_size[1]),
-                               initializer='zeros',
-                               trainable=self.trainable_sum)
+#       self.b    = self.add_weight(shape=(1, 1, 1, 1, 1, input_shape[1]//self.filter_size[0]*input_shape[2]//self.filter_size[1]),
+#                                initializer='zeros',
+#                                trainable=self.trainable_sum)
       
     def call(self, feature_map_1, feature_map_2, feature_map_3, training=False):
         dtype = feature_map_1.dtype
@@ -336,7 +336,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
                                kshape_1[2]//self.filter_size[1],
                                kshape_1[3]))
         out = tf.transpose(out, perm=[0, 1, 3, 2, 4, 5])
-        out = tf.reshape(out * self.w + self.b, feature_map_1.shape.as_list())
+        out = tf.reshape(out, feature_map_1.shape.as_list())
 #         out = tf.reshape(tf.reduce_sum(kernel_1 * kernel_2 * self.w + self.b, axis=[1, 2, 5]), (kshape_1[0],
 #                                                                                    kshape_1[1]//self.filter_size[0],
 #                                                                                    kshape_1[2]//self.filter_size[1],
