@@ -328,9 +328,9 @@ class conv_prod_v2(tf.keras.layers.Layer):
 #                                                                                                                                   kshape_1[1]//self.filter_size[0],
 #                                                                                                                                   kshape_1[2]//self.filter_size[1],
 #                                                                                                                                   kshape_1[-1])) 
-          kernel_1 = tf.reduce_sum(kernel_1, axis=2, keepdims=True)
-          kernel_2 = tf.reduce_sum(kernel_3, axis=1, keepdims=True)
-          kernel_3 = tf.reduce_sum(kernel_3, axis=1, keepdims=True)
+        kernel_1 = tf.reduce_sum(kernel_1, axis=2, keepdims=True)
+        kernel_2 = tf.reduce_sum(kernel_3, axis=1, keepdims=True)
+        kernel_3 = tf.reduce_sum(kernel_3, axis=1, keepdims=True)
   
         
         qkT = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', kernel_1, kernel_2), axis=-1, keepdims=True)
