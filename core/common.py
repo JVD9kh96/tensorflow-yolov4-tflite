@@ -324,25 +324,29 @@ class conv_prod_v2(tf.keras.layers.Layer):
             kernel_2 = (kernel_2 - tf.math.reduce_mean(kernel_2, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_2, axis=-1, keepdims=True)+1e-6)
             kernel_3 = (kernel_2 - tf.math.reduce_mean(kernel_3, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_3, axis=-1, keepdims=True)+1e-6)
         
-        out = tf.reshape(tf.reduce_sum(tf.nn.softmax(kernel_1 * kernel_2 * self.w, axis=1) * kernel_3 + self.b, axis=[1, 2, 5]), (kshape_1[0],
-                                                                                                                                  kshape_1[1]//self.filter_size[0],
-                                                                                                                                  kshape_1[2]//self.filter_size[1],
-                                                                                                                                  kshape_1[-1])) 
+#         out = tf.reshape(tf.reduce_sum(tf.nn.softmax(kernel_1 * kernel_2 * self.w, axis=1) * kernel_3 + self.b, axis=[1, 2, 5]), (kshape_1[0],
+#                                                                                                                                   kshape_1[1]//self.filter_size[0],
+#                                                                                                                                   kshape_1[2]//self.filter_size[1],
+#                                                                                                                                   kshape_1[-1])) 
+          kernel_1 = tf.reduce_sum(kernel_1, axis=2, keepdims=True)
+          kernel_2 = tf.reduce_sum(kernel_3, axis=1, keepdims=True)
+          kernel_3 = tf.reduce_sum(kernel_3, axis=1, keepdims=True)
+  
         
-#         qkT = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', kernel_1, kernel_2), axis=-1, keepdims=True)
-#         qkT = (qkT - tf.math.reduce_mean(qkT, axis=-1, keepdims=True)) / (tf.math.reduce_std(qkT, axis=-1, keepdims=True)+1e-6)
-#         qkT = tf.nn.softmax(qkT, axis=1)
-#         out = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', qkT, kernel_3), axis=-1, keepdims=True)
+        qkT = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', kernel_1, kernel_2), axis=-1, keepdims=True)
+        qkT = (qkT - tf.math.reduce_mean(qkT, axis=-1, keepdims=True)) / (tf.math.reduce_std(qkT, axis=-1, keepdims=True)+1e-6)
+        qkT = tf.nn.softmax(qkT, axis=1)
+        out = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', qkT, kernel_3), axis=-1, keepdims=True)
 #         out = tf.reduce_sum(kernel_3 * qkT, axis=-1, keepdims=True)
-#         out = tf.transpose(out, perm=[0, 1, 2, 4, 5, 3])
-#         out = tf.reshape(out, (kshape_1[0], 
-#                                self.filter_size[0], 
-#                                self.filter_size[0],
-#                                kshape_1[1]//self.filter_size[0],
-#                                kshape_1[2]//self.filter_size[1],
-#                                kshape_1[3]))
-#         out = tf.transpose(out, perm=[0, 1, 3, 2, 4, 5])
-#         out = tf.reshape(out, feature_map_1.shape.as_list())
+        out = tf.transpose(out, perm=[0, 1, 2, 4, 5, 3])
+        out = tf.reshape(out, (kshape_1[0], 
+                               self.filter_size[0], 
+                               self.filter_size[0],
+                               kshape_1[1]//self.filter_size[0],
+                               kshape_1[2]//self.filter_size[1],
+                               kshape_1[3]))
+        out = tf.transpose(out, perm=[0, 1, 3, 2, 4, 5])
+        out = tf.reshape(out, feature_map_1.shape.as_list())
 #         out = tf.reshape(tf.reduce_sum(kernel_1 * kernel_2 * self.w + self.b, axis=[1, 2, 5]), (kshape_1[0],
 #                                                                                    kshape_1[1]//self.filter_size[0],
 #                                                                                    kshape_1[2]//self.filter_size[1],
