@@ -334,7 +334,8 @@ class conv_prod_v2(tf.keras.layers.Layer):
   
         
         qkT = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', kernel_1, kernel_2), axis=-1, keepdims=True)
-        qkT = (qkT - tf.math.reduce_mean(qkT, axis=-1, keepdims=True)) / (tf.math.reduce_std(qkT, axis=-1, keepdims=True)+1e-6)
+        qkT = qkT / tf.math.sqrt(self.filter_size[0])
+        #qkT = (qkT - tf.math.reduce_mean(qkT, axis=-1, keepdims=True)) / (tf.math.reduce_std(qkT, axis=-1, keepdims=True)+1e-6)
         qkT = tf.nn.softmax(qkT, axis=1)
         qkT = tf.reduce_sum(qkT, axis=2, keepdims=True)
         out = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', qkT, kernel_3), axis=-1, keepdims=True)
