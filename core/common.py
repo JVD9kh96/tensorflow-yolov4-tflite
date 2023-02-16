@@ -320,7 +320,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
                                      kshape_3[3],
                                      1, kshape_3[1]//self.filter_size[0]*kshape_3[2]//self.filter_size[1]])
         if self.standardized:
-            kernel_1 = (kernel_1 - tf.math.reduce_mean(kernel_1, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_1, axis=-1, keepdims=True)+1e-6)
+            kernel_1 = (kernel_1 - tf.math.reduce_mean(kernel_1, axis=-2, keepdims=True)) / (tf.math.reduce_std(kernel_1, axis=-2, keepdims=True)+1e-6)
             kernel_2 = (kernel_2 - tf.math.reduce_mean(kernel_2, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_2, axis=-1, keepdims=True)+1e-6)
             kernel_3 = (kernel_2 - tf.math.reduce_mean(kernel_3, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_3, axis=-1, keepdims=True)+1e-6)
         
