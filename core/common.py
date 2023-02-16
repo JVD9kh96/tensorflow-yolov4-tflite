@@ -320,13 +320,13 @@ class conv_prod_v2(tf.keras.layers.Layer):
                                      kshape_3[3],
                                      1, kshape_3[1]//self.filter_size[0]*kshape_3[2]//self.filter_size[1]])
         if self.standardized:
-            kernel_1 = (kernel_1 - tf.math.reduce_mean(kernel_1, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_1, axis=-1, keepdims=True)+1e-6)
+            kernel_1 = (kernel_1 - tf.math.reduce_mean(kernel_1, axis=-2, keepdims=True)) / (tf.math.reduce_std(kernel_1, axis=-2, keepdims=True)+1e-6)
             kernel_2 = (kernel_2 - tf.math.reduce_mean(kernel_2, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_2, axis=-1, keepdims=True)+1e-6)
             kernel_3 = (kernel_2 - tf.math.reduce_mean(kernel_3, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_3, axis=-1, keepdims=True)+1e-6)
         
-        out = tf.reshape(tf.reduce_sum(tf.reduce_sum(tf.nn.softmax(kernel_1 * kernel_2 * self.w, axis=1), axis=-1, keepdims=True) * kernel_3 + self.b, axis=[1, 2, 5]), (kshape_1[0],
-                                                                                                                                  kshape_1[1]//self.filter_size[0],
-                                                                                                                                  kshape_1[2]//self.filter_size[1],
+        out = tf.reshape(tf.reduce_sum(tf.reduce_sum(tf.nn.softmax(kernel_1 * kernel_2 * self.w, axis=1), axis=-1, keepdims=True) * kernel_3 + self.b, axis=5), (kshape_1[0],
+                                                                                                                                  kshape_1[1],
+                                                                                                                                  kshape_1[2],
                                                                                                                                   kshape_1[-1])) 
         
 #         qkT = tf.reduce_sum(tf.einsum('abcdef,ackdgh->abkdeh', kernel_1, kernel_2), axis=-1, keepdims=True)
@@ -611,7 +611,7 @@ def kai_attention(key,
 
 #     qk = conv_prod_v2(filter_size=[query.shape[1]//16,query.shape[1]//16], strides=[query.shape[1]//16,query.shape[1]//16],upsample=True, preserve_depth=True)(query, key)
     filter_size = 16 if query.shape[1] == 256 else 8
-    qk = conv_prod_v2(filter_size=[filter_size, filter_size], strides=[filter_size, filter_size], upsample=True, preserve_depth=True)(query, key, value)
+    qk = conv_prod_v2(filter_size=[filter_size, filter_size], strides=[filter_size, filter_size], upsample=False, preserve_depth=False)(query, key, value)
   
 #     qk = conv_prod(filter_size=[2, 2], strides=[2, 2],upsample=False, preserve_depth=True)(query, key)
     if normalization == 'batch':
