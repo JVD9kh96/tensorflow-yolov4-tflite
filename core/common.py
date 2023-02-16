@@ -324,7 +324,7 @@ class conv_prod_v2(tf.keras.layers.Layer):
             kernel_2 = (kernel_2 - tf.math.reduce_mean(kernel_2, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_2, axis=-1, keepdims=True)+1e-6)
             kernel_3 = (kernel_2 - tf.math.reduce_mean(kernel_3, axis=-1, keepdims=True)) / (tf.math.reduce_std(kernel_3, axis=-1, keepdims=True)+1e-6)
         
-        out = tf.reshape(tf.reduce_sum(tf.nn.softmax(kernel_1 * kernel_2 * self.w, axis=1) * kernel_3 + self.b, axis=[1, 2, 5]), (kshape_1[0],
+        out = tf.reshape(tf.reduce_sum(tf.reduce_sum(tf.nn.softmax(kernel_1 * kernel_2 * self.w, axis=1), axis=-1, keepdims=True) * kernel_3 + self.b, axis=[1, 2, 5]), (kshape_1[0],
                                                                                                                                   kshape_1[1]//self.filter_size[0],
                                                                                                                                   kshape_1[2]//self.filter_size[1],
                                                                                                                                   kshape_1[-1])) 
