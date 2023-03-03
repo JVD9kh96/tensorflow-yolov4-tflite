@@ -26,10 +26,10 @@ __C.YOLO.IOU_LOSS_THRESH      = 0.5
 # Train options
 __C.TRAIN                     = edict()
 
-__C.TRAIN.ANNOT_PATH          = "../input/wheat5d3/data5/train.txt"
-__C.TRAIN.BATCH_SIZE          = 2
+__C.TRAIN.ANNOT_PATH          = "./data/dataset/train.txt"
+__C.TRAIN.BATCH_SIZE          = 5
 # __C.TRAIN.INPUT_SIZE            = [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
-__C.TRAIN.INPUT_SIZE          = 736
+__C.TRAIN.INPUT_SIZE          = 608
 __C.TRAIN.DATA_AUG            = True
 __C.TRAIN.LR_INIT             = 1e-4
 __C.TRAIN.LR_END              = 1e-6
@@ -42,9 +42,9 @@ __C.TRAIN.SECOND_STAGE_EPOCHS   = 40
 # TEST options
 __C.TEST                      = edict()
 
-__C.TEST.ANNOT_PATH           = "../input/wheat5d3/data5/test.txt"
-__C.TEST.BATCH_SIZE           = 2
-__C.TEST.INPUT_SIZE           = 736
+__C.TEST.ANNOT_PATH           = "./data/dataset/test.txt"
+__C.TEST.BATCH_SIZE           = 5
+__C.TEST.INPUT_SIZE           = 608
 __C.TEST.DATA_AUG             = False
 __C.TEST.DECTECTED_IMAGE_PATH = "./data/detection/"
 __C.TEST.SCORE_THRESHOLD      = 0.25
