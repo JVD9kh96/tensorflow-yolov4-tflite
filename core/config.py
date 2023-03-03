@@ -27,7 +27,7 @@ __C.YOLO.IOU_LOSS_THRESH      = 0.5
 __C.TRAIN                     = edict()
 
 __C.TRAIN.ANNOT_PATH          = "./data/dataset/train.txt"
-__C.TRAIN.BATCH_SIZE          = 5
+__C.TRAIN.BATCH_SIZE          = 4
 # __C.TRAIN.INPUT_SIZE            = [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
 __C.TRAIN.INPUT_SIZE          = 608
 __C.TRAIN.DATA_AUG            = True
@@ -43,7 +43,7 @@ __C.TRAIN.SECOND_STAGE_EPOCHS   = 40
 __C.TEST                      = edict()
 
 __C.TEST.ANNOT_PATH           = "./data/dataset/test.txt"
-__C.TEST.BATCH_SIZE           = 5
+__C.TEST.BATCH_SIZE           = 4
 __C.TEST.INPUT_SIZE           = 608
 __C.TEST.DATA_AUG             = False
 __C.TEST.DECTECTED_IMAGE_PATH = "./data/detection/"
