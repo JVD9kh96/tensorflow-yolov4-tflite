@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # coding=utf-8
-
+import math
 import tensorflow as tf
 from core.config import cfg
 
@@ -67,3 +67,115 @@ def route_group(input_layer, groups, group_id):
 def upsample(input_layer):
     return tf.image.resize(input_layer, (tf.shape(input_layer)[1] * 2, tf.shape(input_layer)[2] * 2), method='bilinear')
 
+def autopad(k, p=None, d=1):  # kernel, padding, dilation
+    # Pad to 'same' shape outputs
+    if d > 1:
+        k = d * (k - 1) + 1 if isinstance(k, int) else [d * (x - 1) + 1 for x in k]  # actual kernel-size
+    if p is None:
+        p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
+    return p
+
+class Conv(tf.keras.layers.Layer):
+    def __init__(self, filters, kernel_size=3, strides=1, padding=None, dilation_rate=1, groups=1, activation=None, bn=True):
+        super(Conv, self).__init__()
+        self.filters     = filters
+        self.kernel_size = kernel_size 
+        self.strides     = strides
+        self.dilatation  = dilation_rate
+        self.padding     = autopad(kernel_size, padding, self.dilatation)
+        self.groups      = groups
+        self.bn          = bn
+        self.linear      = lambda x: x
+        self.activation  = activation if activation is not None else self.linear
+    def build(self, input_shape):
+        self.conv = tf.keras.layers.Conv2D(filters=self.filters,
+                                            kernel_size=self.kernel_size,
+                                            strides=self.strides,
+                                            padding='valid',
+                                            dilation_rate=self.dilatation,
+                                            groups=self.groups,
+                                            activation=None,
+                                            use_bias=not self.bn,
+                                            kernel_initializer='glorot_uniform',
+                                            bias_initializer='zeros',
+                                            kernel_regularizer=tf.keras.regularizers.l2(cfg.TRAIN.WEIGHT_DECAY))
+        self.pad = tf.keras.layers.ZeroPadding2D(padding=self.padding)
+        if self.bn:
+            self.norm = BatchNormalization()
+            
+    def call(self, x):
+        x = self.pad(x)
+        x = self.conv(x)
+        if self.bn:
+            x = self.norm(x)
+        x = self.activation(x)
+        return x
+
+class DwConv(tf.keras.layers.Layer):
+    # Depth-wise convolution
+    def __init__(self, filters, kernel_size=3, strides=1, padding=None, dilation_rate=1, groups=1, activation=None, bn=True, depth_multiplier=1):
+        super(DwConv, self).__init__()
+        self.filters          = filters
+        self.kernel_size      = kernel_size 
+        self.strides          = strides
+        self.dilatation       = dilation_rate
+        self.padding          = autopad(kernel_size, padding, self.dilatation)
+        self.groups           = groups
+        self.bn               = bn
+        self.linear           = lambda x: x
+        self.activation       = activation if activation is not None else self.linear
+        self.depth_multiplier = depth_multiplier
+
+    def build(self, input_shape):
+        self.dwconv = tf.keras.layers.DepthwiseConv2D(
+                                                        kernel_size=self.kernel_size,
+                                                        strides=self.strides,
+                                                        padding='valid',
+                                                        depth_multiplier=self.depth_multiplier,
+                                                        dilation_rate=self.dilatation,
+                                                        activation=None,
+                                                        use_bias=not self.bn,
+                                                        depthwise_initializer='glorot_uniform',
+                                                        bias_initializer='zeros',
+                                                        depthwise_regularizer=tf.keras.regularizers.l2(cfg.TRAIN.WEIGHT_DECAY))
+        self.pad = tf.keras.layers.ZeroPadding2D(padding=self.padding)
+        if self.bn:
+            self.norm = BatchNormalization()
+    def call(self, x):
+        x = self.pad(x)
+        x = self.dwconv(x)
+        if self.bn:
+            x = self.norm(x)
+        x = self.activation(x)
+        return x
+    
+class Bottleneck(tf.keras.layers.Layer):
+    # Standard bottleneck
+    def __init__(self, filters, shortcut=True, groups=1, kernel_size=(3, 3), e=0.5, activation=tf.nn.silu):
+        super(Bottleneck, self).__init__()
+        self.filters1   = int(filters * e)
+        self.filters2   = filters
+        self.groups     = groups
+        self.shortcut   = shortcut
+        self.activation = activation
+        
+    def build(self, input_shape):
+        self.cnv1 = Conv(filters=self.filters1,
+                         kernel_size=self.kernel_size[0], 
+                         strides=1,
+                         padding=None,
+                         dilation_rate=1,
+                         groups=self.groups,
+                         activation=self.activation,
+                         bn=True)
+        self.cnv2 = Conv(filters=self.filters2,
+                         kernel_size=self.kernel_size[1], 
+                         strides=1,
+                         padding=None,
+                         dilation_rate=1,
+                         groups=self.groups,
+                         activation=self.activation,
+                         bn=True)
+        self.add  = input_shape[-1] == self.filters2 and self.shortcut
+    def call(self, x):
+        return x + self.cnv2(self.cnv1(x)) if self.add else self.cnv2(self.cnv1(x))
