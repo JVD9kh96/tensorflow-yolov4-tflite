@@ -180,3 +180,45 @@ class Bottleneck(tf.keras.layers.Layer):
         self.add  = input_shape[-1] == self.filters2 and self.shortcut
     def call(self, x):
         return x + self.cnv2(self.cnv1(x)) if self.add else self.cnv2(self.cnv1(x))
+
+    
+class C2f(tf.keras.layers.Layer):
+    def __init__(self, filters, n=1, shortcut=False, kernel_size=(3, 3), groups=1, e=0.5, activation=tf.nn.silu):
+        super().__init__()
+        self.filters1    = int(filters * e)
+        self.filters2    = filters
+        self.shortcut    = shortcut
+        self.kernel_size = kernel_size
+        self.activation  = activation
+        self.groups      = groups
+        self.n           = n
+        self.e           = e
+    
+    def build(self, input_shape):
+        self.cnv1 = Conv(filters= 2*self.filters1,
+                         kernel_size=self.kernel_size[0], 
+                         strides=1,
+                         padding=None,
+                         dilation_rate=1,
+                         groups=self.groups,
+                         activation=self.activation,
+                         bn=True)
+        self.cnv2 = Conv(filters=self.filters2,
+                         kernel_size=self.kernel_size[1], 
+                         strides=1,
+                         padding=None,
+                         dilation_rate=1,
+                         groups=self.groups,
+                         activation=self.activation,
+                         bn=True)
+        
+        self.m = [Bottleneck(filters=self.f1,
+                             shortcut=self.shortcut,
+                             groups=self.groups,
+                             kernel_size=self.kernel_size,
+                             e=self.e) for _ in range(self.n)]
+
+    def call(self, x):
+        y = tf.split(self.cnv1(x), 2, axis=3)
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cnv2(tf.concat(y, axis=3))
