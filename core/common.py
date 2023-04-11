@@ -153,11 +153,12 @@ class Bottleneck(tf.keras.layers.Layer):
     # Standard bottleneck
     def __init__(self, filters, shortcut=True, groups=1, kernel_size=(3, 3), e=0.5, activation=tf.nn.silu):
         super(Bottleneck, self).__init__()
-        self.filters1   = int(filters * e)
-        self.filters2   = filters
-        self.groups     = groups
-        self.shortcut   = shortcut
-        self.activation = activation
+        self.filters1    = int(filters * e)
+        self.filters2    = filters
+        self.groups      = groups
+        self.shortcut    = shortcut
+        self.activation  = activation
+        self.kernel_size = kernel_size
         
     def build(self, input_shape):
         self.cnv1 = Conv(filters=self.filters1,
