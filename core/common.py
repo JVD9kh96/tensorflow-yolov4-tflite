@@ -184,7 +184,7 @@ class Bottleneck(tf.keras.layers.Layer):
     
 class C2f(tf.keras.layers.Layer):
     def __init__(self, filters, n=1, shortcut=False, kernel_size=(3, 3), groups=1, e=0.5, activation=tf.nn.silu):
-        super().__init__()
+        super(C2f, self).__init__()
         self.filters1    = int(filters * e)
         self.filters2    = filters
         self.shortcut    = shortcut
@@ -222,3 +222,67 @@ class C2f(tf.keras.layers.Layer):
         y = tf.split(self.cnv1(x), 2, axis=3)
         y.extend(m(y[-1]) for m in self.m)
         return self.cnv2(tf.concat(y, axis=3))
+
+    
+class MaxPool(tf.keras.layers.Layer):
+    # Spatial Pyramid Pooling - Fast (SPPF) layer for YOLOv5 by Glenn Jocher
+    def __init__(self, pool_size=3, strides=1, padding=5):  # equivalent to SPP(k=(5, 9, 13))
+        super(MaxPool, self).__init__()
+        self.pool_size   = pool_size 
+        self.strides     = strides
+        self.padding     = padding
+    
+    def build(self, input_shape):
+        self.maxpool = tf.keras.layers.MaxPooling2D(pool_size=self.pool_size,
+                                                    strides=self.strides,
+                                                    padding='valid')
+        self.pad     = tf.keras.layers.ZeroPadding2D(padding=self.padding)
+    
+    def call(self, x):
+        x = self.pad(x)
+        x = self.maxpool(x)
+        return x
+
+
+class SPPF(tf.keras.layers.Layer):
+    # Spatial Pyramid Pooling - Fast (SPPF) layer for YOLOv5 by Glenn Jocher
+    def __init__(self, filters, kernel_size=1, strides=1, dilation_rate=1, groups=1, activation=tf.nn.silu, pool_size=5):  # equivalent to SPP(k=(5, 9, 13))
+        super(SPPF, self).__init__()
+        self.filters     = filters
+        self.kernel_size = kernel_size 
+        self.strides     = strides
+        self.dilatation  = dilation_rate
+        self.groups      = groups
+        self.activation  = activation
+        self.pool_size   = pool_size
+    
+    def build(self, input_shape):
+        self.filters1 = input_shape[-1] // 2
+        self.filters2 = self.filters
+
+        self.cnv1   = Conv(filters= self.filters1,
+                            kernel_size=self.kernel_size, 
+                            strides=1,
+                            padding=None,
+                            dilation_rate=1,
+                            groups=self.groups,
+                            activation=self.activation,
+                            bn=True)
+        
+        self.cnv2   = Conv(filters=self.filters2,
+                            kernel_size=self.kernel_size, 
+                            strides=1,
+                            padding=None,
+                            dilation_rate=1,
+                            groups=self.groups,
+                            activation=self.activation,
+                            bn=True)
+        self.maxpool = MaxPool(pool_size=self.pool_size,
+                               strides=self.strides,
+                               padding=self.pool_size//2)
+        
+    def call(self, x):
+        x  = self.cnv1(x)
+        y1 = self.maxpool(x)
+        y2 = self.maxpool(y1)
+        return self.cnv2(tf.concat([x, y1, y2, self.maxpool(y2)], axis=-1))
