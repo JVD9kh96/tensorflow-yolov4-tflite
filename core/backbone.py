@@ -1004,12 +1004,7 @@ def cspdarknet53_small(input_data,
     route = common.convolutional(route, (1, 1, 32, 32), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 32, 32), activate_type="mish")
     for i in range(1):
-        input_data = common.residual_block(input_data, out_filt = 32,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
+        input_data = common.residual_block(input_data,  32,  16, 32, activate_type="mish")
 
     input_data = common.convolutional(input_data, (1, 1, 32, 32), activate_type="mish")
 
@@ -1020,12 +1015,7 @@ def cspdarknet53_small(input_data,
     route = common.convolutional(route, (1, 1, 64, 32), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 64, 32), activate_type="mish")
     for i in range(2):
-        input_data = common.residual_block(input_data, out_filt = 32,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
+        input_data = common.residual_block(input_data,  32,  16, 32, activate_type="mish")
 
     input_data = common.convolutional(input_data, (1, 1, 32, 32), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
@@ -1036,12 +1026,7 @@ def cspdarknet53_small(input_data,
     route = common.convolutional(route, (1, 1, 128, 64), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 128, 64), activate_type="mish")
     for i in range(8):
-        input_data = common.residual_block(input_data, out_filt = 64,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
+        input_data = common.residual_block(input_data,  64,  32, 64, activate_type="mish")
 
     input_data = common.convolutional(input_data, (1, 1, 64, 64), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
@@ -1053,13 +1038,7 @@ def cspdarknet53_small(input_data,
     route = common.convolutional(route, (1, 1, 256, 128), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 256, 128), activate_type="mish")
     for i in range(8):
-        input_data = common.residual_block(input_data, out_filt = 128,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
-
+        input_data = common.residual_block(input_data,  128,  64, 128, activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 128, 128), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
 
@@ -1070,12 +1049,7 @@ def cspdarknet53_small(input_data,
     route = common.convolutional(route, (1, 1, 512, 256), activate_type="mish")
     input_data = common.convolutional(input_data, (1, 1, 512, 256), activate_type="mish")
     for i in range(4):
-        input_data = common.residual_block(input_data, out_filt = 256,
-                                          activation = activation,
-                                          down_sample = False,
-                                          attention_axes = attention_axes,
-                                          kernel_size = 3,
-                                          normalization = normalization)
+        input_data = common.residual_block(input_data,  256,  128, 256, activate_type="mish")
 
     input_data = common.convolutional(input_data, (1, 1, 256, 256), activate_type="mish")
     input_data = tf.concat([input_data, route], axis=-1)
