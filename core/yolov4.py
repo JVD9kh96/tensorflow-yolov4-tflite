@@ -586,6 +586,149 @@ def Yolov4_neck(route_1,
         conv_lbbox = conv
     return [conv_sbbox, conv_mbbox, conv_lbbox]
 
+def sepYolov4_neck(route_1,
+                route_2,
+                conv ,
+                NUM_CLASS,
+                include_head=True,
+                dropblock=False,
+                dropblock_keep_prob=1,
+                dtype=tf.float32):
+
+    route = conv
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.upsample(conv, dtype)
+    route_2 = common.convolutional(route_2, (1, 1, 512, 256))
+    conv = tf.concat([route_2, conv], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.sepconvolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.sepconvolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+
+    route_2 = conv
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.upsample(conv, dtype)
+    route_1 = common.convolutional(route_1, (1, 1, 256, 128))
+    conv = tf.concat([route_1, conv], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.sepconvolutional(conv, (3, 3, 128, 256))
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.sepconvolutional(conv, (3, 3, 128, 256), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    conv = common.convolutional(conv, (1, 1, 256, 128), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+
+    route_1 = conv
+    conv = common.sepconvolutional(conv, (3, 3, 128, 256), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    if include_head:
+        conv_sbbox = common.convolutional(conv, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    else:
+        conv_sbbox = conv
+
+    conv = common.sepconvolutional(route_1, (3, 3, 128, 256), downsample=True)
+    conv = tf.concat([conv, route_2], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.sepconvolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.sepconvolutional(conv, (3, 3, 256, 512), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    conv = common.convolutional(conv, (1, 1, 512, 256), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+
+    route_2 = conv
+    conv = common.sepconvolutional(conv, (3, 3, 256, 512), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    if include_head:
+        conv_mbbox = common.convolutional(conv, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    else:
+        conv_mbbox = conv
+
+    conv = common.sepconvolutional(route_2, (3, 3, 256, 512), downsample=True)
+    conv = tf.concat([conv, route], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 1024, 512))
+    conv = common.sepconvolutional(conv, (3, 3, 512, 1024))
+    conv = common.convolutional(conv, (1, 1, 1024, 512))
+    conv = common.sepconvolutional(conv, (3, 3, 512, 1024), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    conv = common.convolutional(conv, (1, 1, 1024, 512), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+
+    conv = common.sepconvolutional(conv, (3, 3, 512, 1024), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    if include_head:
+        conv_lbbox = common.convolutional(conv, (1, 1, 1024, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    else:
+        conv_lbbox = conv
+    return [conv_sbbox, conv_mbbox, conv_lbbox]
+
+def Yolov4_neck_small(route_1,
+                route_2,
+                conv ,
+                NUM_CLASS,
+                include_head=True,
+                dropblock=False,
+                dropblock_keep_prob=1,
+                dtype=tf.float32):
+
+    route = conv
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.upsample(conv, dtype)
+    route_2 = common.convolutional(route_2, (1, 1, 256, 128))
+    conv = tf.concat([route_2, conv], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+
+    route_2 = conv
+    conv = common.convolutional(conv, (1, 1, 128, 64))
+    conv = common.upsample(conv, dtype)
+    route_1 = common.convolutional(route_1, (1, 1, 128, 64))
+    conv = tf.concat([route_1, conv], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 128, 64))
+    conv = common.convolutional(conv, (3, 3, 64, 128))
+    conv = common.convolutional(conv, (1, 1, 128, 64))
+    conv = common.convolutional(conv, (3, 3, 64, 128), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    conv = common.convolutional(conv, (1, 1, 128, 64), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+
+    route_1 = conv
+    conv = common.convolutional(conv, (3, 3, 64, 128), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    if include_head:
+        conv_sbbox = common.convolutional(conv, (1, 1, 128, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    else:
+        conv_sbbox = conv
+
+    conv = common.convolutional(route_1, (3, 3, 64, 128), downsample=True)
+    conv = tf.concat([conv, route_2], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.convolutional(conv, (3, 3, 128, 256))
+    conv = common.convolutional(conv, (1, 1, 256, 128))
+    conv = common.convolutional(conv, (3, 3, 128, 256), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    conv = common.convolutional(conv, (1, 1, 256, 128), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+
+    route_2 = conv
+    conv = common.convolutional(conv, (3, 3, 128, 256), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    if include_head:
+        conv_mbbox = common.convolutional(conv, (1, 1, 256, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    else:
+        conv_mbbox = conv
+
+    conv = common.convolutional(route_2, (3, 3, 128, 256), downsample=True)
+    conv = tf.concat([conv, route], axis=-1)
+
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.convolutional(conv, (3, 3, 256, 512))
+    conv = common.convolutional(conv, (1, 1, 512, 256))
+    conv = common.convolutional(conv, (3, 3, 256, 512), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    conv = common.convolutional(conv, (1, 1, 512, 256), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+
+    conv = common.convolutional(conv, (3, 3, 256, 512), dropblock=True, dropblock_keep_prob=dropblock_keep_prob)
+    if include_head:
+        conv_lbbox = common.convolutional(conv, (1, 1, 512, 3 * (NUM_CLASS + 5)), activate=False, bn=False)
+    else:
+        conv_lbbox = conv
+    return [conv_sbbox, conv_mbbox, conv_lbbox]
 
 def YOLOv4_vit_v1(input_layer,
                   NUM_CLASS,
