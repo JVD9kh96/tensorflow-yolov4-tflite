@@ -356,6 +356,40 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
         conv = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(conv)
     return conv
 
+def sepconvolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
+    if downsample:
+        input_layer = tf.keras.layers.ZeroPadding2D(((1, 0), (1, 0)))(input_layer)
+        padding = 'valid'
+        strides = 2
+    else:
+        strides = 1
+        padding = 'same'
+
+    conv = tf.keras.layers.SeparableConv2D(filters=filters_shape[-1], kernel_size = filters_shape[0], strides=strides, padding=padding,
+                                  use_bias=not bn, depthwise_regularizer=tf.keras.regularizers.l2(0.0005),
+                                  depth_multiplier=2,
+                                  pointwise_regularizer=tf.keras.regularizers.l2(0.0005),
+                                  depthwise_initializer=tf.random_normal_initializer(stddev=0.01),
+                                  pointwise_initializer=tf.random_normal_initializer(stddev=0.01),
+                                  bias_initializer=tf.constant_initializer(0.))(input_layer)
+
+    if bn and norm==0: 
+        conv = BatchNormalization()(conv)
+    # elif bn and norm==1:
+    #     conv = tfa.layers.GroupNormalization(groups = min(filters_shape[-1], 32))(conv)
+     
+    if activate == True:
+        if activate_type == "leaky":
+            conv = tf.nn.leaky_relu(conv, alpha=0.1)
+        elif activate_type == "mish":
+            conv = mish(conv)
+        elif activate_type == 'gelu':
+            # conv = tfa.activations.gelu(conv)
+            conv = tf.nn.gelu(conv)
+    if dropblock:
+        conv = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(conv)
+    return conv
+
 def mish(x):
     return x * tf.math.tanh(tf.math.softplus(x))
     # return tf.keras.layers.Lambda(lambda x: x*tf.tanh(tf.math.log(1+tf.exp(x))))(x)
@@ -376,6 +410,13 @@ def residual_block(input_layer, input_channel, filter_num1, filter_num2, activat
     residual_output = short_cut + conv
     return residual_output
 
+def sepresidual_block(input_layer, input_channel, filter_num1, filter_num2, activate_type='leaky'):
+    short_cut = input_layer
+    conv = convolutional(input_layer, filters_shape=(1, 1, input_channel, filter_num1), activate_type=activate_type)
+    conv = sepconvolutional(conv       , filters_shape=(3, 3, filter_num1,   filter_num2), activate_type=activate_type)
+
+    residual_output = short_cut + conv
+    return residual_output
 # def block_tiny(input_layer, input_channel, filter_num1, activate_type='leaky'):
 #     conv = convolutional(input_layer, filters_shape=(3, 3, input_channel, filter_num1), activate_type=activate_type)
 #     short_cut = input_layer
