@@ -983,8 +983,8 @@ def cspdarkerattnet53(input_data,
     input_data = common.convolutional(input_data, (1, 1, 1024, 512))
 
     input_data = tf.keras.layers.Concatenate(axis=-1)([tf.keras.layers.Lambda(lambda x:tf.nn.max_pool(x, ksize=13, padding='SAME', strides=1), output_shape=input_data.shape[1:])(input_data),
-                                                       tf.keras.layers.Lambda(lambda x:tf.nn.max_pool(input_data, ksize=9, padding='SAME', strides=1), output_shape=input_data.shape[1:])(input_data),
-                                                       tf.keras.layers.Lambda(lambda x:tf.nn.max_pool(input_data, ksize=5, padding='SAME', strides=1), output_shape=input_data.shape[1:])(input_data),
+                                                       tf.keras.layers.Lambda(lambda x:tf.nn.max_pool(x, ksize=9, padding='SAME', strides=1), output_shape=input_data.shape[1:])(input_data),
+                                                       tf.keras.layers.Lambda(lambda x:tf.nn.max_pool(x, ksize=5, padding='SAME', strides=1), output_shape=input_data.shape[1:])(input_data),
                                                        input_data])
     input_data = common.convolutional(input_data, (1, 1, 2048, 512))
     input_data = common.convolutional(input_data, (3, 3, 512, 1024))
