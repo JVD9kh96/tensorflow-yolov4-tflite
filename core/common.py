@@ -138,13 +138,15 @@ class Dropblock(tf.keras.layers.Layer):
         block_pattern, net.dtype)
     return net
 
-class BatchNormalization(tf.keras.layers.experimental.SyncBatchNormalization):
+class BatchNormalization(tf.keras.layers.BatchNormalization):
     """
     "Frozen state" and "inference mode" are two separate concepts.
     `layer.trainable = False` is to freeze the layer, so the layer will use
     stored moving `var` and `mean` in the "inference mode", and both `gama`
     and `beta` will not be updated !
     """
+    def __init__(self, synchronized=True, **kwargs):
+        super(BatchNormalization, self).__init__(synchronized=synchronized, **kwargs)
     def call(self, x, training=False):
         if not training:
             training = tf.constant(False)
