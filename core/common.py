@@ -240,7 +240,7 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
     for _ in range(num_layers):
         # Layer normalization 1.
         if normal == 0:
-            x1 = tf.keras.layers.experimental.SyncBatchNormalization()(encoded_patches)
+            x1 = BatchNormalization()(encoded_patches)
         # elif normal == 1:
         #     x1 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(encoded_patches)
         elif normal == 2:
@@ -253,7 +253,7 @@ def transformer(input_layer, projection_dim, transformer_units, num_layers = 4, 
         x2 = layers.Add()([attention_output, encoded_patches])
         # Layer normalization 2.
         if normal == 0:
-            x3 = tf.keras.layers.experimental.SyncBatchNormalization()(x2)
+            x3 = BatchNormalization()(x2)
         # elif normal == 1:
         #     x3 = tfa.layers.GroupNormalization(groups = min(projection_dim, 16))(x2)
         elif normal ==2:
@@ -298,7 +298,7 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
     if normalization == 'batch':
-        k1 = tf.keras.layers.experimental.SyncBatchNormalization()(k1)
+        k1 = BatchNormalization()(k1)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -320,7 +320,7 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
     if normalization == 'batch':
-        k2 = tf.keras.layers.experimental.SyncBatchNormalization()(k2)
+        k2 = BatchNormalization()(k2)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -345,7 +345,7 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(key)
     if normalization == 'batch':
-        k3 = tf.keras.layers.experimental.SyncBatchNormalization()(k3)
+        k3 = BatchNormalization()(k3)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -408,7 +408,7 @@ def kai_attention(key,
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
     
     if normalization == 'batch':
-        v1 = tf.keras.layers.experimental.SyncBatchNormalization()(v1)
+        v1 = BatchNormalization()(v1)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -434,7 +434,7 @@ def kai_attention(key,
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
     
     if normalization == 'batch':
-        v2 = tf.keras.layers.experimental.SyncBatchNormalization()(v2)
+        v2 = BatchNormalization()(v2)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -460,7 +460,7 @@ def kai_attention(key,
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(value)
     
     if normalization == 'batch':
-        v3 = tf.keras.layers.experimental.SyncBatchNormalization()(v3)
+        v3 = BatchNormalization()(v3)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -518,7 +518,7 @@ def kai_attention(key,
                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(v14)),
                    axis=-1)
     if normalization == 'batch':
-        v1 = tf.keras.layers.experimental.SyncBatchNormalization()(v1)
+        v1 = BatchNormalization()(v1)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -542,7 +542,7 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
     if normalization == 'batch':
-        q1 = tf.keras.layers.experimental.SyncBatchNormalization()(q1)
+        q1 = BatchNormalization()(q1)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -566,7 +566,7 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
     if normalization == 'batch':
-        q2 = tf.keras.layers.experimental.SyncBatchNormalization()(q2)
+        q2 = BatchNormalization()(q2)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -590,7 +590,7 @@ def kai_attention(key,
                                  kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                  kernel_initializer=tf.random_normal_initializer(stddev=0.01))(query)
     if normalization == 'batch':
-        q3 = tf.keras.layers.experimental.SyncBatchNormalization()(q3)
+        q3 = BatchNormalization()(q3)
     # elif normalization == 'group':
     #     key = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(key)
     elif normalization == 'layer':
@@ -659,28 +659,28 @@ def kai_attention(key,
     qk    = tf.multiply(q, k)
     
     if normalization == 'batch':
-        qk = tf.keras.layers.experimental.SyncBatchNormalization()(qk)
+        qk = BatchNormalization()(qk)
     # elif normalization == 'group':
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
         qk = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk)
     qk = tf.nn.sigmoid(qk)
 #     if normalization == 'batch':
-#         qk1 = tf.keras.layers.experimental.SyncBatchNormalization()(qk1)
+#         qk1 = BatchNormalization()(qk1)
 #     # elif normalization == 'group':
 #     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
 #     elif normalization == 'layer':
 #         qk1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk1)
     
 #     if normalization == 'batch':
-#         qk2 = tf.keras.layers.experimental.SyncBatchNormalization()(qk2)
+#         qk2 = BatchNormalization()(qk2)
 #     # elif normalization == 'group':
 #     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
 #     elif normalization == 'layer':
 #         qk2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk2)
     
 #     if normalization == 'batch':
-#         qk3 = tf.keras.layers.experimental.SyncBatchNormalization()(qk3)
+#         qk3 = BatchNormalization()(qk3)
 #     # elif normalization == 'group':
 #     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
 #     elif normalization == 'layer':
@@ -821,7 +821,7 @@ def transformer_block(inp,
 #         i1 = tf.keras.layers.LeakyReLU(alpha = 0.3)(i1)
 
 #     if normalization == 'batch':
-#         i1 = tf.keras.layers.experimental.SyncBatchNormalization()(i1)
+#         i1 = BatchNormalization()(i1)
 #     # elif normalization == 'group':
 #     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
 #     elif normalization == 'layer':
@@ -843,7 +843,7 @@ def transformer_block(inp,
         inp = tf.keras.layers.LeakyReLU(alpha = 0.3)(inp)
 
     if normalization == 'batch':
-        x1 = tf.keras.layers.experimental.SyncBatchNormalization()(inp)
+        x1 = BatchNormalization()(inp)
     # elif normalization == 'group':
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
@@ -862,7 +862,7 @@ def transformer_block(inp,
                        dropblock = dropblock)
     
 #     if normalization == 'batch':
-#         x1p = tf.keras.layers.experimental.SyncBatchNormalization()(inp)
+#         x1p = BatchNormalization()(inp)
 #     # elif normalization == 'group':
 #     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
 #     elif normalization == 'layer':
@@ -883,7 +883,7 @@ def transformer_block(inp,
 #     x3 = shake_shake_add()(inp, x2, x2p)
     x3 = tf.keras.layers.Add()([inp, x2])
     if normalization == 'batch':
-        x4 = tf.keras.layers.experimental.SyncBatchNormalization()(x3)
+        x4 = BatchNormalization()(x3)
     # elif normalization == 'group':
     #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
     elif normalization == 'layer':
@@ -930,7 +930,7 @@ def transformer_block(inp,
         x7 = DropBlock(dropblock_keep_prob=dropblock_keep_prob)(x7)
     
 #     if normalization == 'batch':
-#         x4p = tf.keras.layers.experimental.SyncBatchNormalization()(x3)
+#         x4p = BatchNormalization()(x3)
 #     # elif normalization == 'group':
 #     #     x4 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x3)
 #     elif normalization == 'layer':
@@ -980,7 +980,7 @@ def transformer_block(inp,
     x8 = tf.keras.layers.Add()([x3, x7])
 
     if normalization == 'batch':
-        x8 = tf.keras.layers.experimental.SyncBatchNormalization()(x8)
+        x8 = BatchNormalization()(x8)
     # elif normalization == 'group':
     #     x8 = tfa.layers.GroupNormalization(min(16, x3.shape[-1]))(x8)
     elif normalization == 'layer':
