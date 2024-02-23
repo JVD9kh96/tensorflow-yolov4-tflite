@@ -360,8 +360,9 @@ def kai_attention(key,
         k3 = tf.keras.layers.LeakyReLU(alpha = 0.3)(k3)
     
 #     key = shake_shake_add()(k1, k2, k3)
-    k11, k12, k13, k14 = tf.split(k1, 4, axis=-1)
-    k1 = tf.concat((tf.keras.layers.Conv2D(filters = heads//16,
+    k_split = tf.keras.layers.Lambda(lambda x: tf.split(x, 4, axis=-1))(k1)
+    k11, k12, k13, k14 = k_split[0], k_split[1], k_split[2], k_split[3]
+    k1 = tf.keras.layers.Concatenate(axis=-1)((tf.keras.layers.Conv2D(filters = heads//16,
                              kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
                              padding = 'same',
@@ -388,8 +389,7 @@ def kai_attention(key,
                              padding = 'same',
                              use_bias = False,
                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
-                             kernel_initializer=tf.random_normal_initializer(stddev=0.01))(k14)),
-                   axis=-1)
+                             kernel_initializer=tf.random_normal_initializer(stddev=0.01))(k14)))
                     
 #     k1 = tf.keras.layers.Conv2D(filters = heads//2,
 #                              kernel_size=(kernel_size, kernel_size),
@@ -487,8 +487,9 @@ def kai_attention(key,
 #                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
 #                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(v1)
     
-    v11, v12, v13, v14 = tf.split(v1, 4, axis=-1)
-    v1 = tf.concat((tf.keras.layers.Conv2D(filters = heads//16,
+    v_split = tf.keras.layers.Lambda(lambda x: tf.split(x, 4, axis=-1))(v1)
+    v11, v12, v13, v14 = v_split[0], v_split[1], v_split[2], v_split[3]
+    v1 = tf.keras.layers.Concatenate(axis=-1)((tf.keras.layers.Conv2D(filters = heads//16,
                              kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
                              padding = 'same',
@@ -515,8 +516,7 @@ def kai_attention(key,
                              padding = 'same',
                              use_bias = False,
                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
-                             kernel_initializer=tf.random_normal_initializer(stddev=0.01))(v14)),
-                   axis=-1)
+                             kernel_initializer=tf.random_normal_initializer(stddev=0.01))(v14)))
     if normalization == 'batch':
         v1 = BatchNormalization()(v1)
     # elif normalization == 'group':
@@ -615,8 +615,9 @@ def kai_attention(key,
 #                              use_bias = False,
 #                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
 #                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(q1)
-    q11, q12, q13, q14 = tf.split(q1, 4, axis=-1)
-    q1 = tf.concat((tf.keras.layers.Conv2D(filters = heads//16,
+    q_split = tfkeras.layers.Lambda(lambda x: tf.split(x, 4, axis=-1))(q1)
+    q11, q12, q13, q14 = q_split[0], q_split[1], q_split[2], q_split[3]
+    q1 = tf.keras.layers.Concatenate(axis=-1)((tf.keras.layers.Conv2D(filters = heads//16,
                              kernel_size=(kernel_size, kernel_size),
                              strides = (1, 1),
                              padding = 'same',
@@ -643,8 +644,7 @@ def kai_attention(key,
                              padding = 'same',
                              use_bias = False,
                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
-                             kernel_initializer=tf.random_normal_initializer(stddev=0.01))(q14)),
-                   axis=-1)
+                             kernel_initializer=tf.random_normal_initializer(stddev=0.01))(q14)))
     
     shape = getattr(value, 'shape')
     dtype = getattr(value, 'dtype')
@@ -656,7 +656,7 @@ def kai_attention(key,
     q = shake_shake_add()(q1, q2, q3)
     k = shake_shake_add()(k1, k2, k3)
     v = shake_shake_add()(v1, v2, v3)
-    qk    = tf.multiply(q, k)
+    qk    = tf.keras.layers.Lambda(lambda x: multiply(x[0], x[1]))((q, k))
     
     if normalization == 'batch':
         qk = BatchNormalization()(qk)
@@ -664,7 +664,7 @@ def kai_attention(key,
     #     x1 = tfa.layers.GroupNormalization(min(16, inp.shape[-1]))(inp)
     elif normalization == 'layer':
         qk = tf.keras.layers.LayerNormalization(epsilon=1e-6)(qk)
-    qk = tf.nn.sigmoid(qk)
+    qk = tf.keras.layers.Lambda(lambda x:tf.nn.sigmoid(x))(qk)
 #     if normalization == 'batch':
 #         qk1 = BatchNormalization()(qk1)
 #     # elif normalization == 'group':
@@ -710,7 +710,7 @@ def kai_attention(key,
 #     a2         = tf.math.multiply(qk2 , v2)
 #     a3         = tf.math.multiply(qk3 , v3)
 #     attention  = shake_shake_add()(a1, a2, a3)
-    attention  = tf.math.multiply(qk , v)
+    attention  = tf.keras.layers.Lambda(lambda x: x[0]*x[1])((qk , v))
     attention  = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
@@ -790,7 +790,7 @@ def kai_attention(key,
         attention = tf.nn.gelu(attention)
     elif activation == 'leaky':
         attention = tf.keras.layers.LeakyReLU(alpha = 0.3)(attention)
-    attention = attention + shortcut
+    attention = tf.keras.layers.Add()([attention, shortcut])
     if dropblock:
         attention = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(attention)
     return attention
