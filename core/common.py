@@ -219,11 +219,17 @@ def residual_block(input_layer, input_channel, filter_num1, filter_num2, activat
 def route_group(input_layer, groups, group_id):
     convs = tf.split(input_layer, num_or_size_splits=groups, axis=-1)
     return convs[group_id]
-
-def upsample(input_layer, dtype=None):
-    if dtype is None:
-        dtype = input_layer.dtype
-    return tf.cast(tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear'), dtype)
+class Upsample(tf.keras.layers.Layer):
+    def call(x, dtype=None, training=False):
+        if dtype is None:
+            dtype = input_layer.dtype
+        return tf.cast(tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear'), dtype)
+        
+# def upsample(input_layer, dtype=None):
+    # if dtype is None:
+    #     dtype = input_layer.dtype
+    # return tf.cast(tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear'), dtype)
+upsample = Upsample()
 
 def mlp(x, hidden_units, dropout_rate, activation = 'gelu'):
     for units in hidden_units:
