@@ -656,7 +656,7 @@ def kai_attention(key,
     q = shake_shake_add()(q1, q2, q3)
     k = shake_shake_add()(k1, k2, k3)
     v = shake_shake_add()(v1, v2, v3)
-    qk    = tf.keras.layers.Lambda(lambda x: multiply(x[0], x[1]))((q, k))
+    qk    = tf.keras.layers.Lambda(lambda x: tf.multiply(x[0], x[1]))((q, k))
     
     if normalization == 'batch':
         qk = BatchNormalization()(qk)
@@ -710,7 +710,7 @@ def kai_attention(key,
 #     a2         = tf.math.multiply(qk2 , v2)
 #     a3         = tf.math.multiply(qk3 , v3)
 #     attention  = shake_shake_add()(a1, a2, a3)
-    attention  = tf.keras.layers.Lambda(lambda x: x[0]*x[1])((qk , v))
+    attention  = tf.keras.layers.Lambda(lambda x: tf.multiply(x[0],x[1]))((qk , v))
     attention  = tf.keras.layers.Conv2D(filters = out_filters//2, kernel_size = (1, 1), strides = (1, 1), padding = 'same',
                                         kernel_regularizer=tf.keras.regularizers.l2(0.0005),
                                         kernel_initializer=tf.random_normal_initializer(stddev=0.01),
