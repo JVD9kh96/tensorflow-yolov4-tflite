@@ -148,10 +148,10 @@ class BatchNormalization(tf.keras.layers.BatchNormalization):
     def __init__(self, synchronized=True, **kwargs):
         super(BatchNormalization, self).__init__(synchronized=synchronized, **kwargs)
     def call(self, x, training=False):
-        if not training:
-            training = tf.constant(False)
-        training = tf.logical_and(training, self.trainable)
-        return super().call(x, training)
+        # if not training:
+        #     training = tf.constant(False)
+        # training = tf.logical_and(training, self.trainable)
+        return super().call(x, training=training)
 
 def convolutional(input_layer, filters_shape, downsample=False, activate=True, bn=True, activate_type='leaky', norm = 0, dropblock=False, dropblock_keep_prob=0.9):
     if downsample:
