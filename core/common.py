@@ -184,8 +184,12 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
         conv = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(conv)
     return conv
 
-def mish(x):
-    return x * tf.math.tanh(tf.math.softplus(x))
+class Mish(tf.keras.layers.Layer):
+    def call(self, x, training=False):
+        return x * tf.math.tanh(tf.math.softplus(x))
+mish = Mish()
+# def mish(x):
+#     return x * tf.math.tanh(tf.math.softplus(x))
     # return tf.keras.layers.Lambda(lambda x: x*tf.tanh(tf.math.log(1+tf.exp(x))))(x)
 
 class softmax_2d(tf.keras.layers.Layer):
