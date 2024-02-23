@@ -525,7 +525,7 @@ def Yolov4_neck(route_1,
 
     route = conv
     conv = common.convolutional(conv, (1, 1, 512, 256))
-    conv = common.upsample(conv, dtype)
+    conv = common.upsample(conv, dtype=dtype)
     route_2 = common.convolutional(route_2, (1, 1, 512, 256))
     conv = tf.keras.layers.Concatenate(axis=-1)([route_2, conv])
 
@@ -537,7 +537,7 @@ def Yolov4_neck(route_1,
 
     route_2 = conv
     conv = common.convolutional(conv, (1, 1, 256, 128))
-    conv = common.upsample(conv, dtype)
+    conv = common.upsample(conv, dtype=dtype)
     route_1 = common.convolutional(route_1, (1, 1, 256, 128))
     conv = tf.keras.layers.Concatenate(axis=-1)([route_1, conv])
 
