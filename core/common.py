@@ -174,12 +174,12 @@ def convolutional(input_layer, filters_shape, downsample=False, activate=True, b
      
     if activate == True:
         if activate_type == "leaky":
-            conv = tf.nn.leaky_relu(conv, alpha=0.1)
+            conv = tf.keras.layers.Lambda(lambda x:tf.nn.leaky_relu(x, alpha=0.1))(conv)
         elif activate_type == "mish":
             conv = mish(conv)
         elif activate_type == 'gelu':
             # conv = tfa.activations.gelu(conv)
-            conv = tf.nn.gelu(conv)
+            conv = tf.keras.layers.Lambda(lambda x:tf.nn.gelu(x))(conv)
     if dropblock:
         conv = Dropblock(dropblock_keep_prob=dropblock_keep_prob)(conv)
     return conv
