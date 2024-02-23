@@ -615,7 +615,7 @@ def kai_attention(key,
 #                              use_bias = False,
 #                              kernel_regularizer=tf.keras.regularizers.l2(0.0005),
 #                              kernel_initializer=tf.random_normal_initializer(stddev=0.01))(q1)
-    q_split = tfkeras.layers.Lambda(lambda x: tf.split(x, 4, axis=-1))(q1)
+    q_split = tf.keras.layers.Lambda(lambda x: tf.split(x, 4, axis=-1))(q1)
     q11, q12, q13, q14 = q_split[0], q_split[1], q_split[2], q_split[3]
     q1 = tf.keras.layers.Concatenate(axis=-1)((tf.keras.layers.Conv2D(filters = heads//16,
                              kernel_size=(kernel_size, kernel_size),
