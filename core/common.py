@@ -220,9 +220,11 @@ def route_group(input_layer, groups, group_id):
     convs = tf.split(input_layer, num_or_size_splits=groups, axis=-1)
     return convs[group_id]
 class Upsample(tf.keras.layers.Layer):
-    def call(x, dtype=None, training=False):
-        if dtype is None:
+    def call(x, dt=None, training=False):
+        if dt is None:
             dtype = input_layer.dtype
+        else:
+            dtype = dt
         return tf.cast(tf.image.resize(input_layer, (input_layer.shape[1] * 2, input_layer.shape[2] * 2), method='bilinear'), dtype)
         
 # def upsample(input_layer, dtype=None):
