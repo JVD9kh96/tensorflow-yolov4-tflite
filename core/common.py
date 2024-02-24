@@ -221,7 +221,7 @@ def route_group(input_layer, groups, group_id):
     return convs[group_id]
 
 class Upsample(tf.keras.layers.Layer):
-    def call(x, training=False):
+    def call(x):
         # if dt is None:
         #     dtype = input_layer.dtype
         # else:
