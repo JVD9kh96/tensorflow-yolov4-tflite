@@ -614,7 +614,7 @@ with open(results_files_path + "/results.txt", 'w') as results_file:
       plt.fill_between(area_under_curve_x, 0, area_under_curve_y, alpha=0.2, edgecolor='r')
       # set window title
       fig = plt.gcf() # gcf - get current figure
-      fig.canvas.set_window_title('AP ' + class_name)
+      # fig.canvas.set_window_title('AP ' + class_name)
       # set plot title
       plt.title('class: ' + text)
       #plt.suptitle('This is a somewhat long figure title', fontsize=16)
